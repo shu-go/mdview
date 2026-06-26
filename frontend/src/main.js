@@ -178,7 +178,7 @@ document.addEventListener('keydown', async (e) => {
         toolbarHideTimer = setTimeout(() => toolbar.classList.remove('visible'), 1500);
         return;
     }
-    if (e.ctrlKey && e.key === 'w') {
+    if (e.ctrlKey && e.key === 'w' || e.key === 'q') {
         e.preventDefault();
         Quit();
         return;

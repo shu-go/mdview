@@ -67,7 +67,7 @@ Hover the mouse near the top of the viewer window to reveal the toolbar.
 | `Shift+F3` | Previous match |
 | `Escape` | Close search panel |
 | `Ctrl+D` | Cycle diff mode: Normal → Initial Diff → Baseline Diff → Normal |
-| `Ctrl+W` | Quit the application |
+| `Ctrl+W` or `q` | Quit the application |
 | `j` | Scroll down one line |
 | `k` | Scroll up one line |
 | `b` or `Shift+Space` | Scroll up one page |
