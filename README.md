@@ -1,0 +1,103 @@
+# mdview
+
+A lightweight standalone Markdown viewer for Windows, built with [Wails](https://wails.io/) (Go + WebView2).
+
+## Features
+
+- **Drag & drop** — Drop a Markdown file onto the window to open it, from either the start screen or the viewer
+- **CLI argument** — Open a file directly: `mdview.exe path/to/file.md`
+- **File watching** — Automatically reloads when the file is saved
+- **Inline diff** — View changes against two baselines:
+  - *Initial Diff* — diff against the content when the file was first opened
+  - *Baseline Diff* — diff against a snapshot you set manually with **Update Baseline**
+- **Syntax highlighting** — Code blocks highlighted via Prism.js (lazy-loaded)
+- **Mermaid diagrams** — Renders `mermaid` code blocks as diagrams (lazy-loaded)
+- **Link handling**
+  - `.md` / `.markdown` links → opens a new instance of mdview
+  - `http://`, `https://`, `mailto:` links → opens in the system default browser
+  - Other local file links → opens in the system default browser
+  - Hovering a link shows the resolved destination in a status bar at the bottom
+- **Overlay toolbar** — Move the mouse to the top of the viewer to reveal the toolbar; it hides when you move away
+- **Font selection** — Choose any installed font via the system font picker; the selection is saved and restored on next launch
+- **Color themes** — Switch between Light, Dark, and System (follows OS setting) from the toolbar; preference is saved across sessions
+- **Editor integration** — Register an external editor executable via the toolbar; press `Ctrl+E` to open the current file in that editor
+
+## Supported Markdown
+
+Rendered via [goldmark](https://github.com/yuin/goldmark) with the following extensions enabled:
+
+- GitHub Flavored Markdown (GFM): tables, strikethrough, task lists, autolinks
+- Definition lists
+- Raw HTML passthrough (`html.WithUnsafe`)
+
+## Usage
+
+```
+mdview.exe [file]
+```
+
+| Action | Result |
+|---|---|
+| Launch with no argument | Shows the drop screen |
+| Drag & drop a `.md` file | Opens the file in the viewer |
+| Click the drop area | Opens a file picker dialog |
+| `mdview.exe path/to/file.md` | Opens the file directly on launch |
+
+### Toolbar
+
+Hover the mouse near the top of the viewer window to reveal the toolbar.
+
+| Control | Description |
+|---|---|
+| **Normal** | Renders the current file as-is |
+| **Initial Diff** | Highlights changes since the file was first opened |
+| **Baseline Diff** | Highlights changes since the last **Update Baseline** |
+| **Update Baseline** | Saves the current content as the new diff baseline |
+| **Light / System / Dark** | Switches the color theme; System follows the OS setting |
+| **Editor** | Select an editor executable (saved to settings); hover to see current path |
+| **Font** | Opens the system font picker to change the rendering font |
+
+### Keyboard shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+E` | Open current file in the configured editor |
+| `Ctrl+F` or `/` | Open search panel |
+| `F3` | Next match |
+| `Shift+F3` | Previous match |
+| `Escape` | Close search panel |
+| `Ctrl+D` | Cycle diff mode: Normal → Initial Diff → Baseline Diff → Normal |
+| `Ctrl+W` | Quit the application |
+| `j` | Scroll down one line |
+| `k` | Scroll up one line |
+| `b` or `Shift+Space` | Scroll up one page |
+| `g` | Scroll to top |
+| `Shift+G` | Scroll to bottom |
+
+### Settings file
+
+User preferences (font and color theme) are saved to `mdview.json` in the same directory as `mdview.exe` and loaded automatically on next launch.
+
+## Building
+
+Prerequisites: [Go](https://go.dev/), [Wails CLI](https://wails.io/docs/gettingstarted/installation), [Node.js](https://nodejs.org/)
+
+```sh
+# Development (hot reload)
+wails dev
+
+# Production binary → build/bin/mdview.exe
+wails build
+```
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Desktop framework | [Wails v2](https://wails.io/) |
+| Markdown parser | [goldmark](https://github.com/yuin/goldmark) |
+| Diff engine | [go-diff / diffmatchpatch](https://github.com/sergi/go-diff) |
+| File watching | [fsnotify](https://github.com/fsnotify/fsnotify) |
+| Syntax highlighting | [Prism.js](https://prismjs.com/) (lazy-loaded) |
+| Diagram rendering | [Mermaid](https://mermaid.js.org/) (lazy-loaded) |
+| Frontend | Vanilla JS / CSS (no framework) |

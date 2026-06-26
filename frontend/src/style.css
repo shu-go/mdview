@@ -1,0 +1,111 @@
+/* ===== Dark theme (default) ===== */
+:root {
+    --bg-main: #0d121f;
+    --bg-surface: #161e31;
+    --bg-surface-hover: #1e2942;
+    --border-color: #2a3754;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+    --success: #10b981;
+    --success-bg: rgba(16, 185, 129, 0.15);
+    --error-bg: rgba(239, 68, 68, 0.15);
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
+    /* Component-specific */
+    --overlay-bg: rgba(22, 30, 49, 0.92);
+    --code-color: #f472b6;
+    --blockquote-bg: rgba(22, 30, 49, 0.4);
+    --table-stripe-bg: rgba(22, 30, 49, 0.3);
+}
+
+/* ===== Light theme ===== */
+:root.theme-light {
+    --bg-main: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-surface-hover: #f1f5f9;
+    --border-color: #cbd5e1;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+    --success: #059669;
+    --success-bg: rgba(5, 150, 105, 0.1);
+    --error-bg: rgba(239, 68, 68, 0.1);
+    --overlay-bg: rgba(255, 255, 255, 0.95);
+    --code-color: #be185d;
+    --blockquote-bg: rgba(241, 245, 249, 0.8);
+    --table-stripe-bg: rgba(241, 245, 249, 0.6);
+}
+
+/* ===== System preference: apply light when OS is light ===== */
+@media (prefers-color-scheme: light) {
+    :root.theme-system {
+        --bg-main: #f8fafc;
+        --bg-surface: #ffffff;
+        --bg-surface-hover: #f1f5f9;
+        --border-color: #cbd5e1;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-muted: #94a3b8;
+        --accent: #2563eb;
+        --accent-hover: #1d4ed8;
+        --danger: #ef4444;
+        --danger-hover: #dc2626;
+        --success: #059669;
+        --success-bg: rgba(5, 150, 105, 0.1);
+        --error-bg: rgba(239, 68, 68, 0.1);
+        --overlay-bg: rgba(255, 255, 255, 0.95);
+        --code-color: #be185d;
+        --blockquote-bg: rgba(241, 245, 249, 0.8);
+        --table-stripe-bg: rgba(241, 245, 249, 0.6);
+    }
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100%;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-main);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}

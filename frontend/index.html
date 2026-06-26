@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>mdview - Markdown ビューアー</title>
+</head>
+<body>
+<div id="app">
+    <!-- Drop Area -->
+    <div id="drop-area" class="drop-area" style="--wails-drop-target: drop;">
+        <div class="drop-content">
+            <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+            </svg>
+            <h2 class="drop-title">Markdown Viewer</h2>
+            <p class="drop-subtitle">Drag &amp; drop a Markdown file here, or click to select</p>
+        </div>
+    </div>
+
+    <!-- Viewer Container -->
+    <div id="viewer-container" class="viewer-container hidden" style="--wails-drop-target: drop;">
+        <!-- Toolbar -->
+        <header class="toolbar">
+            <div class="toolbar-left">
+                <span class="file-icon">📄</span>
+                <span id="file-name" class="file-name"></span>
+            </div>
+
+            <div class="toolbar-center">
+                <div class="segmented-control">
+                    <button class="seg-btn active" data-mode="off">Normal</button>
+                    <button class="seg-btn" data-mode="initial">Initial Diff</button>
+                    <button class="seg-btn" data-mode="baseline">Baseline Diff</button>
+                </div>
+                <button id="btn-update-baseline" class="btn btn-secondary" title="Save current content as new diff baseline">
+                    Update Baseline
+                </button>
+            </div>
+
+            <div class="toolbar-right">
+                <div class="segmented-control">
+                    <button class="seg-btn theme-btn" data-theme="light">Light</button>
+                    <button class="seg-btn theme-btn" data-theme="system">System</button>
+                    <button class="seg-btn theme-btn" data-theme="dark">Dark</button>
+                </div>
+                <button id="btn-editor" class="btn btn-secondary" title="Select editor executable">Editor</button>
+                <button id="btn-font" class="btn btn-secondary" title="Select display font">Font</button>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <main class="content-area">
+            <article id="markdown-body" class="markdown-body"></article>
+        </main>
+
+        <!-- Link preview status bar -->
+        <div id="link-preview" class="link-preview"></div>
+    </div>
+</div>
+<div class="search-panel hidden">
+    <input class="search-input" type="text" placeholder="Search..." autocomplete="off" spellcheck="false">
+    <span class="search-count"></span>
+    <button class="search-nav-btn search-prev" title="Previous (Shift+F3)">▲</button>
+    <button class="search-nav-btn search-next" title="Next (F3)">▼</button>
+    <button class="search-close-btn" title="Close (Esc)">✕</button>
+</div>
+<script src="./src/main.js" type="module"></script>
+</body>
+</html>
