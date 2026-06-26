@@ -36,6 +36,9 @@ var mdParser = goldmark.New(
 
 var reTagName = regexp.MustCompile(`^</?([a-zA-Z][a-zA-Z0-9]*)`)
 
+// reHTMLToken splits text into HTML tags, words, and whitespace runs.
+var reHTMLToken = regexp.MustCompile(`<[^>]*>|[^\s<>]+|\s+`)
+
 // structuralTags are block-container elements whose tags should not be wrapped
 // in <ins>/<del>; only their content lines should be marked.
 var structuralTags = map[string]bool{
@@ -134,7 +137,7 @@ func (a *App) ParseMarkdownWithDiff(baseText, currentText string) (string, error
 		return "", err
 	}
 
-	return diffHTMLByLine(baseHTML, currentHTML), nil
+	return diffHTMLByWord(baseHTML, currentHTML), nil
 }
 
 // diffHTMLByLine computes a line-level diff between two HTML strings,
@@ -170,6 +173,191 @@ func diffHTMLByLine(oldHTML, newHTML string) string {
 		}
 	}
 	return result.String()
+}
+
+// diffHTMLByWord computes a word-level diff between two HTML strings.
+// It first identifies changed line regions, then for matched delete+insert pairs
+// applies word-level markup. Unmatched lines fall back to whole-line markup.
+func diffHTMLByWord(oldHTML, newHTML string) string {
+	dmp := diffmatchpatch.New()
+	chars1, chars2, lineArray := dmp.DiffLinesToChars(oldHTML, newHTML)
+	diffs := dmp.DiffMain(chars1, chars2, false)
+	diffs = dmp.DiffCharsToLines(diffs, lineArray)
+
+	var result strings.Builder
+	i := 0
+	for i < len(diffs) {
+		d := diffs[i]
+		switch d.Type {
+		case diffmatchpatch.DiffEqual:
+			result.WriteString(d.Text)
+			i++
+		case diffmatchpatch.DiffDelete:
+			if i+1 < len(diffs) && diffs[i+1].Type == diffmatchpatch.DiffInsert {
+				applyWordDiff(&result, dmp, d.Text, diffs[i+1].Text)
+				i += 2
+			} else {
+				writeWrappedLines(&result, d.Text, "del")
+				i++
+			}
+		case diffmatchpatch.DiffInsert:
+			writeWrappedLines(&result, d.Text, "ins")
+			i++
+		}
+	}
+	return result.String()
+}
+
+// writeWrappedLines wraps each non-empty line in text with <ins> or <del> markup.
+func writeWrappedLines(sb *strings.Builder, text, tag string) {
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
+		if i == len(lines)-1 {
+			break
+		}
+		if line != "" {
+			sb.WriteString(wrapWithDiff(line, tag))
+		}
+		sb.WriteString("\n")
+	}
+}
+
+// applyWordDiff writes word-level diff output for a paired delete+insert block.
+func applyWordDiff(sb *strings.Builder, dmp *diffmatchpatch.DiffMatchPatch, delText, insText string) {
+	delLines := splitLines(delText)
+	insLines := splitLines(insText)
+
+	if len(delLines) != len(insLines) {
+		writeWrappedLines(sb, delText, "del")
+		writeWrappedLines(sb, insText, "ins")
+		return
+	}
+
+	for j := range delLines {
+		wordDiffOneLine(sb, dmp, delLines[j], insLines[j])
+	}
+}
+
+// splitLines splits text by \n, dropping the trailing empty element.
+func splitLines(text string) []string {
+	parts := strings.Split(text, "\n")
+	if len(parts) > 0 && parts[len(parts)-1] == "" {
+		parts = parts[:len(parts)-1]
+	}
+	return parts
+}
+
+// wordDiffOneLine performs word-level diff between delLine and insLine,
+// writing the result (including trailing \n) to sb.
+// Falls back to line-level markup when the outer HTML structure differs.
+func wordDiffOneLine(sb *strings.Builder, dmp *diffmatchpatch.DiffMatchPatch, delLine, insLine string) {
+	// Structural container tags: fall back to line-level
+	if m := reTagName.FindStringSubmatch(delLine); m != nil && structuralTags[strings.ToLower(m[1])] {
+		if delLine != "" {
+			sb.WriteString(wrapWithDiff(delLine, "del"))
+		}
+		sb.WriteString("\n")
+		if insLine != "" {
+			sb.WriteString(wrapWithDiff(insLine, "ins"))
+		}
+		sb.WriteString("\n")
+		return
+	}
+
+	delOpen, delContent, _ := splitHTMLLine(delLine)
+	insOpen, insContent, insClose := splitHTMLLine(insLine)
+
+	if delOpen != insOpen || (delContent == "" && insContent == "") {
+		// Different outer tag or bare tag: line-level fallback
+		if delLine != "" {
+			sb.WriteString(wrapWithDiff(delLine, "del"))
+		}
+		sb.WriteString("\n")
+		if insLine != "" {
+			sb.WriteString(wrapWithDiff(insLine, "ins"))
+		}
+		sb.WriteString("\n")
+		return
+	}
+
+	// Same outer tag: word-level diff on inner content
+	wordDiffs := tokenizedDiff(dmp, delContent, insContent)
+	sb.WriteString(insOpen)
+	for _, wd := range wordDiffs {
+		switch wd.Type {
+		case diffmatchpatch.DiffDelete:
+			sb.WriteString("<del>")
+			sb.WriteString(wd.Text)
+			sb.WriteString("</del>")
+		case diffmatchpatch.DiffInsert:
+			sb.WriteString("<ins>")
+			sb.WriteString(wd.Text)
+			sb.WriteString("</ins>")
+		default:
+			sb.WriteString(wd.Text)
+		}
+	}
+	sb.WriteString(insClose)
+	sb.WriteString("\n")
+}
+
+// splitHTMLLine extracts the outer opening tag, inner content, and closing tag from an HTML line.
+// e.g. "<p>foo bar</p>" → ("<p>", "foo bar", "</p>")
+func splitHTMLLine(line string) (openTag, content, closeTag string) {
+	if !strings.HasPrefix(line, "<") {
+		return "", line, ""
+	}
+	firstClose := strings.Index(line, ">")
+	if firstClose == -1 {
+		return "", line, ""
+	}
+	openTag = line[:firstClose+1]
+	rest := line[firstClose+1:]
+	lastOpen := strings.LastIndex(rest, "</")
+	if lastOpen == -1 {
+		return openTag, rest, ""
+	}
+	return openTag, rest[:lastOpen], rest[lastOpen:]
+}
+
+// tokenizedDiff diffs two strings at the word/token level, treating HTML tags as atomic tokens.
+func tokenizedDiff(dmp *diffmatchpatch.DiffMatchPatch, text1, text2 string) []diffmatchpatch.Diff {
+	tokens := []string{""}
+	tokenIndex := map[string]rune{}
+	next := rune(1)
+
+	encode := func(text string) string {
+		var b strings.Builder
+		for _, tok := range reHTMLToken.FindAllString(text, -1) {
+			r, ok := tokenIndex[tok]
+			if !ok {
+				r = next
+				next++
+				tokenIndex[tok] = r
+				tokens = append(tokens, tok)
+			}
+			b.WriteRune(r)
+		}
+		return b.String()
+	}
+
+	c1 := encode(text1)
+	c2 := encode(text2)
+
+	diffs := dmp.DiffMain(c1, c2, false)
+	diffs = dmp.DiffCleanupSemantic(diffs)
+
+	result := make([]diffmatchpatch.Diff, len(diffs))
+	for i, d := range diffs {
+		var b strings.Builder
+		for _, r := range d.Text {
+			if int(r) < len(tokens) {
+				b.WriteString(tokens[int(r)])
+			}
+		}
+		result[i] = diffmatchpatch.Diff{Type: d.Type, Text: b.String()}
+	}
+	return result
 }
 
 // wrapWithDiff places <ins> or <del> inside an HTML element's content.
