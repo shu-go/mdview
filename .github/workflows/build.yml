@@ -31,7 +31,7 @@ jobs:
         working-directory: frontend
 
       - name: Build
-        run: wails build -platform windows/amd64
+        run: wails build -platform windows/amd64 -upx
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
