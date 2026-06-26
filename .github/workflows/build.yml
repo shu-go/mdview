@@ -30,6 +30,11 @@ jobs:
         run: npm install
         working-directory: frontend
 
+      - name: Set up UPX
+        uses: crazy-max/ghaction-upx@v3
+        with:
+          install-only: true
+
       - name: Build
         run: wails build -platform windows/amd64 -upx
 
