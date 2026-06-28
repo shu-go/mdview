@@ -55,6 +55,12 @@ const btnSearchPrev = searchPanel.querySelector('.search-prev');
 const btnSearchNext = searchPanel.querySelector('.search-next');
 const btnSearchClose = searchPanel.querySelector('.search-close-btn');
 
+const zoomBar = document.getElementById('zoom-bar');
+const zoomLabel = document.getElementById('zoom-label');
+const btnZoomOut = document.getElementById('btn-zoom-out');
+const btnZoomIn = document.getElementById('btn-zoom-in');
+const btnZoomReset = document.getElementById('btn-zoom-reset');
+
 // Search state
 let searchMatches = [];
 let currentMatchIdx = -1;
@@ -152,6 +158,21 @@ btnSearchClose.addEventListener('click', closeSearch);
 
 // Keyboard shortcuts
 document.addEventListener('keydown', async (e) => {
+    if (e.ctrlKey && e.key === '+') {
+        e.preventDefault();
+        changeZoom(10);
+        return;
+    }
+    if (e.ctrlKey && e.key === '-') {
+        e.preventDefault();
+        changeZoom(-10);
+        return;
+    }
+    if (e.ctrlKey && e.key === '=') {
+        e.preventDefault();
+        resetZoom();
+        return;
+    }
     if (e.ctrlKey && e.key === 'e') {
         e.preventDefault();
         if (!state.filePath) return;
@@ -246,14 +267,59 @@ function scheduleHideToolbar() {
     toolbarHideTimer = setTimeout(() => toolbar.classList.remove('visible'), 400);
 }
 
+// Zoom
+let currentZoom = 100;
+let zoomBarHideTimer = null;
+
+function applyZoom() {
+    markdownBody.style.zoom = currentZoom / 100;
+    zoomLabel.textContent = currentZoom + '%';
+}
+
+function showZoomBar() {
+    clearTimeout(zoomBarHideTimer);
+    zoomBar.classList.add('visible');
+}
+
+function scheduleHideZoomBar(delay = 400) {
+    clearTimeout(zoomBarHideTimer);
+    zoomBarHideTimer = setTimeout(() => zoomBar.classList.remove('visible'), delay);
+}
+
+function changeZoom(delta) {
+    currentZoom = Math.max(50, Math.min(200, currentZoom + delta));
+    applyZoom();
+    showZoomBar();
+    scheduleHideZoomBar(1500);
+}
+
+function resetZoom() {
+    currentZoom = 100;
+    applyZoom();
+    showZoomBar();
+    scheduleHideZoomBar(1500);
+}
+
+btnZoomOut.addEventListener('click', () => changeZoom(-10));
+btnZoomIn.addEventListener('click', () => changeZoom(10));
+btnZoomReset.addEventListener('click', resetZoom);
+
 viewerContainer.addEventListener('mousemove', (e) => {
-    const top = viewerContainer.getBoundingClientRect().top;
-    if (e.clientY - top < 48) showToolbar();
+    const rect = viewerContainer.getBoundingClientRect();
+    if (e.clientY - rect.top < 48) showToolbar();
     else if (!toolbar.matches(':hover')) scheduleHideToolbar();
+
+    if (e.clientY > rect.bottom - 40 && e.clientX > rect.right - 130) showZoomBar();
+    else if (!zoomBar.matches(':hover')) scheduleHideZoomBar();
 });
-viewerContainer.addEventListener('mouseleave', scheduleHideToolbar);
+viewerContainer.addEventListener('mouseleave', () => {
+    scheduleHideToolbar();
+    scheduleHideZoomBar();
+});
 toolbar.addEventListener('mouseenter', showToolbar);
 toolbar.addEventListener('mouseleave', scheduleHideToolbar);
+zoomBar.addEventListener('mouseenter', showZoomBar);
+zoomBar.addEventListener('mouseleave', scheduleHideZoomBar);
 
 // Show link destination in status bar on hover (like browser status bar)
 markdownBody.addEventListener('mouseover', (e) => {
