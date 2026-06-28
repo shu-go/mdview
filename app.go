@@ -605,7 +605,7 @@ func configFinder() *findcfg.Finder {
 		findcfg.JSON(),
 		findcfg.Name("mdview"),
 		findcfg.ExecutableDir(),
-		findcfg.UserConfigDir(),
+		findcfg.UserConfigDir("mdview"),
 	)
 }
 
@@ -626,12 +626,18 @@ func (a *App) LoadConfig() Config {
 	return cfg
 }
 
-// SaveConfig writes config to the found mdview.json, or to the executable dir as fallback.
+// SaveConfig writes config to the found mdview.json, or to UserConfigDir as fallback.
 func (a *App) SaveConfig(cfg Config) error {
 	finder := configFinder()
-	path := finder.FallbackPath()
+	var path string
 	if found := finder.Find(); found != nil {
 		path = found.Path
+	} else {
+		ud, err := os.UserConfigDir()
+		if err != nil {
+			return err
+		}
+		path = filepath.Join(ud, "mdview", "mdview.json")
 	}
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return err

@@ -132,12 +132,12 @@ User preferences are saved to `mdview.json` and loaded automatically on next lau
 The file is searched in this order; the first found is used:
 
 1. Same directory as the executable
-2. OS user config directory (`os.UserConfigDir()`)
-   - Windows: `%APPDATA%\mdview.json`
-   - macOS: `~/Library/Application Support/mdview.json`
-   - Linux: `~/.config/mdview.json`
+2. OS user config directory — `mdview` subdirectory (`os.UserConfigDir()`)
+   - Windows: `%APPDATA%\mdview\mdview.json`
+   - macOS: `~/Library/Application Support/mdview/mdview.json`
+   - Linux: `~/.config/mdview/mdview.json`
 
-When saving for the first time (no existing file), it is written to the executable directory.
+When saving for the first time (no existing file), it is written to the OS user config directory (`mdview` subdirectory).
 
 The `font` field accepts any valid CSS `font` shorthand string:
 
