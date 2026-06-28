@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -34,6 +36,9 @@ var mdParser = goldmark.New(
 )
 
 var reTagName = regexp.MustCompile(`^</?([a-zA-Z][a-zA-Z0-9]*)`)
+
+// reImgSrc matches src="..." inside <img> tags produced by goldmark.
+var reImgSrc = regexp.MustCompile(`(?i)<img\b([^>]*?\s)?src="([^"]*)"([^>]*)>`)
 
 // reHTMLToken splits text into HTML tags, words, and whitespace runs.
 var reHTMLToken = regexp.MustCompile(`<[^>]*>|[^\s<>]+|\s+`)
@@ -78,6 +83,65 @@ type App struct {
 	watcherStop  chan struct{}
 	watchedFile  string
 	watcherMutex sync.Mutex
+	currentDir   string // directory of the currently open file, for image resolution
+}
+
+// detectImageMIME returns the MIME type for a local image file based on its extension.
+func detectImageMIME(path string) string {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".png":
+		return "image/png"
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".gif":
+		return "image/gif"
+	case ".webp":
+		return "image/webp"
+	case ".svg":
+		return "image/svg+xml"
+	case ".bmp":
+		return "image/bmp"
+	case ".ico":
+		return "image/x-icon"
+	case ".avif":
+		return "image/avif"
+	default:
+		return "image/png"
+	}
+}
+
+// inlineLocalImages replaces local <img src="..."> references with base64 data URLs.
+// Absolute URLs (http/https/data/protocol-relative) are left unchanged.
+func inlineLocalImages(htmlContent, dir string) string {
+	return reImgSrc.ReplaceAllStringFunc(htmlContent, func(match string) string {
+		groups := reImgSrc.FindStringSubmatch(match)
+		if len(groups) < 4 {
+			return match
+		}
+		src := groups[2]
+
+		lower := strings.ToLower(src)
+		if strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") ||
+			strings.HasPrefix(lower, "data:") || strings.HasPrefix(lower, "//") {
+			return match
+		}
+
+		// URL-decode percent-encoded characters in the path (e.g. %20 → space)
+		decoded, err := url.PathUnescape(src)
+		if err != nil {
+			decoded = src
+		}
+
+		imgPath := filepath.Join(dir, filepath.FromSlash(decoded))
+		data, err := os.ReadFile(imgPath)
+		if err != nil {
+			return match
+		}
+
+		mimeType := detectImageMIME(imgPath)
+		dataURL := "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(data)
+		return strings.Replace(match, `src="`+src+`"`, `src="`+dataURL+`"`, 1)
+	})
 }
 
 // NewApp creates a new App application struct
@@ -125,6 +189,10 @@ func (a *App) LoadFile(filePath string) (LoadResult, error) {
 		return LoadResult{}, fmt.Errorf("failed to parse markdown: %w", err)
 	}
 
+	dir := filepath.Dir(filePath)
+	a.currentDir = dir
+	htmlContent = inlineLocalImages(htmlContent, dir)
+
 	return LoadResult{
 		HTML:        htmlContent,
 		Raw:         body,
@@ -147,7 +215,14 @@ func (a *App) ParseMarkdownWithDiff(baseText, currentText string) (string, error
 	_, currentBody := extractFrontMatter(currentText)
 
 	if baseBody == currentBody {
-		return a.parseMarkdown(currentBody)
+		html, err := a.parseMarkdown(currentBody)
+		if err != nil {
+			return "", err
+		}
+		if a.currentDir != "" {
+			html = inlineLocalImages(html, a.currentDir)
+		}
+		return html, nil
 	}
 
 	baseHTML, err := a.parseMarkdown(baseBody)
@@ -159,7 +234,11 @@ func (a *App) ParseMarkdownWithDiff(baseText, currentText string) (string, error
 		return "", err
 	}
 
-	return diffHTMLByWord(baseHTML, currentHTML), nil
+	result := diffHTMLByWord(baseHTML, currentHTML)
+	if a.currentDir != "" {
+		result = inlineLocalImages(result, a.currentDir)
+	}
+	return result, nil
 }
 
 // diffHTMLByLine computes a line-level diff between two HTML strings,
