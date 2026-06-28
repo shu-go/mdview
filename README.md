@@ -20,7 +20,11 @@ A lightweight standalone Markdown viewer for Windows, macOS, and Linux, built wi
 - **Overlay toolbar** — Move the mouse to the top of the viewer to reveal the toolbar; it hides when you move away
 - **Font selection** — Set the rendering font via an in-app dialog using any CSS `font` shorthand value (e.g. `bold 1.1em "Yu Gothic", sans-serif`); a live preview updates as you type; the value is saved and restored on next launch
 - **Color themes** — Switch between Light, Dark, and System (follows OS setting) from the toolbar; preference is saved across sessions
-- **Editor integration** — Register an external editor executable via the toolbar; press `Ctrl+E` to open the current file in that editor
+- **Editor integration** — Register an external editor executable via the Menu; press `Ctrl+E` to open the current file in that editor
+- **Zoom** — Scale the document view from 50% to 200% in 10% steps; a zoom indicator appears in the bottom-right corner on hover or when the zoom level changes
+- **Front matter display** — YAML front matter (`---` blocks) is parsed and shown as a collapsible metadata table above the document body
+- **Local image rendering** — Relative image paths are resolved against the markdown file's directory and embedded as base64 data URLs
+- **Code block copy** — A **Copy** button appears on hover over any code block; clicking it copies the raw code to the clipboard
 
 ## Supported Markdown
 
@@ -53,9 +57,28 @@ Hover the mouse near the top of the viewer window to reveal the toolbar.
 | **Initial Diff** | Highlights changes since the file was first opened |
 | **Baseline Diff** | Highlights changes since the last **Update Baseline** |
 | **Update Baseline** | Saves the current content as the new diff baseline |
-| **Light / System / Dark** | Switches the color theme; System follows the OS setting |
-| **Editor** | Select an editor executable (saved to settings); hover to see current path |
-| **Font** | Opens the font settings dialog; enter any CSS `font` shorthand value with a live preview |
+| **Menu** | Opens a context menu with color scheme, editor, and font settings |
+
+#### Menu
+
+| Item | Description |
+|---|---|
+| **Color Scheme ▶** | Submenu to switch between Light, Dark, and System (follows OS); active choice is marked with ✓ |
+| **Editor...** | Select an editor executable; saved to settings; press `Ctrl+E` to open the current file |
+| **Font...** | Opens the font settings dialog; enter any CSS `font` shorthand value with a live preview |
+
+#### Zoom bar
+
+Move the mouse to the **bottom-right corner** of the viewer to reveal the zoom bar.
+
+| Control | Description |
+|---|---|
+| **−** | Zoom out 10% |
+| **100%** (label) | Displays the current zoom level |
+| **+** | Zoom in 10% |
+| **1:1** | Reset to 100% |
+
+The zoom bar also appears briefly after any zoom change via keyboard shortcut and hides automatically after 1.5 seconds. The zoom level ranges from 50% to 200%.
 
 ### Keyboard shortcuts
 
@@ -65,8 +88,11 @@ Hover the mouse near the top of the viewer window to reveal the toolbar.
 | `Ctrl+F` or `/` | Open search panel |
 | `F3` | Next match |
 | `Shift+F3` | Previous match |
-| `Escape` | Close search panel |
+| `Escape` | Close menu / close search panel |
 | `Ctrl+D` | Cycle diff mode: Normal → Initial Diff → Baseline Diff → Normal |
+| `Ctrl++` | Zoom in 10% |
+| `Ctrl+-` | Zoom out 10% |
+| `Ctrl+=` | Reset zoom to 100% |
 | `Ctrl+W` or `q` | Quit the application |
 | `j` | Scroll down one line |
 | `k` | Scroll up one line |
