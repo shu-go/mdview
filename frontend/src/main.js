@@ -204,20 +204,20 @@ document.addEventListener('keydown', async (e) => {
             break;
         case 'j':
             e.preventDefault();
-            contentArea.scrollBy({ top: lineHeight(), behavior: 'instant' });
+            contentArea.scrollBy({ top: lineHeight()*2, behavior: 'smooth' });
             break;
         case 'k':
             e.preventDefault();
-            contentArea.scrollBy({ top: -lineHeight(), behavior: 'instant' });
+            contentArea.scrollBy({ top: -lineHeight()*2, behavior: 'smooth' });
             break;
         case 'b':
             e.preventDefault();
-            contentArea.scrollBy({ top: -contentArea.clientHeight, behavior: 'instant' });
+            contentArea.scrollBy({ top: -contentArea.clientHeight, behavior: 'smooth' });
             break;
         case ' ':
             if (e.shiftKey) {
                 e.preventDefault();
-                contentArea.scrollBy({ top: -contentArea.clientHeight, behavior: 'instant' });
+                contentArea.scrollBy({ top: -contentArea.clientHeight, behavior: 'smooth' });
             }
             break;
         case 'g':
