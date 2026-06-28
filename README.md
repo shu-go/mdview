@@ -34,6 +34,31 @@ Rendered via [goldmark](https://github.com/yuin/goldmark) with the following ext
 - Definition lists
 - Raw HTML passthrough (`html.WithUnsafe`)
 
+## Syntax Highlighting
+
+Code blocks are highlighted by [Prism.js](https://prismjs.com/). Specify the language after the opening fence:
+
+````markdown
+```go
+package main
+```
+````
+
+Supported languages:
+
+| Category | Languages (fence identifier) |
+|---|---|
+| Systems | `c`, `cpp`, `rust`, `go`, `swift` |
+| JVM | `java`, `kotlin`, `scala` |
+| Scripting | `python`, `ruby`, `perl`, `lua`, `r` |
+| Shell | `bash`, `shell`, `powershell` |
+| Web | `javascript`, `js`, `typescript`, `ts`, `jsx`, `tsx`, `css`, `html`, `xml`, `php`, `graphql` |
+| Data / Config | `json`, `json5`, `yaml`, `toml`, `sql` |
+| DevOps | `docker`, `makefile` |
+| Other | `diff`, `markdown`, `go-module`, `vim` |
+
+The theme switches automatically with the color scheme (Light/System/Dark).
+
 ## Usage
 
 ```

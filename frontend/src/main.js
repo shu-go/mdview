@@ -5,6 +5,42 @@ import { LoadFile, ParseMarkdownWithDiff, WatchFile, SelectFile, GetInitialFile,
 import { EventsOn, OnFileDrop, Quit } from '../wailsjs/runtime/runtime';
 import prismDarkTheme from 'prismjs/themes/prism-tomorrow.css?inline';
 import prismLightTheme from 'prismjs/themes/prism.css?inline';
+import Prism from 'prismjs';
+// Core-independent languages
+import 'prismjs/components/prism-bash';
+import 'prismjs/components/prism-c';
+import 'prismjs/components/prism-diff';
+import 'prismjs/components/prism-docker';
+import 'prismjs/components/prism-go';
+import 'prismjs/components/prism-graphql';
+import 'prismjs/components/prism-json';
+import 'prismjs/components/prism-lua';
+import 'prismjs/components/prism-makefile';
+import 'prismjs/components/prism-markdown';
+import 'prismjs/components/prism-perl';
+import 'prismjs/components/prism-powershell';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-r';
+import 'prismjs/components/prism-ruby';
+import 'prismjs/components/prism-rust';
+import 'prismjs/components/prism-sql';
+import 'prismjs/components/prism-swift';
+import 'prismjs/components/prism-toml';
+import 'prismjs/components/prism-vim';
+import 'prismjs/components/prism-yaml';
+import 'prismjs/components/prism-csharp';
+import 'prismjs/components/prism-kotlin';
+// Languages that depend on the above
+import 'prismjs/components/prism-cpp';            // depends on c
+import 'prismjs/components/prism-java';
+import 'prismjs/components/prism-scala';          // depends on java
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-jsx';
+import 'prismjs/components/prism-tsx';            // depends on jsx, typescript
+import 'prismjs/components/prism-go-module';      // depends on go
+import 'prismjs/components/prism-json5';          // depends on json
+import 'prismjs/components/prism-markup-templating';
+import 'prismjs/components/prism-php';            // depends on markup-templating
 
 // Inject Prism theme via a <style> element so we can swap it at runtime
 const prismStyleEl = document.createElement('style');
@@ -556,11 +592,8 @@ async function postProcessHTML() {
     // 2. Add copy buttons to all remaining pre>code blocks (mermaid pre elements are already removed)
     addCopyButtons();
 
-    // 3. Syntax highlighting with Prism (lazy-loaded)
-    if (markdownBody.querySelector('pre code[class*="language-"]')) {
-        const { default: Prism } = await import('prismjs');
-        Prism.highlightAllUnder(markdownBody);
-    }
+    // 3. Syntax highlighting with Prism
+    Prism.highlightAllUnder(markdownBody);
 }
 
 function addCopyButtons() {
