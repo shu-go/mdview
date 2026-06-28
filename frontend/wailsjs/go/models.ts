@@ -19,6 +19,7 @@ export namespace main {
 	export class LoadResult {
 	    html: string;
 	    raw: string;
+	    frontMatter: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new LoadResult(source);
@@ -28,6 +29,7 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.html = source["html"];
 	        this.raw = source["raw"];
+	        this.frontMatter = source["frontMatter"];
 	    }
 	}
 

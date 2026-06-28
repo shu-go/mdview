@@ -231,14 +231,116 @@
     background-color: var(--bg-main);
 }
 
+.content-inner {
+    max-width: 800px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-self: flex-start;
+}
+
+/* --- Front Matter Panel --- */
+.front-matter-panel {
+    width: 100%;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--bg-surface);
+    font-size: 0.85rem;
+}
+
+.fm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.15s ease;
+}
+
+.fm-header:hover {
+    background-color: var(--bg-surface-hover);
+}
+
+.fm-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.fm-toggle {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    line-height: 1;
+}
+
+.fm-body {
+    overflow: hidden;
+}
+
+.fm-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.fm-table tr:not(:last-child) td {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.fm-key {
+    padding: 0.3rem 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    white-space: nowrap;
+    width: 1%;
+    vertical-align: top;
+}
+
+.fm-value {
+    padding: 0.3rem 0.75rem;
+    color: var(--text-primary);
+    word-break: break-word;
+    font-size: 0.85rem;
+}
+
+.fm-tag {
+    display: inline-block;
+    padding: 1px 6px;
+    margin: 1px 2px;
+    background-color: var(--bg-main);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    font-size: 0.75rem;
+    color: var(--accent);
+}
+
+.fm-bool,
+.fm-number {
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+}
+
+.fm-null {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
 /* --- Markdown Rendering Styles --- */
 .markdown-body {
-    max-width: 800px;
     width: 100%;
     color: var(--text-primary);
     line-height: 1.65;
     font-size: 1rem;
     word-wrap: break-word;
+    min-width: 0;
 }
 
 .markdown-body h1,

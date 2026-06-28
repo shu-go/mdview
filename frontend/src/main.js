@@ -19,6 +19,8 @@ let state = {
     currentRaw: '',
     currentHTML: '',
     diffMode: 'off', // 'off' | 'initial' | 'baseline'
+    frontMatter: '',
+    frontMatterCollapsed: false,
 };
 
 // Persisted config (loaded at startup, updated on font/theme/editor change)
@@ -339,6 +341,8 @@ async function openFile(path) {
         state.currentRaw = result.raw;
         state.currentHTML = result.html;
         state.diffMode = 'off';
+        state.frontMatter = result.frontMatter || '';
+        state.frontMatterCollapsed = false;
 
         fileNameLabel.textContent = state.fileName;
         SetWindowTitle(`${state.fileName} - mdview`);
@@ -368,12 +372,15 @@ function closeFile() {
         currentRaw: '',
         currentHTML: '',
         diffMode: 'off',
+        frontMatter: '',
+        frontMatterCollapsed: false,
     };
 
     SetWindowTitle('mdview');
     viewerContainer.classList.add('hidden');
     dropArea.classList.remove('hidden');
     closeSearch();
+    document.getElementById('front-matter-panel').classList.add('hidden');
 }
 
 // File change detected by watcher — update currentRaw/currentHTML only,
@@ -384,6 +391,7 @@ EventsOn('file-changed', async (_filePath) => {
         const result = await LoadFile(state.filePath);
         state.currentRaw = result.raw;
         state.currentHTML = result.html;
+        state.frontMatter = result.frontMatter || '';
         renderContent();
         showToast('File change detected — reloaded');
     } catch (err) {
@@ -393,6 +401,8 @@ EventsOn('file-changed', async (_filePath) => {
 
 // --- Rendering Logic ---
 async function renderContent() {
+    renderFrontMatterPanel();
+
     if (state.diffMode === 'off') {
         markdownBody.innerHTML = state.currentHTML;
         stripEventHandlers(markdownBody);
@@ -685,6 +695,99 @@ function rerunSearchIfOpen() {
         await openFile(initialFile);
     }
 })();
+
+// --- Front Matter ---
+
+function escapeHTML(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function parseYAMLScalar(str) {
+    if ((str.startsWith('"') && str.endsWith('"')) || (str.startsWith("'") && str.endsWith("'")))
+        return str.slice(1, -1);
+    if (str.startsWith('[') && str.endsWith(']')) {
+        const inner = str.slice(1, -1).trim();
+        if (!inner) return [];
+        return inner.split(',').map(s => {
+            const t = s.trim();
+            return (t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))
+                ? t.slice(1, -1) : t;
+        });
+    }
+    if (str === 'true' || str === 'yes') return true;
+    if (str === 'false' || str === 'no') return false;
+    if (str === 'null' || str === '~' || str === '') return null;
+    const num = Number(str);
+    if (!isNaN(num) && str !== '') return num;
+    return str;
+}
+
+function parseFrontMatterYAML(yamlStr) {
+    const entries = [];
+    const lines = yamlStr.split('\n');
+    let i = 0;
+    while (i < lines.length) {
+        const trimmed = lines[i].trim();
+        if (!trimmed || trimmed.startsWith('#')) { i++; continue; }
+        const colonIdx = trimmed.indexOf(':');
+        if (colonIdx <= 0) { i++; continue; }
+        const key = trimmed.slice(0, colonIdx).trim();
+        const rest = trimmed.slice(colonIdx + 1).trim();
+        if (rest === '') {
+            i++;
+            const items = [], subLines = [];
+            while (i < lines.length && /^\s/.test(lines[i])) {
+                const s = lines[i].trim();
+                if (s.startsWith('- ')) items.push(s.slice(2).trim());
+                else subLines.push(s);
+                i++;
+            }
+            if (items.length > 0) entries.push({ key, value: items });
+            else if (subLines.length > 0) entries.push({ key, value: subLines.join('\n') });
+            else entries.push({ key, value: null });
+            continue;
+        }
+        entries.push({ key, value: parseYAMLScalar(rest) });
+        i++;
+    }
+    return entries;
+}
+
+function renderFrontMatterValue(val) {
+    if (val === null || val === undefined) return '<span class="fm-null">—</span>';
+    if (typeof val === 'boolean') return `<span class="fm-bool">${val}</span>`;
+    if (typeof val === 'number') return `<span class="fm-number">${val}</span>`;
+    if (Array.isArray(val)) {
+        if (val.length === 0) return '<span class="fm-null">[]</span>';
+        return val.map(v => `<span class="fm-tag">${escapeHTML(String(v))}</span>`).join('');
+    }
+    return escapeHTML(String(val));
+}
+
+function renderFrontMatterPanel() {
+    const panel = document.getElementById('front-matter-panel');
+    if (!state.frontMatter) {
+        panel.classList.add('hidden');
+        panel.innerHTML = '';
+        return;
+    }
+    const entries = parseFrontMatterYAML(state.frontMatter);
+    if (entries.length === 0) {
+        panel.classList.add('hidden');
+        panel.innerHTML = '';
+        return;
+    }
+    const collapsed = state.frontMatterCollapsed;
+    const rows = entries.map(({ key, value }) =>
+        `<tr><td class="fm-key">${escapeHTML(key)}</td><td class="fm-value">${renderFrontMatterValue(value)}</td></tr>`
+    ).join('');
+    panel.innerHTML = `<div class="fm-header"><span class="fm-title">Front Matter</span><span class="fm-toggle">${collapsed ? '▶' : '▼'}</span></div><div class="fm-body${collapsed ? ' hidden' : ''}"><table class="fm-table"><tbody>${rows}</tbody></table></div>`;
+    panel.classList.remove('hidden');
+    panel.querySelector('.fm-header').addEventListener('click', () => {
+        state.frontMatterCollapsed = !state.frontMatterCollapsed;
+        renderFrontMatterPanel();
+    });
+}
 
 // --- Toast notification ---
 function showToast(message) {

@@ -48,8 +48,27 @@ var structuralTags = map[string]bool{
 
 // LoadResult contains the HTML parsed content and the raw Markdown content.
 type LoadResult struct {
-	HTML string `json:"html"`
-	Raw  string `json:"raw"`
+	HTML        string `json:"html"`
+	Raw         string `json:"raw"`
+	FrontMatter string `json:"frontMatter"` // raw YAML string, empty if none
+}
+
+// extractFrontMatter splits YAML front matter (between --- delimiters) from markdown content.
+// Returns the raw YAML string and the body without front matter.
+// If no front matter is detected, returns ("", content).
+func extractFrontMatter(content string) (yamlStr, body string) {
+	norm := strings.ReplaceAll(content, "\r\n", "\n")
+	if !strings.HasPrefix(norm, "---\n") {
+		return "", content
+	}
+	rest := norm[4:]
+	if idx := strings.Index(rest, "\n---\n"); idx != -1 {
+		return rest[:idx], rest[idx+5:]
+	}
+	if strings.HasSuffix(rest, "\n---") {
+		return rest[:len(rest)-4], ""
+	}
+	return "", content
 }
 
 // App struct
@@ -100,15 +119,16 @@ func (a *App) LoadFile(filePath string) (LoadResult, error) {
 		return LoadResult{}, fmt.Errorf("failed to read file: %w", err)
 	}
 
-	rawContent := string(data)
-	htmlContent, err := a.parseMarkdown(rawContent)
+	frontMatter, body := extractFrontMatter(string(data))
+	htmlContent, err := a.parseMarkdown(body)
 	if err != nil {
 		return LoadResult{}, fmt.Errorf("failed to parse markdown: %w", err)
 	}
 
 	return LoadResult{
-		HTML: htmlContent,
-		Raw:  rawContent,
+		HTML:        htmlContent,
+		Raw:         body,
+		FrontMatter: frontMatter,
 	}, nil
 }
 
@@ -123,15 +143,18 @@ func (a *App) parseMarkdown(mdText string) (string, error) {
 // ParseMarkdownWithDiff renders both base and current Markdown to HTML,
 // then returns the HTML with line-level diff markup (<ins>/<del>).
 func (a *App) ParseMarkdownWithDiff(baseText, currentText string) (string, error) {
-	if baseText == currentText {
-		return a.parseMarkdown(currentText)
+	_, baseBody := extractFrontMatter(baseText)
+	_, currentBody := extractFrontMatter(currentText)
+
+	if baseBody == currentBody {
+		return a.parseMarkdown(currentBody)
 	}
 
-	baseHTML, err := a.parseMarkdown(baseText)
+	baseHTML, err := a.parseMarkdown(baseBody)
 	if err != nil {
 		return "", err
 	}
-	currentHTML, err := a.parseMarkdown(currentText)
+	currentHTML, err := a.parseMarkdown(currentBody)
 	if err != nil {
 		return "", err
 	}
