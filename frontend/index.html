@@ -39,13 +39,7 @@
             </div>
 
             <div class="toolbar-right">
-                <div class="segmented-control">
-                    <button class="seg-btn theme-btn" data-theme="light">Light</button>
-                    <button class="seg-btn theme-btn" data-theme="system">System</button>
-                    <button class="seg-btn theme-btn" data-theme="dark">Dark</button>
-                </div>
-                <button id="btn-editor" class="btn btn-secondary" title="Select editor executable">Editor</button>
-                <button id="btn-font" class="btn btn-secondary" title="Select display font">Font</button>
+                <button id="btn-menu" class="btn btn-secondary">Menu</button>
             </div>
         </header>
 
@@ -91,6 +85,28 @@
             <button id="font-apply-btn" class="btn btn-primary">Apply</button>
         </div>
     </div>
+</div>
+
+<!-- Context Menu -->
+<div id="app-menu" class="app-menu hidden">
+    <div class="menu-item has-submenu">
+        <span class="menu-label">Color Scheme</span>
+        <span class="menu-arrow">▶</span>
+        <div class="submenu">
+            <div class="menu-item submenu-item" data-theme="light">
+                <span class="menu-check"></span><span>Light</span>
+            </div>
+            <div class="menu-item submenu-item" data-theme="system">
+                <span class="menu-check"></span><span>System</span>
+            </div>
+            <div class="menu-item submenu-item" data-theme="dark">
+                <span class="menu-check"></span><span>Dark</span>
+            </div>
+        </div>
+    </div>
+    <div class="menu-separator"></div>
+    <div class="menu-item" id="menu-editor">Editor...</div>
+    <div class="menu-item" id="menu-font">Font...</div>
 </div>
 
 <div class="search-panel hidden">

@@ -42,13 +42,14 @@ const viewerContainer = document.getElementById('viewer-container');
 const toolbar = viewerContainer.querySelector('.toolbar');
 const fileNameLabel = document.getElementById('file-name');
 const btnUpdateBaseline = document.getElementById('btn-update-baseline');
-const btnEditor = document.getElementById('btn-editor');
-const btnFont = document.getElementById('btn-font');
+const btnMenu = document.getElementById('btn-menu');
+const appMenu = document.getElementById('app-menu');
+const menuEditor = document.getElementById('menu-editor');
+const menuFont = document.getElementById('menu-font');
 const markdownBody = document.getElementById('markdown-body');
 const linkPreview = document.getElementById('link-preview');
 const contentArea = viewerContainer.querySelector('.content-area');
-const segButtons = document.querySelectorAll('.segmented-control .seg-btn:not(.theme-btn)');
-const themeBtns = document.querySelectorAll('.theme-btn');
+const segButtons = document.querySelectorAll('.segmented-control .seg-btn');
 const searchInput = searchPanel.querySelector('.search-input');
 const searchCountEl = searchPanel.querySelector('.search-count');
 const btnSearchPrev = searchPanel.querySelector('.search-prev');
@@ -106,12 +107,44 @@ btnUpdateBaseline.addEventListener('click', () => {
     showToast('Baseline updated to current content');
 });
 
-btnEditor.addEventListener('click', async () => {
+// Menu toggle
+btnMenu.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const rect = btnMenu.getBoundingClientRect();
+    if (appMenu.classList.contains('hidden')) {
+        appMenu.style.top = (rect.bottom + 4) + 'px';
+        appMenu.style.right = (window.innerWidth - rect.right) + 'px';
+        appMenu.classList.remove('hidden');
+    } else {
+        appMenu.classList.add('hidden');
+    }
+});
+
+appMenu.addEventListener('click', (e) => e.stopPropagation());
+
+document.addEventListener('click', () => appMenu.classList.add('hidden'));
+
+// Menu items
+document.querySelectorAll('.submenu-item[data-theme]').forEach(item => {
+    item.addEventListener('click', async () => {
+        const mode = item.dataset.theme;
+        applyTheme(mode);
+        currentConfig.themeMode = mode;
+        appMenu.classList.add('hidden');
+        try {
+            await SaveConfig(currentConfig);
+        } catch (err) {
+            console.error('Failed to save theme:', err);
+        }
+    });
+});
+
+menuEditor.addEventListener('click', async () => {
+    appMenu.classList.add('hidden');
     try {
         const editorPath = await ChooseEditor();
         if (editorPath) {
             currentConfig.editorPath = editorPath;
-            updateEditorButtonTitle();
             await SaveConfig(currentConfig);
         }
     } catch (err) {
@@ -119,22 +152,9 @@ btnEditor.addEventListener('click', async () => {
     }
 });
 
-btnFont.addEventListener('click', () => {
+menuFont.addEventListener('click', () => {
+    appMenu.classList.add('hidden');
     openFontModal();
-});
-
-// Theme buttons
-themeBtns.forEach(btn => {
-    btn.addEventListener('click', async () => {
-        const mode = btn.dataset.theme;
-        applyTheme(mode);
-        currentConfig.themeMode = mode;
-        try {
-            await SaveConfig(currentConfig);
-        } catch (err) {
-            console.error('Failed to save theme:', err);
-        }
-    });
 });
 
 // Search panel event listeners
@@ -210,9 +230,9 @@ document.addEventListener('keydown', async (e) => {
         if (e.shiftKey) searchPrev(); else searchNext();
         return;
     }
-    if (e.key === 'Escape' && !searchPanel.classList.contains('hidden')) {
-        closeSearch();
-        return;
+    if (e.key === 'Escape') {
+        if (!appMenu.classList.contains('hidden')) { appMenu.classList.add('hidden'); return; }
+        if (!searchPanel.classList.contains('hidden')) { closeSearch(); return; }
     }
 
     // Vim-like scroll and / search opener: skip when a text input is focused
@@ -629,13 +649,6 @@ fontModal.addEventListener('click', (e) => {
     if (e.target === fontModal) closeFontModal();
 });
 
-function updateEditorButtonTitle() {
-    const path = currentConfig.editorPath;
-    btnEditor.title = path
-        ? `Editor: ${path} (Ctrl+E to open current file)`
-        : 'Select editor executable';
-}
-
 function cycleDiffMode() {
     if (!state.filePath) return;
     const modes = ['off', 'initial', 'baseline'];
@@ -654,7 +667,10 @@ function applyTheme(mode) {
     root.classList.remove('theme-light', 'theme-dark', 'theme-system');
     const validMode = (mode === 'light' || mode === 'dark' || mode === 'system') ? mode : 'system';
     root.classList.add(`theme-${validMode}`);
-    themeBtns.forEach(b => b.classList.toggle('active', b.dataset.theme === validMode));
+    document.querySelectorAll('.submenu-item[data-theme]').forEach(item => {
+        const check = item.querySelector('.menu-check');
+        if (check) check.textContent = item.dataset.theme === validMode ? '✓' : '';
+    });
 
     const isLight = validMode === 'light' ||
         (validMode === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches);
@@ -789,7 +805,6 @@ function rerunSearchIfOpen() {
         applyFont(currentConfig.font);
     }
     applyTheme(currentConfig.themeMode);
-    updateEditorButtonTitle();
     if (initialFile) {
         await openFile(initialFile);
     }
