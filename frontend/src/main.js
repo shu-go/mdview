@@ -533,11 +533,44 @@ async function postProcessHTML() {
         }
     }
 
-    // 2. Syntax highlighting with Prism (lazy-loaded)
+    // 2. Add copy buttons to all remaining pre>code blocks (mermaid pre elements are already removed)
+    addCopyButtons();
+
+    // 3. Syntax highlighting with Prism (lazy-loaded)
     if (markdownBody.querySelector('pre code[class*="language-"]')) {
         const { default: Prism } = await import('prismjs');
         Prism.highlightAllUnder(markdownBody);
     }
+}
+
+function addCopyButtons() {
+    markdownBody.querySelectorAll('pre').forEach(pre => {
+        if (pre.querySelector('.copy-btn')) return;
+        const code = pre.querySelector('code');
+        if (!code) return;
+
+        const btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.title = 'Copy code';
+        btn.textContent = 'Copy';
+
+        btn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(code.innerText);
+                btn.textContent = '✓ Copied';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            } catch {
+                btn.textContent = 'Failed';
+                setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+            }
+        });
+
+        pre.appendChild(btn);
+    });
 }
 
 function lineHeight() {

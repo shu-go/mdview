@@ -503,6 +503,7 @@
 }
 
 .markdown-body pre {
+    position: relative;
     padding: 1rem;
     overflow: auto;
     font-size: 85%;
@@ -510,6 +511,38 @@
     background-color: var(--bg-surface) !important;
     border-radius: 8px;
     border: 1px solid var(--border-color);
+}
+
+.copy-btn {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.4rem;
+    padding: 2px 8px;
+    font-size: 0.7rem;
+    background-color: var(--bg-main);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    line-height: 1.5;
+    user-select: none;
+}
+
+.markdown-body pre:hover .copy-btn {
+    opacity: 1;
+}
+
+.copy-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-surface-hover);
+}
+
+.copy-btn.copied {
+    color: #34d399;
+    border-color: #34d399;
+    opacity: 1;
 }
 
 .markdown-body pre code {
