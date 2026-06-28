@@ -1,7 +1,7 @@
 import './style.css';
 import './app.css';
 
-import { LoadFile, ParseMarkdownWithDiff, WatchFile, SelectFile, GetInitialFile, OpenInNewInstance, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, ChooseFont, LoadConfig, SaveConfig } from '../wailsjs/go/main/App';
+import { LoadFile, ParseMarkdownWithDiff, WatchFile, SelectFile, GetInitialFile, OpenInNewInstance, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig } from '../wailsjs/go/main/App';
 import { EventsOn, OnFileDrop, Quit } from '../wailsjs/runtime/runtime';
 import prismDarkTheme from 'prismjs/themes/prism-tomorrow.css?inline';
 import prismLightTheme from 'prismjs/themes/prism.css?inline';
@@ -22,10 +22,18 @@ let state = {
 };
 
 // Persisted config (loaded at startup, updated on font/theme/editor change)
-let currentConfig = { fontFamily: '', themeMode: 'system', editorPath: '' };
+let currentConfig = { font: '', themeMode: 'system', editorPath: '' };
 
 // DOM Elements (pre-rendered in index.html)
 const searchPanel = document.querySelector('.search-panel');
+
+// Font Picker Modal elements
+const fontModal = document.getElementById('font-modal');
+const fontInput = document.getElementById('font-input');
+const fontPreview = document.getElementById('font-preview');
+const fontApplyBtn = document.getElementById('font-apply-btn');
+const fontCancelBtn = document.getElementById('font-cancel-btn');
+const fontModalClose = document.getElementById('font-modal-close');
 
 const dropArea = document.getElementById('drop-area');
 const viewerContainer = document.getElementById('viewer-container');
@@ -103,17 +111,8 @@ btnEditor.addEventListener('click', async () => {
     }
 });
 
-btnFont.addEventListener('click', async () => {
-    try {
-        const fontFamily = await ChooseFont();
-        if (fontFamily) {
-            applyFont(fontFamily);
-            currentConfig.fontFamily = fontFamily;
-            await SaveConfig(currentConfig);
-        }
-    } catch (err) {
-        console.error('Font selection failed:', err);
-    }
+btnFont.addEventListener('click', () => {
+    openFontModal();
 });
 
 // Theme buttons
@@ -205,11 +204,11 @@ document.addEventListener('keydown', async (e) => {
             break;
         case 'j':
             e.preventDefault();
-            contentArea.scrollBy({ top: parseFloat(getComputedStyle(markdownBody).lineHeight), behavior: 'instant' });
+            contentArea.scrollBy({ top: lineHeight(), behavior: 'instant' });
             break;
         case 'k':
             e.preventDefault();
-            contentArea.scrollBy({ top: -parseFloat(getComputedStyle(markdownBody).lineHeight), behavior: 'instant' });
+            contentArea.scrollBy({ top: -lineHeight(), behavior: 'instant' });
             break;
         case 'b':
             e.preventDefault();
@@ -465,9 +464,61 @@ async function postProcessHTML() {
     }
 }
 
-function applyFont(fontFamily) {
-    markdownBody.style.fontFamily = `"${fontFamily}", serif`;
+function lineHeight() {
+    const lh = parseFloat(getComputedStyle(markdownBody).lineHeight);
+    if (!isNaN(lh) && lh > 0) return lh;
+    // font shorthand resets line-height to "normal"; fall back to font-size * 1.5
+    return (parseFloat(getComputedStyle(markdownBody).fontSize) || 16) * 1.5;
 }
+
+function applyFont(font) {
+    markdownBody.style.font = font || '';
+}
+
+function openFontModal() {
+    fontInput.value = currentConfig.font || '';
+    updateFontPreview(fontInput.value);
+    fontModal.classList.remove('hidden');
+    fontInput.focus();
+    fontInput.select();
+}
+
+function closeFontModal() {
+    fontModal.classList.add('hidden');
+}
+
+function updateFontPreview(font) {
+    fontPreview.style.font = font || '';
+}
+
+async function applyFontFromModal() {
+    const font = fontInput.value.trim();
+    closeFontModal();
+    applyFont(font);
+    currentConfig.font = font;
+    try {
+        await SaveConfig(currentConfig);
+    } catch (err) {
+        console.error('Failed to save font config:', err);
+    }
+}
+
+fontInput.addEventListener('input', () => {
+    updateFontPreview(fontInput.value);
+});
+
+fontInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') applyFontFromModal();
+    if (e.key === 'Escape') closeFontModal();
+});
+
+fontModalClose.addEventListener('click', closeFontModal);
+fontCancelBtn.addEventListener('click', closeFontModal);
+fontApplyBtn.addEventListener('click', applyFontFromModal);
+
+fontModal.addEventListener('click', (e) => {
+    if (e.target === fontModal) closeFontModal();
+});
 
 function updateEditorButtonTitle() {
     const path = currentConfig.editorPath;
@@ -621,12 +672,12 @@ function rerunSearchIfOpen() {
 (async () => {
     const [config, initialFile] = await Promise.all([LoadConfig(), GetInitialFile()]);
     currentConfig = {
-        fontFamily: config.fontFamily || '',
+        font: config.font || '',
         themeMode: config.themeMode || 'system',
         editorPath: config.editorPath || '',
     };
-    if (currentConfig.fontFamily) {
-        applyFont(currentConfig.fontFamily);
+    if (currentConfig.font) {
+        applyFont(currentConfig.font);
     }
     applyTheme(currentConfig.themeMode);
     updateEditorButtonTitle();

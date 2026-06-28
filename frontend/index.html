@@ -58,6 +58,30 @@
         <div id="link-preview" class="link-preview"></div>
     </div>
 </div>
+<!-- Font Picker Modal -->
+<div id="font-modal" class="modal-backdrop hidden">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <span class="modal-title">Font Settings</span>
+            <button class="modal-close-btn" id="font-modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+            <label for="font-input" class="modal-label">CSS font</label>
+            <input id="font-input" class="modal-input" type="text"
+                   placeholder='bold 1em "Noto Sans", sans-serif'
+                   autocomplete="off" spellcheck="false">
+            <div class="font-preview" id="font-preview">
+                The quick brown fox jumps over the lazy dog.<br>
+                あいうえお かきくけこ さしすせそ たちつてと
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="font-cancel-btn" class="btn btn-secondary">Cancel</button>
+            <button id="font-apply-btn" class="btn btn-primary">Apply</button>
+        </div>
+    </div>
+</div>
+
 <div class="search-panel hidden">
     <input class="search-input" type="text" placeholder="Search..." autocomplete="off" spellcheck="false">
     <span class="search-count"></span>

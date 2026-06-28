@@ -4,8 +4,6 @@ import {main} from '../models';
 
 export function ChooseEditor():Promise<string>;
 
-export function ChooseFont():Promise<string>;
-
 export function GetInitialFile():Promise<string>;
 
 export function LoadConfig():Promise<main.Config>;

@@ -1,7 +1,7 @@
 export namespace main {
 	
 	export class Config {
-	    fontFamily: string;
+	    font: string;
 	    themeMode: string;
 	    editorPath: string;
 	
@@ -11,7 +11,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.fontFamily = source["fontFamily"];
+	        this.font = source["font"];
 	        this.themeMode = source["themeMode"];
 	        this.editorPath = source["editorPath"];
 	    }

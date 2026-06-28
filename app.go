@@ -11,9 +11,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
-	"unsafe"
 
 	"github.com/bep/debounce"
 	"github.com/fsnotify/fsnotify"
@@ -494,7 +492,7 @@ func (a *App) OpenInBrowser(url string) {
 
 // Config holds user preferences persisted to mdview.json next to the executable.
 type Config struct {
-	FontFamily string `json:"fontFamily"`
+	Font       string `json:"font"`
 	ThemeMode  string `json:"themeMode"` // "light" | "dark" | "system"
 	EditorPath string `json:"editorPath"`
 }
@@ -537,53 +535,6 @@ func (a *App) SaveConfig(cfg Config) error {
 	return os.WriteFile(path, data, 0644)
 }
 
-// logFontW mirrors the Windows LOGFONTW structure.
-type logFontW struct {
-	lfHeight         int32
-	lfWidth          int32
-	lfEscapement     int32
-	lfOrientation    int32
-	lfWeight         int32
-	lfItalic         uint8
-	lfUnderline      uint8
-	lfStrikeOut      uint8
-	lfCharSet        uint8
-	lfOutPrecision   uint8
-	lfClipPrecision  uint8
-	lfQuality        uint8
-	lfPitchAndFamily uint8
-	lfFaceName       [32]uint16
-}
-
-// chooseFontParams mirrors the Windows CHOOSEFONTW structure for 64-bit.
-// Explicit pad fields match the C struct's alignment padding.
-type chooseFontParams struct {
-	lStructSize uint32
-	pad0        uint32
-	hwndOwner   uintptr
-	hDC         uintptr
-	lpLogFont   uintptr
-	iPointSize  int32
-	flags       uint32
-	rgbColors   uint32
-	pad1        uint32
-	lCustData   uintptr
-	lpfnHook    uintptr
-	lpTemplate  uintptr
-	hInstance   uintptr
-	lpszStyle   uintptr
-	nFontType   uint16
-	pad2        uint16
-	nSizeMin    int32
-	nSizeMax    int32
-}
-
-const (
-	cfScreenFonts         = 0x00000001
-	cfInitToLogFontStruct = 0x00000040
-	cfNoVertFonts         = 0x01000000
-)
-
 // ChooseEditor opens a native file dialog to select an editor executable.
 // Returns the selected path, or empty string if the user cancelled.
 func (a *App) ChooseEditor() (string, error) {
@@ -606,25 +557,6 @@ func (a *App) OpenInEditor(editorPath, filePath string) error {
 		return fmt.Errorf("no editor configured")
 	}
 	return exec.Command(editorPath, filePath).Start()
-}
-
-// ChooseFont opens the Windows native font picker dialog.
-// Returns the selected font family name, or empty string if the user cancelled.
-func (a *App) ChooseFont() (string, error) {
-	dll := syscall.NewLazyDLL("comdlg32.dll")
-	proc := dll.NewProc("ChooseFontW")
-
-	var lf logFontW
-	var cf chooseFontParams
-	cf.lStructSize = uint32(unsafe.Sizeof(cf))
-	cf.flags = cfScreenFonts | cfInitToLogFontStruct | cfNoVertFonts
-	cf.lpLogFont = uintptr(unsafe.Pointer(&lf))
-
-	ret, _, _ := proc.Call(uintptr(unsafe.Pointer(&cf)))
-	if ret == 0 {
-		return "", nil // user cancelled
-	}
-	return syscall.UTF16ToString(lf.lfFaceName[:]), nil
 }
 
 // GetInitialFile returns the file path passed as the first command-line argument, or empty string.

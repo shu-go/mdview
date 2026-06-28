@@ -6,10 +6,6 @@ export function ChooseEditor() {
   return window['go']['main']['App']['ChooseEditor']();
 }
 
-export function ChooseFont() {
-  return window['go']['main']['App']['ChooseFont']();
-}
-
 export function GetInitialFile() {
   return window['go']['main']['App']['GetInitialFile']();
 }

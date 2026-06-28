@@ -1,6 +1,6 @@
 # mdview
 
-A lightweight standalone Markdown viewer for Windows, built with [Wails](https://wails.io/) (Go + WebView2).
+A lightweight standalone Markdown viewer for Windows, macOS, and Linux, built with [Wails](https://wails.io/) (Go + WebView2).
 
 ## Features
 
@@ -18,7 +18,7 @@ A lightweight standalone Markdown viewer for Windows, built with [Wails](https:/
   - Other local file links → opens in the system default browser
   - Hovering a link shows the resolved destination in a status bar at the bottom
 - **Overlay toolbar** — Move the mouse to the top of the viewer to reveal the toolbar; it hides when you move away
-- **Font selection** — Choose any installed font via the system font picker; the selection is saved and restored on next launch
+- **Font selection** — Set the rendering font via an in-app dialog using any CSS `font` shorthand value (e.g. `bold 1.1em "Yu Gothic", sans-serif`); a live preview updates as you type; the value is saved and restored on next launch
 - **Color themes** — Switch between Light, Dark, and System (follows OS setting) from the toolbar; preference is saved across sessions
 - **Editor integration** — Register an external editor executable via the toolbar; press `Ctrl+E` to open the current file in that editor
 
@@ -55,7 +55,7 @@ Hover the mouse near the top of the viewer window to reveal the toolbar.
 | **Update Baseline** | Saves the current content as the new diff baseline |
 | **Light / System / Dark** | Switches the color theme; System follows the OS setting |
 | **Editor** | Select an editor executable (saved to settings); hover to see current path |
-| **Font** | Opens the system font picker to change the rendering font |
+| **Font** | Opens the font settings dialog; enter any CSS `font` shorthand value with a live preview |
 
 ### Keyboard shortcuts
 
@@ -76,7 +76,17 @@ Hover the mouse near the top of the viewer window to reveal the toolbar.
 
 ### Settings file
 
-User preferences (font and color theme) are saved to `mdview.json` in the same directory as `mdview.exe` and loaded automatically on next launch.
+User preferences (font and color theme) are saved to `mdview.json` in the same directory as the executable and loaded automatically on next launch.
+
+The `font` field accepts any valid CSS `font` shorthand string:
+
+```json
+{
+  "font": "bold 1.1em \"Yu Gothic\", sans-serif",
+  "themeMode": "system",
+  "editorPath": ""
+}
+```
 
 ## Building
 
