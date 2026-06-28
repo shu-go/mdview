@@ -205,29 +205,29 @@ document.addEventListener('keydown', async (e) => {
             break;
         case 'j':
             e.preventDefault();
-            contentArea.scrollBy({ top: parseFloat(getComputedStyle(markdownBody).lineHeight), behavior: 'smooth' });
+            contentArea.scrollBy({ top: parseFloat(getComputedStyle(markdownBody).lineHeight), behavior: 'instant' });
             break;
         case 'k':
             e.preventDefault();
-            contentArea.scrollBy({ top: -parseFloat(getComputedStyle(markdownBody).lineHeight), behavior: 'smooth' });
+            contentArea.scrollBy({ top: -parseFloat(getComputedStyle(markdownBody).lineHeight), behavior: 'instant' });
             break;
         case 'b':
             e.preventDefault();
-            contentArea.scrollBy({ top: -contentArea.clientHeight, behavior: 'smooth' });
+            contentArea.scrollBy({ top: -contentArea.clientHeight, behavior: 'instant' });
             break;
         case ' ':
             if (e.shiftKey) {
                 e.preventDefault();
-                contentArea.scrollBy({ top: -contentArea.clientHeight, behavior: 'smooth' });
+                contentArea.scrollBy({ top: -contentArea.clientHeight, behavior: 'instant' });
             }
             break;
         case 'g':
             e.preventDefault();
-            contentArea.scrollTo({ top: 0, behavior: 'smooth' });
+            contentArea.scrollTo({ top: 0, behavior: 'instant' });
             break;
         case 'G':
             e.preventDefault();
-            contentArea.scrollTo({ top: contentArea.scrollHeight, behavior: 'smooth' });
+            contentArea.scrollTo({ top: contentArea.scrollHeight, behavior: 'instant' });
             break;
     }
 });
