@@ -1,4 +1,4 @@
-name: Build Windows x64
+name: Build
 
 on:
   push:
@@ -8,7 +8,31 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows/amd64
+            artifact-name: mdview-windows-amd64
+            artifact-path: build/bin/mdview.exe
+            upx: true
+          - os: macos-13
+            platform: darwin/amd64
+            artifact-name: mdview-darwin-amd64
+            artifact-path: build/bin/mdview-darwin-amd64.zip
+            upx: false
+          - os: macos-latest
+            platform: darwin/arm64
+            artifact-name: mdview-darwin-arm64
+            artifact-path: build/bin/mdview-darwin-arm64.zip
+            upx: false
+          - os: ubuntu-latest
+            platform: linux/amd64
+            artifact-name: mdview-linux-amd64
+            artifact-path: build/bin/mdview
+            upx: true
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
@@ -23,6 +47,12 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+
       - name: Install Wails
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
@@ -31,21 +61,26 @@ jobs:
         working-directory: frontend
 
       - name: Set up UPX
+        if: matrix.upx
         uses: crazy-max/ghaction-upx@v3
         with:
           install-only: true
 
       - name: Build
-        run: wails build -platform windows/amd64 -upx
+        run: wails build -platform ${{ matrix.platform }}${{ matrix.upx && ' -upx' || '' }}
+
+      - name: Package macOS app bundle
+        if: runner.os == 'macOS'
+        run: cd build/bin && zip -r ${{ matrix.artifact-name }}.zip mdview.app
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mdview-windows-amd64
-          path: build/bin/mdview.exe
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.artifact-path }}
 
       - name: Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: build/bin/mdview.exe
+          files: ${{ matrix.artifact-path }}
