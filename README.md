@@ -76,7 +76,17 @@ Hover the mouse near the top of the viewer window to reveal the toolbar.
 
 ### Settings file
 
-User preferences (font and color theme) are saved to `mdview.json` in the same directory as the executable and loaded automatically on next launch.
+User preferences are saved to `mdview.json` and loaded automatically on next launch.
+
+The file is searched in this order; the first found is used:
+
+1. Same directory as the executable
+2. OS user config directory (`os.UserConfigDir()`)
+   - Windows: `%APPDATA%\mdview.json`
+   - macOS: `~/Library/Application Support/mdview.json`
+   - Linux: `~/.config/mdview.json`
+
+When saving for the first time (no existing file), it is written to the executable directory.
 
 The `font` field accepts any valid CSS `font` shorthand string:
 

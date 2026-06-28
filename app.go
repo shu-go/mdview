@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/bep/debounce"
+	"github.com/shu-go/findcfg"
 	"github.com/fsnotify/fsnotify"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -490,28 +491,29 @@ func (a *App) OpenInBrowser(url string) {
 	runtime.BrowserOpenURL(a.ctx, url)
 }
 
-// Config holds user preferences persisted to mdview.json next to the executable.
+// Config holds user preferences persisted to mdview.json.
 type Config struct {
 	Font       string `json:"font"`
 	ThemeMode  string `json:"themeMode"` // "light" | "dark" | "system"
 	EditorPath string `json:"editorPath"`
 }
 
-func (a *App) configPath() (string, error) {
-	exe, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(filepath.Dir(exe), "mdview.json"), nil
+func configFinder() *findcfg.Finder {
+	return findcfg.New(
+		findcfg.JSON(),
+		findcfg.Name("mdview"),
+		findcfg.ExecutableDir(),
+		findcfg.UserConfigDir(),
+	)
 }
 
-// LoadConfig reads mdview.json and returns the stored config (or defaults on missing/invalid file).
+// LoadConfig searches for mdview.json (executable dir → UserConfigDir) and returns the stored config.
 func (a *App) LoadConfig() Config {
-	path, err := a.configPath()
-	if err != nil {
+	found := configFinder().Find()
+	if found == nil {
 		return Config{}
 	}
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(found.Path)
 	if err != nil {
 		return Config{}
 	}
@@ -522,10 +524,14 @@ func (a *App) LoadConfig() Config {
 	return cfg
 }
 
-// SaveConfig writes the given config to mdview.json next to the executable.
+// SaveConfig writes config to the found mdview.json, or to the executable dir as fallback.
 func (a *App) SaveConfig(cfg Config) error {
-	path, err := a.configPath()
-	if err != nil {
+	finder := configFinder()
+	path := finder.FallbackPath()
+	if found := finder.Find(); found != nil {
+		path = found.Path
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return err
 	}
 	data, err := json.Marshal(cfg)
@@ -541,7 +547,6 @@ func (a *App) ChooseEditor() (string, error) {
 	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
 		Title: "Select Editor Executable",
 		Filters: []runtime.FileFilter{
-			{DisplayName: "Executable Files (*.exe)", Pattern: "*.exe"},
 			{DisplayName: "All Files (*.*)", Pattern: "*.*"},
 		},
 	})
