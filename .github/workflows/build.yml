@@ -16,21 +16,25 @@ jobs:
             artifact-name: mdview-windows-amd64
             artifact-path: build/bin/mdview.exe
             upx: true
+            extra-args: ''
           - os: macos-13
             platform: darwin/amd64
             artifact-name: mdview-darwin-amd64
             artifact-path: build/bin/mdview-darwin-amd64.zip
             upx: false
+            extra-args: ''
           - os: macos-latest
             platform: darwin/arm64
             artifact-name: mdview-darwin-arm64
             artifact-path: build/bin/mdview-darwin-arm64.zip
             upx: false
+            extra-args: ''
           - os: ubuntu-latest
             platform: linux/amd64
             artifact-name: mdview-linux-amd64
             artifact-path: build/bin/mdview
             upx: true
+            extra-args: '-tags webkit2gtk_4_1'
 
     runs-on: ${{ matrix.os }}
 
@@ -67,7 +71,7 @@ jobs:
           install-only: true
 
       - name: Build
-        run: wails build -platform ${{ matrix.platform }}${{ matrix.upx && ' -upx' || '' }}
+        run: wails build -platform ${{ matrix.platform }}${{ matrix.upx && ' -upx' || '' }} ${{ matrix.extra-args }}
 
       - name: Package macOS app bundle
         if: runner.os == 'macOS'
