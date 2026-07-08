@@ -2,7 +2,7 @@ import './style.css';
 import './app.css';
 
 import { LoadFile, ParseMarkdownWithDiff, WatchFile, SelectFile, GetInitialFile, OpenInNewInstance, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig } from '../wailsjs/go/main/App';
-import { EventsOn, OnFileDrop, Quit } from '../wailsjs/runtime/runtime';
+import { EventsOn, OnFileDrop, Quit, WindowUnminimise } from '../wailsjs/runtime/runtime';
 import prismDarkTheme from 'prismjs/themes/prism-tomorrow.css?inline';
 import prismLightTheme from 'prismjs/themes/prism.css?inline';
 import Prism from 'prismjs';
@@ -852,6 +852,9 @@ function rerunSearchIfOpen() {
     applyTheme(currentConfig.themeMode);
     if (initialFile) {
         await openFile(initialFile);
+        // On Windows the app is launched minimised (see main.go) to hide the
+        // drop-area flash; restore the window now that content is rendered.
+        WindowUnminimise();
     } else {
         dropArea.classList.remove('hidden');
     }
