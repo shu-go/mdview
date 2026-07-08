@@ -852,6 +852,8 @@ function rerunSearchIfOpen() {
     applyTheme(currentConfig.themeMode);
     if (initialFile) {
         await openFile(initialFile);
+    } else {
+        dropArea.classList.remove('hidden');
     }
 })();
 
