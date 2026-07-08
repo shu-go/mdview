@@ -29,6 +29,7 @@ var mdParser = goldmark.New(
 	goldmark.WithExtensions(
 		extension.GFM,
 		extension.DefinitionList,
+		Callout,
 	),
 	goldmark.WithRendererOptions(
 		html.WithUnsafe(),
@@ -48,7 +49,7 @@ var reHTMLToken = regexp.MustCompile(`<[^>]*>|[^\s<>]+|\s+`)
 var structuralTags = map[string]bool{
 	"ul": true, "ol": true,
 	"table": true, "thead": true, "tbody": true, "tfoot": true, "tr": true,
-	"blockquote": true, "dl": true,
+	"blockquote": true, "dl": true, "div": true,
 }
 
 // LoadResult contains the HTML parsed content and the raw Markdown content.

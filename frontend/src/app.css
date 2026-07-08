@@ -459,6 +459,50 @@
     border-radius: 0 4px 4px 0;
 }
 
+/* Callouts (GitHub-style alerts: > [!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]) */
+.markdown-body .markdown-callout {
+    padding: 0.5em 1em;
+    margin-bottom: 1rem;
+    border-left: 0.25em solid var(--callout-color, var(--border-color));
+    background-color: var(--callout-bg, var(--blockquote-bg));
+    border-radius: 0 4px 4px 0;
+}
+
+.markdown-body .markdown-callout > *:last-child {
+    margin-bottom: 0;
+}
+
+.markdown-body .markdown-callout-title {
+    font-weight: 600;
+    color: var(--callout-color, var(--text-primary));
+    margin-bottom: 0.25em;
+}
+
+.markdown-body .markdown-callout-note {
+    --callout-color: #3b82f6;
+    --callout-bg: rgba(59, 130, 246, 0.1);
+}
+
+.markdown-body .markdown-callout-tip {
+    --callout-color: #10b981;
+    --callout-bg: rgba(16, 185, 129, 0.1);
+}
+
+.markdown-body .markdown-callout-important {
+    --callout-color: #8b5cf6;
+    --callout-bg: rgba(139, 92, 246, 0.1);
+}
+
+.markdown-body .markdown-callout-warning {
+    --callout-color: #f59e0b;
+    --callout-bg: rgba(245, 158, 11, 0.1);
+}
+
+.markdown-body .markdown-callout-caution {
+    --callout-color: #ef4444;
+    --callout-bg: rgba(239, 68, 68, 0.1);
+}
+
 .markdown-body ul,
 .markdown-body ol {
     padding-left: 2em;

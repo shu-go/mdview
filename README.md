@@ -13,6 +13,12 @@ A lightweight standalone Markdown viewer for Windows, macOS, and Linux, built wi
   - Opens in *Baseline Diff* mode by default; `Ctrl+D` toggles Normal ⇔ the last diff mode used
 - **Syntax highlighting** — Code blocks highlighted via Prism.js (lazy-loaded)
 - **Mermaid diagrams** — Renders `mermaid` code blocks as diagrams (lazy-loaded)
+- **Callouts** — GitHub-style alert blockquotes are rendered as colored callout boxes:
+  ```markdown
+  > [!NOTE]
+  > Highlights information that users should take into account.
+  ```
+  Supported types: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`
 - **Link handling**
   - `.md` / `.markdown` links → opens a new instance of mdview
   - `http://`, `https://`, `mailto:` links → opens in the system default browser
@@ -33,6 +39,7 @@ Rendered via [goldmark](https://github.com/yuin/goldmark) with the following ext
 
 - GitHub Flavored Markdown (GFM): tables, strikethrough, task lists, autolinks
 - Definition lists
+- Callouts / alerts (`NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`)
 - Raw HTML passthrough (`html.WithUnsafe`)
 
 ## Syntax Highlighting
