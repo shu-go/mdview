@@ -362,6 +362,14 @@ btnZoomOut.addEventListener('click', () => changeZoom(-10));
 btnZoomIn.addEventListener('click', () => changeZoom(10));
 btnZoomReset.addEventListener('click', resetZoom);
 
+// Ctrl+wheel zoom: prevent the native browser/webview zoom and route through
+// changeZoom() instead, so the zoom bar stays in sync with the actual zoom level.
+window.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    changeZoom(e.deltaY < 0 ? 10 : -10);
+}, { passive: false });
+
 viewerContainer.addEventListener('mousemove', (e) => {
     const rect = viewerContainer.getBoundingClientRect();
     if (e.clientY - rect.top < 48) showToolbar();
