@@ -10,6 +10,7 @@ A lightweight standalone Markdown viewer for Windows, macOS, and Linux, built wi
 - **Inline diff** — View changes against two baselines:
   - *Initial Diff* — diff against the content when the file was first opened
   - *Baseline Diff* — diff against a snapshot you set manually with **Update Baseline**
+  - Opens in *Baseline Diff* mode by default; `Ctrl+D` toggles Normal ⇔ the last diff mode used
 - **Syntax highlighting** — Code blocks highlighted via Prism.js (lazy-loaded)
 - **Mermaid diagrams** — Renders `mermaid` code blocks as diagrams (lazy-loaded)
 - **Link handling**
@@ -114,7 +115,7 @@ The zoom bar also appears briefly after any zoom change via keyboard shortcut an
 | `F3` | Next match |
 | `Shift+F3` | Previous match |
 | `Escape` | Close menu / close search panel |
-| `Ctrl+D` | Cycle diff mode: Normal → Initial Diff → Baseline Diff → Normal |
+| `Ctrl+D` | Toggle diff mode: Normal ⇔ last used diff mode (Initial Diff or Baseline Diff) |
 | `Ctrl++` | Zoom in 10% |
 | `Ctrl+-` | Zoom out 10% |
 | `Ctrl+=` | Reset zoom to 100% |

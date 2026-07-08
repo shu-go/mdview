@@ -55,6 +55,7 @@ let state = {
     currentRaw: '',
     currentHTML: '',
     diffMode: 'off', // 'off' | 'initial' | 'baseline'
+    lastDiffMode: 'initial', // last non-off diff mode, restored by Ctrl+D toggle
     frontMatter: '',
     frontMatterCollapsed: false,
 };
@@ -133,6 +134,7 @@ segButtons.forEach(btn => {
         segButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         state.diffMode = btn.dataset.mode;
+        if (state.diffMode !== 'off') state.lastDiffMode = state.diffMode;
         renderContent();
     });
 });
@@ -462,7 +464,8 @@ async function openFile(path) {
         state.baselineRaw = result.raw;
         state.currentRaw = result.raw;
         state.currentHTML = result.html;
-        state.diffMode = 'off';
+        state.diffMode = 'baseline';
+        state.lastDiffMode = 'baseline';
         state.frontMatter = result.frontMatter || '';
         state.frontMatterCollapsed = false;
 
@@ -470,7 +473,7 @@ async function openFile(path) {
         SetWindowTitle(`${state.fileName} - mdview`);
 
         segButtons.forEach(b => {
-            if (b.dataset.mode === 'off') b.classList.add('active');
+            if (b.dataset.mode === 'baseline') b.classList.add('active');
             else b.classList.remove('active');
         });
 
@@ -494,6 +497,7 @@ function closeFile() {
         currentRaw: '',
         currentHTML: '',
         diffMode: 'off',
+        lastDiffMode: 'initial',
         frontMatter: '',
         frontMatterCollapsed: false,
     };
@@ -684,8 +688,8 @@ fontModal.addEventListener('click', (e) => {
 
 function cycleDiffMode() {
     if (!state.filePath) return;
-    const modes = ['off', 'initial', 'baseline'];
-    const next = modes[(modes.indexOf(state.diffMode) + 1) % modes.length];
+    const next = state.diffMode === 'off' ? state.lastDiffMode : 'off';
+    if (next !== 'off') state.lastDiffMode = next;
     state.diffMode = next;
     segButtons.forEach(b => b.classList.toggle('active', b.dataset.mode === next));
     renderContent();
