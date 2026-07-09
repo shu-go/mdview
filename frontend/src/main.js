@@ -165,7 +165,7 @@ appMenu.addEventListener('click', (e) => e.stopPropagation());
 document.addEventListener('click', () => appMenu.classList.add('hidden'));
 
 // Menu items
-document.querySelectorAll('.submenu-item[data-theme]').forEach(item => {
+document.querySelectorAll('.theme-switch [data-theme]').forEach(item => {
     item.addEventListener('click', async () => {
         const mode = item.dataset.theme;
         applyTheme(mode);
@@ -727,9 +727,8 @@ function applyTheme(mode) {
     root.classList.remove('theme-light', 'theme-dark', 'theme-system');
     const validMode = (mode === 'light' || mode === 'dark' || mode === 'system') ? mode : 'system';
     root.classList.add(`theme-${validMode}`);
-    document.querySelectorAll('.submenu-item[data-theme]').forEach(item => {
-        const check = item.querySelector('.menu-check');
-        if (check) check.textContent = item.dataset.theme === validMode ? '✓' : '';
+    document.querySelectorAll('.theme-switch [data-theme]').forEach(item => {
+        item.classList.toggle('active', item.dataset.theme === validMode);
     });
 
     const isLight = validMode === 'light' ||

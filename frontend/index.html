@@ -93,19 +93,12 @@
 
 <!-- Context Menu -->
 <div id="app-menu" class="app-menu hidden">
-    <div class="menu-item has-submenu">
+    <div class="menu-item menu-item-theme">
         <span class="menu-label">Color Scheme</span>
-        <span class="menu-arrow">▶</span>
-        <div class="submenu">
-            <div class="menu-item submenu-item" data-theme="light">
-                <span class="menu-check"></span><span>Light</span>
-            </div>
-            <div class="menu-item submenu-item" data-theme="system">
-                <span class="menu-check"></span><span>System</span>
-            </div>
-            <div class="menu-item submenu-item" data-theme="dark">
-                <span class="menu-check"></span><span>Dark</span>
-            </div>
+        <div class="segmented-control theme-switch">
+            <button class="seg-btn" data-theme="light">Light</button>
+            <button class="seg-btn" data-theme="system">System</button>
+            <button class="seg-btn" data-theme="dark">Dark</button>
         </div>
     </div>
     <div class="menu-separator"></div>
