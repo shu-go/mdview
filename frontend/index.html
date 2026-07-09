@@ -20,8 +20,16 @@
 
     <!-- Viewer Container -->
     <div id="viewer-container" class="viewer-container hidden" style="--wails-drop-target: drop;">
-        <!-- Toolbar -->
+        <!-- Toolbar: spans the file list area and the render area -->
         <header class="toolbar">
+            <div class="toolbar-left">
+                <button id="btn-toggle-file-list" class="btn btn-secondary btn-icon" title="File list (f)">
+                    <svg class="icon-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                    </svg>
+                </button>
+            </div>
+
             <div class="toolbar-center">
                 <div class="segmented-control">
                     <button class="seg-btn active" data-mode="off">Normal</button>
@@ -38,27 +46,46 @@
             </div>
         </header>
 
-        <!-- Content Area -->
-        <main class="content-area">
-            <div class="content-inner">
-                <div id="front-matter-panel" class="front-matter-panel hidden"></div>
-                <article id="markdown-body" class="markdown-body"></article>
+        <div class="viewer-body">
+            <!-- File List Panel -->
+            <aside id="file-list-panel" class="file-list-panel hidden" tabindex="-1">
+                <div id="file-list-items" class="file-list-items"></div>
+                <div class="file-list-shortcuts">
+                    <div><kbd>↑</kbd><kbd>↓</kbd> / <kbd>j</kbd><kbd>k</kbd> 移動</div>
+                    <div><kbd>Enter</kbd> / <kbd>Space</kbd> / <kbd>f</kbd> 開く・折り畳み</div>
+                    <div><kbd>Esc</kbd> 一覧を隠す</div>
+                    <div><kbd>q</kbd> 閉じる</div>
+                </div>
+            </aside>
+
+            <!-- Splitter -->
+            <div id="splitter" class="splitter hidden"></div>
+
+            <!-- Render Pane -->
+            <div class="render-pane">
+                <!-- Content Area -->
+                <main class="content-area" tabindex="-1">
+                    <div class="content-inner">
+                        <div id="front-matter-panel" class="front-matter-panel hidden"></div>
+                        <article id="markdown-body" class="markdown-body"></article>
+                    </div>
+                </main>
+
+                <!-- Edge-of-scroll flash indicators (shown briefly by g/G shortcuts) -->
+                <div id="edge-flash-top" class="edge-flash edge-flash-top"></div>
+                <div id="edge-flash-bottom" class="edge-flash edge-flash-bottom"></div>
+
+                <!-- Link preview status bar -->
+                <div id="link-preview" class="link-preview"></div>
+
+                <!-- Zoom bar (bottom-right corner) -->
+                <div id="zoom-bar" class="zoom-bar">
+                    <button id="btn-zoom-out" class="zoom-btn" title="Zoom out (Ctrl+-)">−</button>
+                    <span id="zoom-label" class="zoom-label">100%</span>
+                    <button id="btn-zoom-in" class="zoom-btn" title="Zoom in (Ctrl++)">+</button>
+                    <button id="btn-zoom-reset" class="zoom-btn zoom-reset-btn" title="Reset zoom (Ctrl+=)">1:1</button>
+                </div>
             </div>
-        </main>
-
-        <!-- Edge-of-scroll flash indicators (shown briefly by g/G shortcuts) -->
-        <div id="edge-flash-top" class="edge-flash edge-flash-top"></div>
-        <div id="edge-flash-bottom" class="edge-flash edge-flash-bottom"></div>
-
-        <!-- Link preview status bar -->
-        <div id="link-preview" class="link-preview"></div>
-
-        <!-- Zoom bar (bottom-right corner) -->
-        <div id="zoom-bar" class="zoom-bar">
-            <button id="btn-zoom-out" class="zoom-btn" title="Zoom out (Ctrl+-)">−</button>
-            <span id="zoom-label" class="zoom-label">100%</span>
-            <button id="btn-zoom-in" class="zoom-btn" title="Zoom in (Ctrl++)">+</button>
-            <button id="btn-zoom-reset" class="zoom-btn zoom-reset-btn" title="Reset zoom (Ctrl+=)">1:1</button>
         </div>
     </div>
 </div>

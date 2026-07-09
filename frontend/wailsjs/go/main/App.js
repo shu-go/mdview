@@ -30,8 +30,8 @@ export function OpenInNewInstance(arg1) {
   return window['go']['main']['App']['OpenInNewInstance'](arg1);
 }
 
-export function ParseMarkdownWithDiff(arg1, arg2) {
-  return window['go']['main']['App']['ParseMarkdownWithDiff'](arg1, arg2);
+export function ParseMarkdownWithDiff(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ParseMarkdownWithDiff'](arg1, arg2, arg3);
 }
 
 export function SaveConfig(arg1) {
@@ -44,6 +44,10 @@ export function SelectFile() {
 
 export function SetWindowTitle(arg1) {
   return window['go']['main']['App']['SetWindowTitle'](arg1);
+}
+
+export function UnwatchFile(arg1) {
+  return window['go']['main']['App']['UnwatchFile'](arg1);
 }
 
 export function WatchFile(arg1) {

@@ -4,6 +4,7 @@ export namespace main {
 	    font: string;
 	    themeMode: string;
 	    editorPath: string;
+	    fileListRatio: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
@@ -14,6 +15,7 @@ export namespace main {
 	        this.font = source["font"];
 	        this.themeMode = source["themeMode"];
 	        this.editorPath = source["editorPath"];
+	        this.fileListRatio = source["fileListRatio"];
 	    }
 	}
 	export class LoadResult {

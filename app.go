@@ -16,9 +16,9 @@ import (
 	"time"
 
 	"github.com/bep/debounce"
-	"github.com/shu-go/findcfg"
 	"github.com/fsnotify/fsnotify"
 	"github.com/sergi/go-diff/diffmatchpatch"
+	"github.com/shu-go/findcfg"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -77,14 +77,22 @@ func extractFrontMatter(content string) (yamlStr, body string) {
 	return "", content
 }
 
+// dirWatch is an fsnotify watcher on a single parent directory, shared by all
+// currently-open files that reside in that directory.
+type dirWatch struct {
+	watcher  *fsnotify.Watcher
+	stop     chan struct{}
+	refCount int
+}
+
 // App struct
 type App struct {
-	ctx          context.Context
-	watcher      *fsnotify.Watcher
-	watcherStop  chan struct{}
-	watchedFile  string
-	watcherMutex sync.Mutex
-	currentDir   string // directory of the currently open file, for image resolution
+	ctx context.Context
+
+	watchMutex   sync.Mutex
+	dirWatches   map[string]*dirWatch    // parent dir -> shared watcher
+	watchedFiles map[string]struct{}     // cleaned file paths currently watched
+	debouncers   map[string]func(func()) // cleaned file path -> its own debounce function
 }
 
 // detectImageMIME returns the MIME type for a local image file based on its extension.
@@ -158,23 +166,21 @@ func (a *App) startup(ctx context.Context) {
 
 // shutdown is called when the app exits. Clean up resources.
 func (a *App) shutdown(ctx context.Context) {
-	a.stopWatcher()
+	a.stopAllWatchers()
 }
 
-// stopWatcher stops the active file watcher if it exists
-func (a *App) stopWatcher() {
-	a.watcherMutex.Lock()
-	defer a.watcherMutex.Unlock()
+// stopAllWatchers stops every active per-directory file watcher.
+func (a *App) stopAllWatchers() {
+	a.watchMutex.Lock()
+	defer a.watchMutex.Unlock()
 
-	if a.watcherStop != nil {
-		close(a.watcherStop)
-		a.watcherStop = nil
+	for _, dw := range a.dirWatches {
+		close(dw.stop)
+		dw.watcher.Close()
 	}
-	if a.watcher != nil {
-		a.watcher.Close()
-		a.watcher = nil
-	}
-	a.watchedFile = ""
+	a.dirWatches = nil
+	a.watchedFiles = nil
+	a.debouncers = nil
 }
 
 // LoadFile reads a Markdown file, parses it to HTML, and returns both raw text and HTML.
@@ -191,7 +197,6 @@ func (a *App) LoadFile(filePath string) (LoadResult, error) {
 	}
 
 	dir := filepath.Dir(filePath)
-	a.currentDir = dir
 	htmlContent = inlineLocalImages(htmlContent, dir)
 
 	return LoadResult{
@@ -211,17 +216,23 @@ func (a *App) parseMarkdown(mdText string) (string, error) {
 
 // ParseMarkdownWithDiff renders both base and current Markdown to HTML,
 // then returns the HTML with line-level diff markup (<ins>/<del>).
-func (a *App) ParseMarkdownWithDiff(baseText, currentText string) (string, error) {
+// filePath is used to resolve relative image paths and may be empty.
+func (a *App) ParseMarkdownWithDiff(filePath, baseText, currentText string) (string, error) {
 	_, baseBody := extractFrontMatter(baseText)
 	_, currentBody := extractFrontMatter(currentText)
+
+	dir := ""
+	if filePath != "" {
+		dir = filepath.Dir(filePath)
+	}
 
 	if baseBody == currentBody {
 		html, err := a.parseMarkdown(currentBody)
 		if err != nil {
 			return "", err
 		}
-		if a.currentDir != "" {
-			html = inlineLocalImages(html, a.currentDir)
+		if dir != "" {
+			html = inlineLocalImages(html, dir)
 		}
 		return html, nil
 	}
@@ -236,8 +247,8 @@ func (a *App) ParseMarkdownWithDiff(baseText, currentText string) (string, error
 	}
 
 	result := diffHTMLByWord(baseHTML, currentHTML)
-	if a.currentDir != "" {
-		result = inlineLocalImages(result, a.currentDir)
+	if dir != "" {
+		result = inlineLocalImages(result, dir)
 	}
 	return result, nil
 }
@@ -509,70 +520,112 @@ func wrapWithDiff(line, tag string) string {
 	return openTag + "<" + tag + ">" + rest + "</" + tag + ">"
 }
 
-// WatchFile starts watching a markdown file for changes. It will stop any previous watcher.
+// WatchFile starts watching a markdown file for changes, without affecting
+// watches already active on other open files. Calling it again for a file
+// that's already watched is a no-op. Files that share a parent directory
+// share a single fsnotify watcher on that directory.
 func (a *App) WatchFile(filePath string) error {
-	a.stopWatcher()
+	clean := filepath.Clean(filePath)
+	dir := filepath.Dir(clean)
 
-	a.watcherMutex.Lock()
-	var err error
-	a.watcher, err = fsnotify.NewWatcher()
-	if err != nil {
-		a.watcherMutex.Unlock()
-		return fmt.Errorf("failed to create watcher: %w", err)
+	a.watchMutex.Lock()
+	defer a.watchMutex.Unlock()
+
+	if a.watchedFiles == nil {
+		a.watchedFiles = make(map[string]struct{})
 	}
-	a.watcherStop = make(chan struct{})
-	a.watchedFile = filepath.Clean(filePath)
-
-	// Watch the parent directory to safely handle file replacements/renames by editors
-	parentDir := filepath.Dir(a.watchedFile)
-	err = a.watcher.Add(parentDir)
-	a.watcherMutex.Unlock()
-	if err != nil {
-		a.watcher.Close()
-		a.watcher = nil
-		return fmt.Errorf("failed to watch directory %s: %w", parentDir, err)
+	if a.dirWatches == nil {
+		a.dirWatches = make(map[string]*dirWatch)
+	}
+	if a.debouncers == nil {
+		a.debouncers = make(map[string]func(func()))
 	}
 
-	debounced := debounce.New(300 * time.Millisecond)
+	if _, already := a.watchedFiles[clean]; already {
+		return nil
+	}
 
-	go func() {
-		for {
-			select {
-			case event, ok := <-a.watcher.Events:
-				if !ok {
-					return
-				}
-				if filepath.Clean(event.Name) == a.watchedFile {
-					if event.Has(fsnotify.Write) || event.Has(fsnotify.Create) {
-						debounced(func() {
-							a.onFileChanged()
-						})
-					}
-				}
-			case _, ok := <-a.watcher.Errors:
-				if !ok {
-					return
-				}
-			case <-a.watcherStop:
-				return
-			}
+	dw, ok := a.dirWatches[dir]
+	if !ok {
+		w, err := fsnotify.NewWatcher()
+		if err != nil {
+			return fmt.Errorf("failed to create watcher: %w", err)
 		}
-	}()
+		if err := w.Add(dir); err != nil {
+			w.Close()
+			return fmt.Errorf("failed to watch directory %s: %w", dir, err)
+		}
+		dw = &dirWatch{watcher: w, stop: make(chan struct{})}
+		a.dirWatches[dir] = dw
+		go a.runDirWatcher(dw)
+	}
+	dw.refCount++
+
+	a.watchedFiles[clean] = struct{}{}
+	a.debouncers[clean] = debounce.New(300 * time.Millisecond)
 
 	return nil
 }
 
-// onFileChanged notifies the frontend that the watched file has changed.
-func (a *App) onFileChanged() {
-	a.watcherMutex.Lock()
-	watchedFile := a.watchedFile
-	a.watcherMutex.Unlock()
+// UnwatchFile stops watching a single file. If it was the last watched file
+// in its parent directory, the shared directory watcher is torn down too.
+func (a *App) UnwatchFile(filePath string) {
+	clean := filepath.Clean(filePath)
+	dir := filepath.Dir(clean)
 
-	if watchedFile == "" {
+	a.watchMutex.Lock()
+	defer a.watchMutex.Unlock()
+
+	if _, ok := a.watchedFiles[clean]; !ok {
 		return
 	}
+	delete(a.watchedFiles, clean)
+	delete(a.debouncers, clean)
 
-	runtime.EventsEmit(a.ctx, "file-changed", watchedFile)
+	dw, ok := a.dirWatches[dir]
+	if !ok {
+		return
+	}
+	dw.refCount--
+	if dw.refCount <= 0 {
+		close(dw.stop)
+		dw.watcher.Close()
+		delete(a.dirWatches, dir)
+	}
+}
+
+// runDirWatcher processes fsnotify events for a single shared directory
+// watcher, notifying the frontend only for paths that are still watched.
+func (a *App) runDirWatcher(dw *dirWatch) {
+	for {
+		select {
+		case event, ok := <-dw.watcher.Events:
+			if !ok {
+				return
+			}
+			if !event.Has(fsnotify.Write) && !event.Has(fsnotify.Create) {
+				continue
+			}
+			clean := filepath.Clean(event.Name)
+
+			a.watchMutex.Lock()
+			_, watched := a.watchedFiles[clean]
+			debounced := a.debouncers[clean]
+			a.watchMutex.Unlock()
+
+			if watched && debounced != nil {
+				debounced(func() {
+					runtime.EventsEmit(a.ctx, "file-changed", clean)
+				})
+			}
+		case _, ok := <-dw.watcher.Errors:
+			if !ok {
+				return
+			}
+		case <-dw.stop:
+			return
+		}
+	}
 }
 
 // SetWindowTitle sets the OS window title bar text.
@@ -596,9 +649,10 @@ func (a *App) OpenInBrowser(url string) {
 
 // Config holds user preferences persisted to mdview.json.
 type Config struct {
-	Font       string `json:"font"`
-	ThemeMode  string `json:"themeMode"` // "light" | "dark" | "system"
-	EditorPath string `json:"editorPath"`
+	Font          string  `json:"font"`
+	ThemeMode     string  `json:"themeMode"` // "light" | "dark" | "system"
+	EditorPath    string  `json:"editorPath"`
+	FileListRatio float64 `json:"fileListRatio"` // width fraction (0-1) given to the file list area
 }
 
 func configFinder() *findcfg.Finder {

@@ -4,9 +4,10 @@ A lightweight standalone Markdown viewer for Windows, macOS, and Linux, built wi
 
 ## Features
 
-- **Drag & drop** — Drop a Markdown file onto the window to open it, from either the start screen or the viewer
+- **Multi-file support** — Open multiple files in one window and switch between them via a collapsible file list panel, grouped by folder
+- **Drag & drop** — Drop one or more Markdown files onto the window to open them; all are added to the file list, and the first one dropped is displayed, from either the start screen or the viewer
 - **CLI argument** — Open a file directly: `mdview.exe path/to/file.md`
-- **File watching** — Automatically reloads when the file is saved
+- **File watching** — Automatically reloads when the file is saved; files open in the background show an unread (●) indicator instead
 - **Inline diff** — View changes against two baselines:
   - *Initial Diff* — diff against the content when the file was first opened
   - *Baseline Diff* — diff against a snapshot you set manually with **Update Baseline**
@@ -24,7 +25,7 @@ A lightweight standalone Markdown viewer for Windows, macOS, and Linux, built wi
   - `http://`, `https://`, `mailto:` links → opens in the system default browser
   - Other local file links → opens in the system default browser
   - Hovering a link shows the resolved destination in a status bar at the bottom
-- **Overlay toolbar** — Move the mouse to the top of the viewer to reveal the toolbar; it hides when you move away
+- **Persistent toolbar** — Spans both the file list panel and the render area at the top of the window
 - **Font selection** — Set the rendering font via an in-app dialog using any CSS `font` shorthand value (e.g. `bold 1.1em "Yu Gothic", sans-serif`); a live preview updates as you type; the value is saved and restored on next launch
 - **Color themes** — Switch between Light, Dark, and System (follows OS setting) from the toolbar; preference is saved across sessions
 - **Editor integration** — Register an external editor executable via the Menu; press `Ctrl+E` to open the current file in that editor
@@ -76,16 +77,17 @@ mdview.exe [file]
 | Action | Result |
 |---|---|
 | Launch with no argument | Shows the drop screen |
-| Drag & drop a `.md` file | Opens the file in the viewer |
+| Drag & drop one or more `.md` files | Adds all of them to the file list; the first one dropped is shown in the viewer |
 | Click the drop area | Opens a file picker dialog |
 | `mdview.exe path/to/file.md` | Opens the file directly on launch |
 
 ### Toolbar
 
-Hover the mouse near the top of the viewer window to reveal the toolbar.
+The toolbar is always visible and spans the full width of the window, above both the file list panel and the render area.
 
 | Control | Description |
 |---|---|
+| **📁 (folder icon)** | Toggles the file list panel; opening this way does not move keyboard focus |
 | **Normal** | Renders the current file as-is |
 | **Initial Diff** | Highlights changes since the file was first opened |
 | **Baseline Diff** | Highlights changes since the last **Update Baseline** |
@@ -96,7 +98,7 @@ Hover the mouse near the top of the viewer window to reveal the toolbar.
 
 | Item | Description |
 |---|---|
-| **Color Scheme ▶** | Submenu to switch between Light, Dark, and System (follows OS); active choice is marked with ✓ |
+| **Color Scheme** | Switch between Light, Dark, and System (follows OS) using the inline buttons |
 | **Editor...** | Select an editor executable; saved to settings; press `Ctrl+E` to open the current file |
 | **Font...** | Opens the font settings dialog; enter any CSS `font` shorthand value with a live preview |
 
@@ -113,7 +115,21 @@ Move the mouse to the **bottom-right corner** of the viewer to reveal the zoom b
 
 The zoom bar also appears briefly after any zoom change via keyboard shortcut and hides automatically after 1.5 seconds. The zoom level ranges from 50% to 200%.
 
+### File list panel
+
+Toggle the panel via the folder icon on the toolbar or the `f` shortcut. Open files are grouped by their containing folder:
+
+- Each file row shows its file name, plus an unread (●) indicator if it changed on disk while a different file was displayed
+- Group headers show an abbreviated path (e.g. `C:\path\to\my\folder` → `C/p/t/m/folder`, with the leaf folder name shown in full) and can be collapsed by clicking; a group shows ● if any file inside it has unseen changes
+- Click a file to display it in the render area
+- Drag the divider between the panel and the render area to resize; the ratio (initially 30/70) is saved and restored on next launch
+- Closing the last open file (`q`) quits the application
+
+See [Keyboard shortcuts](#keyboard-shortcuts) below for the full set of file-list navigation keys.
+
 ### Keyboard shortcuts
+
+Global (work regardless of which area has focus):
 
 | Shortcut | Action |
 |---|---|
@@ -121,17 +137,32 @@ The zoom bar also appears briefly after any zoom change via keyboard shortcut an
 | `Ctrl+F` or `/` | Open search panel |
 | `F3` | Next match |
 | `Shift+F3` | Previous match |
-| `Escape` | Close menu / close search panel |
 | `Ctrl+D` | Toggle diff mode: Normal ⇔ last used diff mode (Initial Diff or Baseline Diff) |
 | `Ctrl++` | Zoom in 10% |
 | `Ctrl+-` | Zoom out 10% |
 | `Ctrl+=` | Reset zoom to 100% |
-| `Ctrl+W` or `q` | Quit the application |
+
+Render area (active when the file list panel doesn't have keyboard focus):
+
+| Shortcut | Action |
+|---|---|
+| `f` | Show the file list panel and move focus to the current file's position |
+| `Escape` | Close the menu if open, else close the search panel if open, else hide the file list panel if visible |
+| `q` or `Ctrl+W` | Close the current file and switch to the next (or previous) one; quits the app if it's the last file open |
 | `j` | Scroll down one line |
 | `k` | Scroll up one line |
 | `b` or `Shift+Space` | Scroll up one page |
 | `g` | Scroll to top |
 | `Shift+G` | Scroll to bottom |
+
+File list panel (active once focused via `f` or a click):
+
+| Shortcut | Action |
+|---|---|
+| `Enter` / `Space` / `f` | On a file: opens it and moves focus to the render area. On a group: toggles its collapse and keeps focus in the panel |
+| `Escape` | Hide the panel and move focus to the render area |
+| `↑`/`↓` or `j`/`k` | Move focus between files and group headers |
+| `q` | Close the focused file; quits the app if it's the last file open |
 
 ### Settings file
 
@@ -147,13 +178,14 @@ The file is searched in this order; the first found is used:
 
 When saving for the first time (no existing file), it is written to the OS user config directory (`mdview` subdirectory).
 
-The `font` field accepts any valid CSS `font` shorthand string:
+The `font` field accepts any valid CSS `font` shorthand string. `fileListRatio` is the width fraction (0–1) given to the file list panel, updated whenever you drag the splitter:
 
 ```json
 {
   "font": "bold 1.1em \"Yu Gothic\", sans-serif",
   "themeMode": "system",
-  "editorPath": ""
+  "editorPath": "",
+  "fileListRatio": 0.3
 }
 ```
 

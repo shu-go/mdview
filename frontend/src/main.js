@@ -1,7 +1,7 @@
 import './style.css';
 import './app.css';
 
-import { LoadFile, ParseMarkdownWithDiff, WatchFile, SelectFile, GetInitialFile, OpenInNewInstance, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig } from '../wailsjs/go/main/App';
+import { LoadFile, ParseMarkdownWithDiff, WatchFile, UnwatchFile, SelectFile, GetInitialFile, OpenInNewInstance, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig } from '../wailsjs/go/main/App';
 import { EventsOn, OnFileDrop, Quit, WindowUnminimise } from '../wailsjs/runtime/runtime';
 import prismDarkTheme from 'prismjs/themes/prism-tomorrow.css?inline';
 import prismLightTheme from 'prismjs/themes/prism.css?inline';
@@ -46,22 +46,20 @@ import 'prismjs/components/prism-php';            // depends on markup-templatin
 const prismStyleEl = document.createElement('style');
 document.head.appendChild(prismStyleEl);
 
-// App State
-let state = {
-    filePath: '',
-    fileName: '',
-    initialRaw: '',   // Content when file was first opened — never reset on file change
-    baselineRaw: '',  // User-controlled baseline for "基準差分" mode
-    currentRaw: '',
-    currentHTML: '',
-    diffMode: 'off', // 'off' | 'initial' | 'baseline'
-    lastDiffMode: 'initial', // last non-off diff mode, restored by Ctrl+D toggle
-    frontMatter: '',
-    frontMatterCollapsed: false,
-};
+// --- Multi-file state ---
+// filesByPath: absolute path -> { path, name, dirPath, raw, html, initialRaw,
+//   baselineRaw, frontMatter, frontMatterCollapsed, diffMode, lastDiffMode,
+//   unseen, scrollTop }
+let filesByPath = new Map();
+let activePath = null; // currently displayed file, or null if none open
 
-// Persisted config (loaded at startup, updated on font/theme/editor change)
-let currentConfig = { font: '', themeMode: 'system', editorPath: '' };
+// File list panel state
+let collapsedGroups = new Set(); // dirPath values that are collapsed
+let listFocused = false;         // true while keyboard focus is in the file list panel
+let focusedItemKey = null;       // `group:${dirPath}` or `file:${path}`
+
+// Persisted config (loaded at startup, updated on font/theme/editor/split change)
+let currentConfig = { font: '', themeMode: 'system', editorPath: '', fileListRatio: 0 };
 
 // DOM Elements (pre-rendered in index.html)
 const searchPanel = document.querySelector('.search-panel');
@@ -76,7 +74,12 @@ const fontModalClose = document.getElementById('font-modal-close');
 
 const dropArea = document.getElementById('drop-area');
 const viewerContainer = document.getElementById('viewer-container');
-const toolbar = viewerContainer.querySelector('.toolbar');
+const viewerBody = document.querySelector('.viewer-body');
+const renderPane = document.querySelector('.render-pane');
+const btnToggleFileList = document.getElementById('btn-toggle-file-list');
+const fileListPanel = document.getElementById('file-list-panel');
+const fileListItems = document.getElementById('file-list-items');
+const splitter = document.getElementById('splitter');
 const btnUpdateBaseline = document.getElementById('btn-update-baseline');
 const btnMenu = document.getElementById('btn-menu');
 const appMenu = document.getElementById('app-menu');
@@ -106,18 +109,21 @@ let currentMatchIdx = -1;
 
 // Wails native drag and drop handler
 OnFileDrop((x, y, paths) => {
-    if (paths && paths.length > 0) {
-        const path = paths[0];
-        const lowerPath = path.toLowerCase();
-        if (lowerPath.endsWith('.md') || lowerPath.endsWith('.markdown') || lowerPath.endsWith('.txt')) {
-            openFile(path);
-        } else {
-            alert('Please drop a Markdown file (.md, .markdown, .txt).');
-        }
+    if (!paths || paths.length === 0) return;
+
+    const validPaths = paths.filter(p => {
+        const lower = p.toLowerCase();
+        return lower.endsWith('.md') || lower.endsWith('.markdown') || lower.endsWith('.txt');
+    });
+
+    if (validPaths.length > 0) {
+        openFiles(validPaths);
+    } else {
+        alert('Please drop a Markdown file (.md, .markdown, .txt).');
     }
 }, true);
 
-// Click to select file dialog
+// Click to select file dialog (only reachable from the empty drop-area state)
 dropArea.addEventListener('click', async () => {
     try {
         const path = await SelectFile();
@@ -132,18 +138,25 @@ dropArea.addEventListener('click', async () => {
 // --- Toolbar Event Listeners ---
 segButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-        segButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        state.diffMode = btn.dataset.mode;
-        if (state.diffMode !== 'off') state.lastDiffMode = state.diffMode;
+        const entry = filesByPath.get(activePath);
+        if (!entry) return;
+        entry.diffMode = btn.dataset.mode;
+        if (entry.diffMode !== 'off') entry.lastDiffMode = entry.diffMode;
+        syncDiffButtonsForActive();
         renderContent();
     });
 });
 
 btnUpdateBaseline.addEventListener('click', () => {
-    state.baselineRaw = state.currentRaw;
+    const entry = filesByPath.get(activePath);
+    if (!entry) return;
+    entry.baselineRaw = entry.raw;
     renderContent();
     showToast('Baseline updated to current content');
+});
+
+btnToggleFileList.addEventListener('click', () => {
+    toggleFileListViaButton();
 });
 
 // Menu toggle
@@ -215,6 +228,14 @@ btnSearchPrev.addEventListener('click', searchPrev);
 btnSearchNext.addEventListener('click', searchNext);
 btnSearchClose.addEventListener('click', closeSearch);
 
+// Clicking into the render area returns keyboard focus there from the file list.
+contentArea.addEventListener('mousedown', () => {
+    if (listFocused) {
+        listFocused = false;
+        renderFileList();
+    }
+});
+
 // Keyboard shortcuts
 document.addEventListener('keydown', async (e) => {
     if (e.ctrlKey && e.key === '+') {
@@ -234,13 +255,13 @@ document.addEventListener('keydown', async (e) => {
     }
     if (e.ctrlKey && e.key === 'e') {
         e.preventDefault();
-        if (!state.filePath) return;
+        if (!activePath) return;
         if (!currentConfig.editorPath) {
             showToast('No editor configured — click the Editor button to select one');
             return;
         }
         try {
-            await OpenInEditor(currentConfig.editorPath, state.filePath);
+            await OpenInEditor(currentConfig.editorPath, activePath);
         } catch (err) {
             console.error('Failed to open in editor:', err);
         }
@@ -254,14 +275,11 @@ document.addEventListener('keydown', async (e) => {
     if (e.ctrlKey && e.key === 'd') {
         e.preventDefault();
         cycleDiffMode();
-        showToolbar();
-        clearTimeout(toolbarHideTimer);
-        toolbarHideTimer = setTimeout(() => toolbar.classList.remove('visible'), 1500);
         return;
     }
     if (e.ctrlKey && e.key === 'w') {
         e.preventDefault();
-        Quit();
+        await handleRenderAreaClose();
         return;
     }
     if (e.key === 'F3') {
@@ -269,15 +287,25 @@ document.addEventListener('keydown', async (e) => {
         if (e.shiftKey) searchPrev(); else searchNext();
         return;
     }
+
+    const activeTag = document.activeElement?.tagName;
+    const typingInInput = activeTag === 'INPUT' || activeTag === 'TEXTAREA';
+
+    // While the file list has keyboard focus, it owns all non-Ctrl shortcuts.
+    if (listFocused && !typingInInput && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        await handleFileListKeydown(e);
+        return;
+    }
+
     if (e.key === 'Escape') {
         if (!appMenu.classList.contains('hidden')) { appMenu.classList.add('hidden'); return; }
         if (!searchPanel.classList.contains('hidden')) { closeSearch(); return; }
+        if (!fileListPanel.classList.contains('hidden')) { closeFileListPanel(); return; }
     }
 
     // Vim-like scroll and / search opener: skip when a text input is focused
     if (e.ctrlKey || e.altKey || e.metaKey) return;
-    const activeTag = document.activeElement?.tagName;
-    if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
+    if (typingInInput) return;
 
     switch (e.key) {
         case '/':
@@ -312,25 +340,16 @@ document.addEventListener('keydown', async (e) => {
             contentArea.scrollTo({ top: contentArea.scrollHeight, behavior: 'instant' });
             flashEdge(edgeFlashBottom);
             break;
+        case 'f':
+            e.preventDefault();
+            openFileListFocused();
+            break;
         case 'q':
             e.preventDefault();
-            Quit();
+            await handleRenderAreaClose();
             break;
     }
 });
-
-// Toolbar overlay: show when mouse enters top 48px of viewer, hide otherwise
-let toolbarHideTimer = null;
-
-function showToolbar() {
-    clearTimeout(toolbarHideTimer);
-    toolbar.classList.add('visible');
-}
-
-function scheduleHideToolbar() {
-    clearTimeout(toolbarHideTimer);
-    toolbarHideTimer = setTimeout(() => toolbar.classList.remove('visible'), 400);
-}
 
 // Zoom
 let currentZoom = 100;
@@ -384,20 +403,14 @@ function flashEdge(el) {
     el.classList.add('flash');
 }
 
-viewerContainer.addEventListener('mousemove', (e) => {
-    const rect = viewerContainer.getBoundingClientRect();
-    if (e.clientY - rect.top < 48) showToolbar();
-    else if (!toolbar.matches(':hover')) scheduleHideToolbar();
-
+renderPane.addEventListener('mousemove', (e) => {
+    const rect = renderPane.getBoundingClientRect();
     if (e.clientY > rect.bottom - 40 && e.clientX > rect.right - 130) showZoomBar();
     else if (!zoomBar.matches(':hover')) scheduleHideZoomBar();
 });
-viewerContainer.addEventListener('mouseleave', () => {
-    scheduleHideToolbar();
+renderPane.addEventListener('mouseleave', () => {
     scheduleHideZoomBar();
 });
-toolbar.addEventListener('mouseenter', showToolbar);
-toolbar.addEventListener('mouseleave', scheduleHideToolbar);
 zoomBar.addEventListener('mouseenter', showZoomBar);
 zoomBar.addEventListener('mouseleave', scheduleHideZoomBar);
 
@@ -420,7 +433,7 @@ markdownBody.addEventListener('mouseover', (e) => {
     } else if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:')) {
         display = href;
     } else {
-        const resolved = resolveFilePath(state.filePath, href);
+        const resolved = resolveFilePath(activePath, href);
         const lower = resolved.toLowerCase();
         if (lower.endsWith('.md') || lower.endsWith('.markdown')) {
             display = resolved;
@@ -453,7 +466,7 @@ markdownBody.addEventListener('click', async (e) => {
     }
 
     // Local file link — resolve relative to current file
-    const resolved = resolveFilePath(state.filePath, href);
+    const resolved = resolveFilePath(activePath, href);
     const lower = resolved.toLowerCase();
     if (lower.endsWith('.md') || lower.endsWith('.markdown')) {
         await OpenInNewInstance(resolved);
@@ -476,72 +489,149 @@ function resolveFilePath(basePath, relativePath) {
 }
 
 // --- File Handling Functions ---
+
+// Opens (or switches to, if already open) the file at path, adding it to the
+// file list if it's new. Each file's diff-mode state and scroll position are
+// kept independent and restored when switching back to it. Re-selecting the
+// file that's already displayed is a no-op, so its scroll position is left alone.
 async function openFile(path) {
+    if (path === activePath) return;
+
     try {
-        const result = await LoadFile(path);
+        if (activePath && filesByPath.has(activePath)) {
+            filesByPath.get(activePath).scrollTop = contentArea.scrollTop;
+        }
 
-        state.filePath = path;
-        state.fileName = path.split(/[/\\]/).pop();
-        state.initialRaw = result.raw;   // Set once on open, never reset by file changes
-        state.baselineRaw = result.raw;
-        state.currentRaw = result.raw;
-        state.currentHTML = result.html;
-        state.diffMode = 'baseline';
-        state.lastDiffMode = 'baseline';
-        state.frontMatter = result.frontMatter || '';
-        state.frontMatterCollapsed = false;
+        const entry = await ensureFileLoaded(path);
+        entry.unseen = false;
 
-        SetWindowTitle(`${state.fileName} - mdview`);
-
-        segButtons.forEach(b => {
-            if (b.dataset.mode === 'baseline') b.classList.add('active');
-            else b.classList.remove('active');
-        });
+        activePath = path;
+        SetWindowTitle(`${entry.name} - mdview`);
 
         dropArea.classList.add('hidden');
         viewerContainer.classList.remove('hidden');
-        contentArea.scrollTo({ top: 0, behavior: 'instant' });
 
-        await WatchFile(path);
-        renderContent();
+        syncDiffButtonsForActive();
+        await renderContent();
+        contentArea.scrollTo({ top: entry.scrollTop || 0, behavior: 'instant' });
+        renderFileList();
     } catch (err) {
         console.error('Failed to open file:', err);
         alert('Failed to load file: ' + err);
     }
 }
 
-function closeFile() {
-    state = {
-        filePath: '',
-        fileName: '',
-        initialRaw: '',
-        baselineRaw: '',
-        currentRaw: '',
-        currentHTML: '',
-        diffMode: 'off',
-        lastDiffMode: 'initial',
-        frontMatter: '',
-        frontMatterCollapsed: false,
-    };
-
-    SetWindowTitle('mdview');
-    viewerContainer.classList.add('hidden');
-    dropArea.classList.remove('hidden');
-    closeSearch();
-    document.getElementById('front-matter-panel').classList.add('hidden');
+// Loads a file into filesByPath (and starts watching it) if it isn't already
+// open, without changing which file is displayed. Returns its entry.
+async function ensureFileLoaded(path) {
+    let entry = filesByPath.get(path);
+    if (!entry) {
+        const result = await LoadFile(path);
+        entry = {
+            path,
+            name: path.split(/[\\/]/).pop(),
+            dirPath: path.replace(/[\\/][^\\/]*$/, '') || path,
+            raw: result.raw,
+            html: result.html,
+            initialRaw: result.raw,   // Set once on first open, never reset by file changes
+            baselineRaw: result.raw,  // User-controlled baseline for "基準差分" mode
+            frontMatter: result.frontMatter || '',
+            frontMatterCollapsed: false,
+            diffMode: 'baseline',
+            lastDiffMode: 'baseline',
+            unseen: false,
+            scrollTop: 0,
+        };
+        filesByPath.set(path, entry);
+        await WatchFile(path);
+    }
+    return entry;
 }
 
-// File change detected by watcher — update currentRaw/currentHTML only,
-// keeping initialRaw and baselineRaw intact so diff modes still work.
-EventsOn('file-changed', async (_filePath) => {
-    if (!state.filePath) return;
+// Opens multiple files at once (e.g. a multi-file drag & drop): every path is
+// added to the file list, but only the first one is displayed.
+async function openFiles(paths) {
+    if (paths.length === 0) return;
+    for (const path of paths.slice(1)) {
+        try {
+            await ensureFileLoaded(path);
+        } catch (err) {
+            console.error('Failed to load file:', path, err);
+        }
+    }
+    await openFile(paths[0]);
+}
+
+// Closes a single file (stopping its watcher). If it was the active file,
+// switches to the next file in list order (or the previous one, if it was
+// last). Quits the app if this was the last open file.
+async function closeFile(path) {
+    const entry = filesByPath.get(path);
+    if (!entry) return;
+
+    const orderedFiles = getOrderedFilePaths();
+    const fileIdx = orderedFiles.indexOf(path);
+
+    const wasFocused = listFocused && focusedItemKey === `file:${path}`;
+    const flatIdxBefore = wasFocused ? getFlattenedItems().findIndex(it => it.key === focusedItemKey) : -1;
+
+    filesByPath.delete(path);
     try {
-        const result = await LoadFile(state.filePath);
-        state.currentRaw = result.raw;
-        state.currentHTML = result.html;
-        state.frontMatter = result.frontMatter || '';
-        renderContent();
-        showToast('File change detected — reloaded');
+        await UnwatchFile(path);
+    } catch (err) {
+        console.error('Failed to unwatch file:', err);
+    }
+
+    const remainingFiles = getOrderedFilePaths();
+    if (remainingFiles.length === 0) {
+        Quit();
+        return;
+    }
+
+    if (wasFocused) {
+        const items = getFlattenedItems();
+        const newIdx = Math.min(flatIdxBefore, items.length - 1);
+        focusedItemKey = items[newIdx]?.key ?? null;
+    }
+
+    if (path === activePath) {
+        const nextPath = remainingFiles[Math.min(fileIdx, remainingFiles.length - 1)];
+        await openFile(nextPath);
+    } else {
+        renderFileList();
+    }
+
+    if (wasFocused) scrollFocusedIntoView();
+}
+
+// render-area q / Ctrl+W: close the current file, or quit if it's the last one.
+async function handleRenderAreaClose() {
+    if (!activePath) {
+        Quit();
+        return;
+    }
+    await closeFile(activePath);
+}
+
+// File change detected by watcher — refresh the file's content. If it's the
+// currently displayed file, re-render immediately; otherwise just flag it as
+// unseen (●) in the file list.
+EventsOn('file-changed', async (changedPath) => {
+    const entry = filesByPath.get(changedPath);
+    if (!entry) return;
+    try {
+        const result = await LoadFile(changedPath);
+        entry.raw = result.raw;
+        entry.html = result.html;
+        entry.frontMatter = result.frontMatter || '';
+
+        if (changedPath === activePath) {
+            await renderContent();
+            showToast('File change detected — reloaded');
+        } else {
+            entry.unseen = true;
+            renderFileList();
+        }
     } catch (err) {
         console.error('Failed to reload file:', err);
     }
@@ -549,21 +639,24 @@ EventsOn('file-changed', async (_filePath) => {
 
 // --- Rendering Logic ---
 async function renderContent() {
-    renderFrontMatterPanel();
+    const entry = filesByPath.get(activePath);
+    if (!entry) return;
 
-    if (state.diffMode === 'off') {
-        markdownBody.innerHTML = state.currentHTML;
+    renderFrontMatterPanel(entry);
+
+    if (entry.diffMode === 'off') {
+        markdownBody.innerHTML = entry.html;
         stripEventHandlers(markdownBody);
         postProcessHTML();
         rerunSearchIfOpen();
         return;
     }
 
-    const baseRaw = state.diffMode === 'initial' ? state.initialRaw : state.baselineRaw;
+    const baseRaw = entry.diffMode === 'initial' ? entry.initialRaw : entry.baselineRaw;
     try {
         // Go renders both base and current to HTML, then diffs at the HTML line level.
         // This avoids Markdown structure being broken by injecting tags into source.
-        const diffHTML = await ParseMarkdownWithDiff(baseRaw, state.currentRaw);
+        const diffHTML = await ParseMarkdownWithDiff(entry.path, baseRaw, entry.raw);
         markdownBody.innerHTML = diffHTML;
         stripEventHandlers(markdownBody);
         postProcessHTML();
@@ -708,12 +801,19 @@ fontModal.addEventListener('click', (e) => {
     if (e.target === fontModal) closeFontModal();
 });
 
+function syncDiffButtonsForActive() {
+    const entry = filesByPath.get(activePath);
+    const mode = entry ? entry.diffMode : 'off';
+    segButtons.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+}
+
 function cycleDiffMode() {
-    if (!state.filePath) return;
-    const next = state.diffMode === 'off' ? state.lastDiffMode : 'off';
-    if (next !== 'off') state.lastDiffMode = next;
-    state.diffMode = next;
-    segButtons.forEach(b => b.classList.toggle('active', b.dataset.mode === next));
+    const entry = filesByPath.get(activePath);
+    if (!entry) return;
+    const next = entry.diffMode === 'off' ? entry.lastDiffMode : 'off';
+    if (next !== 'off') entry.lastDiffMode = next;
+    entry.diffMode = next;
+    syncDiffButtonsForActive();
     renderContent();
 }
 
@@ -851,6 +951,264 @@ function rerunSearchIfOpen() {
     if (searchInput.value) runSearch(searchInput.value);
 }
 
+// --- File List Panel ---
+
+// Splits an absolute directory path into an abbreviated prefix ("C/p/t/m/")
+// and the full last (leaf) folder name, per the AGENTS.md grouping spec.
+function abbreviateGroupLabel(dirPath) {
+    const parts = dirPath.split(/[\\/]/).filter(p => p !== '');
+    if (parts.length === 0) return { prefix: '', last: dirPath };
+    const last = parts[parts.length - 1];
+    const prefixParts = parts.slice(0, -1).map(p => p.charAt(0));
+    return { prefix: prefixParts.length ? prefixParts.join('/') + '/' : '', last };
+}
+
+// Returns open files grouped by folder, groups sorted by absolute dir path
+// ascending, files within a group sorted by name ascending.
+function getGroupedFiles() {
+    const groups = new Map();
+    for (const f of filesByPath.values()) {
+        if (!groups.has(f.dirPath)) groups.set(f.dirPath, []);
+        groups.get(f.dirPath).push(f);
+    }
+    const dirPaths = [...groups.keys()].sort();
+    return dirPaths.map(dirPath => ({
+        dirPath,
+        label: abbreviateGroupLabel(dirPath),
+        files: groups.get(dirPath).slice().sort((a, b) => a.name.localeCompare(b.name)),
+    }));
+}
+
+// Flat list of every open file path, in file-list display order (ignoring
+// collapse state) — used to pick the next/previous file when one is closed.
+function getOrderedFilePaths() {
+    const paths = [];
+    for (const g of getGroupedFiles()) for (const f of g.files) paths.push(f.path);
+    return paths;
+}
+
+// Flat list of keyboard-navigable items (group headers + visible file rows,
+// respecting collapse state) — used for j/k/arrow navigation.
+function getFlattenedItems() {
+    const items = [];
+    for (const g of getGroupedFiles()) {
+        items.push({ type: 'group', key: `group:${g.dirPath}` });
+        if (!collapsedGroups.has(g.dirPath)) {
+            for (const f of g.files) items.push({ type: 'file', key: `file:${f.path}` });
+        }
+    }
+    return items;
+}
+
+function renderFileList() {
+    fileListItems.innerHTML = getGroupedFiles().map(renderGroupHTML).join('');
+}
+
+function renderGroupHTML(group) {
+    const collapsed = collapsedGroups.has(group.dirPath);
+    const hasUnseen = group.files.some(f => f.unseen);
+    const groupKey = `group:${group.dirPath}`;
+    const filesHTML = collapsed ? '' : group.files.map(renderFileRowHTML).join('');
+    return `<div class="file-group">
+      <div class="file-group-header${focusedItemKey === groupKey ? ' focused' : ''}" data-group="${escapeHTML(group.dirPath)}">
+        <span class="fg-collapse-mark">${collapsed ? '▶' : '▼'}</span>
+        <span class="fg-label"><span class="fg-label-prefix">${escapeHTML(group.label.prefix)}</span><span class="fg-label-last">${escapeHTML(group.label.last)}</span></span>
+        <span class="fg-dot${hasUnseen ? ' visible' : ''}">●</span>
+      </div>
+      <div class="file-group-files">${filesHTML}</div>
+    </div>`;
+}
+
+function renderFileRowHTML(f) {
+    const fileKey = `file:${f.path}`;
+    const active = f.path === activePath;
+    return `<div class="file-row${active ? ' active' : ''}${focusedItemKey === fileKey ? ' focused' : ''}" data-file="${escapeHTML(f.path)}">
+      <span class="fr-name">${escapeHTML(f.name)}</span>
+      <span class="fr-dot${f.unseen ? ' visible' : ''}">●</span>
+    </div>`;
+}
+
+// Mouse interaction (event delegation): clicking a file opens it, clicking a
+// group header toggles its collapse state. Either counts as focusing the list.
+fileListItems.addEventListener('click', async (e) => {
+    const groupHeader = e.target.closest('.file-group-header');
+    const fileRow = e.target.closest('.file-row');
+    if (groupHeader) {
+        listFocused = true;
+        const dirPath = groupHeader.dataset.group;
+        focusedItemKey = `group:${dirPath}`;
+        if (collapsedGroups.has(dirPath)) collapsedGroups.delete(dirPath);
+        else collapsedGroups.add(dirPath);
+        renderFileList();
+    } else if (fileRow) {
+        listFocused = true;
+        const path = fileRow.dataset.file;
+        focusedItemKey = `file:${path}`;
+        await openFile(path);
+        renderFileList();
+    }
+});
+
+function scrollFocusedIntoView() {
+    if (!focusedItemKey) return;
+    const isGroup = focusedItemKey.startsWith('group:');
+    const value = focusedItemKey.slice(isGroup ? 6 : 5);
+    const nodes = fileListItems.querySelectorAll(isGroup ? '.file-group-header' : '.file-row');
+    for (const el of nodes) {
+        if ((isGroup ? el.dataset.group : el.dataset.file) === value) {
+            el.scrollIntoView({ block: 'nearest' });
+            break;
+        }
+    }
+}
+
+function moveFocus(delta) {
+    const items = getFlattenedItems();
+    if (items.length === 0) return;
+    let idx = items.findIndex(it => it.key === focusedItemKey);
+    idx = idx === -1 ? 0 : Math.max(0, Math.min(items.length - 1, idx + delta));
+    focusedItemKey = items[idx].key;
+    renderFileList();
+    scrollFocusedIntoView();
+}
+
+async function activateFocusedItem() {
+    if (!focusedItemKey) return;
+    if (focusedItemKey.startsWith('group:')) {
+        const dirPath = focusedItemKey.slice(6);
+        if (collapsedGroups.has(dirPath)) collapsedGroups.delete(dirPath);
+        else collapsedGroups.add(dirPath);
+    } else {
+        const path = focusedItemKey.slice(5);
+        await openFile(path);
+    }
+}
+
+// Enter/Space/f: perform the focused item's action. For a file, this also
+// moves focus to the render area; for a group (collapse toggle), focus stays
+// in the file list.
+async function activateFocusedItemAndBlur() {
+    const wasGroup = focusedItemKey?.startsWith('group:');
+    await activateFocusedItem();
+    if (wasGroup) {
+        renderFileList();
+        scrollFocusedIntoView();
+    } else {
+        blurFileListToRender();
+    }
+}
+
+async function handleListQuit() {
+    if (!focusedItemKey || !focusedItemKey.startsWith('file:')) return;
+    const path = focusedItemKey.slice(5);
+    await closeFile(path);
+}
+
+function blurFileListToRender() {
+    listFocused = false;
+    renderFileList();
+    contentArea.focus?.({ preventScroll: true });
+}
+
+function closeFileListPanel() {
+    fileListPanel.classList.add('hidden');
+    splitter.classList.add('hidden');
+    listFocused = false;
+    contentArea.focus?.({ preventScroll: true });
+}
+
+function openFileListFocused() {
+    fileListPanel.classList.remove('hidden');
+    splitter.classList.remove('hidden');
+    listFocused = true;
+    focusedItemKey = activePath ? `file:${activePath}` : (getFlattenedItems()[0]?.key ?? null);
+    renderFileList();
+    fileListPanel.focus?.();
+    scrollFocusedIntoView();
+}
+
+function toggleFileListViaButton() {
+    const isHidden = fileListPanel.classList.contains('hidden');
+    if (isHidden) {
+        fileListPanel.classList.remove('hidden');
+        splitter.classList.remove('hidden');
+        renderFileList();
+    } else {
+        fileListPanel.classList.add('hidden');
+        splitter.classList.add('hidden');
+        if (listFocused) {
+            listFocused = false;
+            contentArea.focus?.({ preventScroll: true });
+        }
+    }
+}
+
+async function handleFileListKeydown(e) {
+    switch (e.key) {
+        case 'f':
+            e.preventDefault();
+            await activateFocusedItemAndBlur();
+            break;
+        case 'Escape':
+            e.preventDefault();
+            closeFileListPanel();
+            break;
+        case 'ArrowDown':
+        case 'j':
+            e.preventDefault();
+            moveFocus(1);
+            break;
+        case 'ArrowUp':
+        case 'k':
+            e.preventDefault();
+            moveFocus(-1);
+            break;
+        case 'Enter':
+        case ' ':
+            e.preventDefault();
+            await activateFocusedItemAndBlur();
+            break;
+        case 'q':
+            e.preventDefault();
+            await handleListQuit();
+            break;
+    }
+}
+
+// --- Splitter (resize file list / render pane) ---
+let isDraggingSplitter = false;
+let pendingFileListRatio = null;
+
+splitter.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    isDraggingSplitter = true;
+    splitter.classList.add('dragging');
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (!isDraggingSplitter) return;
+    const bodyRect = viewerBody.getBoundingClientRect();
+    let ratio = (e.clientX - bodyRect.left) / bodyRect.width;
+    ratio = Math.max(0.15, Math.min(0.6, ratio));
+    fileListPanel.style.width = (ratio * 100) + '%';
+    pendingFileListRatio = ratio;
+});
+
+window.addEventListener('mouseup', async () => {
+    if (!isDraggingSplitter) return;
+    isDraggingSplitter = false;
+    splitter.classList.remove('dragging');
+    if (pendingFileListRatio != null) {
+        currentConfig.fileListRatio = pendingFileListRatio;
+        try {
+            await SaveConfig(currentConfig);
+        } catch (err) {
+            console.error('Failed to save file list ratio:', err);
+        }
+        pendingFileListRatio = null;
+    }
+});
+
 // --- Startup: load config and open CLI file if provided ---
 (async () => {
     const [config, initialFile] = await Promise.all([LoadConfig(), GetInitialFile()]);
@@ -858,11 +1216,16 @@ function rerunSearchIfOpen() {
         font: config.font || '',
         themeMode: config.themeMode || 'system',
         editorPath: config.editorPath || '',
+        fileListRatio: config.fileListRatio || 0,
     };
     if (currentConfig.font) {
         applyFont(currentConfig.font);
     }
     applyTheme(currentConfig.themeMode);
+
+    const initialRatio = currentConfig.fileListRatio > 0 ? currentConfig.fileListRatio : 0.3;
+    fileListPanel.style.width = (Math.max(0.15, Math.min(0.6, initialRatio)) * 100) + '%';
+
     if (initialFile) {
         await openFile(initialFile);
         // On Windows the app is launched minimised (see main.go) to hide the
@@ -941,28 +1304,28 @@ function renderFrontMatterValue(val) {
     return escapeHTML(String(val));
 }
 
-function renderFrontMatterPanel() {
+function renderFrontMatterPanel(entry) {
     const panel = document.getElementById('front-matter-panel');
-    if (!state.frontMatter) {
+    if (!entry.frontMatter) {
         panel.classList.add('hidden');
         panel.innerHTML = '';
         return;
     }
-    const entries = parseFrontMatterYAML(state.frontMatter);
+    const entries = parseFrontMatterYAML(entry.frontMatter);
     if (entries.length === 0) {
         panel.classList.add('hidden');
         panel.innerHTML = '';
         return;
     }
-    const collapsed = state.frontMatterCollapsed;
+    const collapsed = entry.frontMatterCollapsed;
     const rows = entries.map(({ key, value }) =>
         `<tr><td class="fm-key">${escapeHTML(key)}</td><td class="fm-value">${renderFrontMatterValue(value)}</td></tr>`
     ).join('');
     panel.innerHTML = `<div class="fm-header"><span class="fm-title">Front Matter</span><span class="fm-toggle">${collapsed ? '▶' : '▼'}</span></div><div class="fm-body${collapsed ? ' hidden' : ''}"><table class="fm-table"><tbody>${rows}</tbody></table></div>`;
     panel.classList.remove('hidden');
     panel.querySelector('.fm-header').addEventListener('click', () => {
-        state.frontMatterCollapsed = !state.frontMatterCollapsed;
-        renderFrontMatterPanel();
+        entry.frontMatterCollapsed = !entry.frontMatterCollapsed;
+        renderFrontMatterPanel(entry);
     });
 }
 

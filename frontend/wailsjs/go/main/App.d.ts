@@ -16,12 +16,14 @@ export function OpenInEditor(arg1:string,arg2:string):Promise<void>;
 
 export function OpenInNewInstance(arg1:string):Promise<void>;
 
-export function ParseMarkdownWithDiff(arg1:string,arg2:string):Promise<string>;
+export function ParseMarkdownWithDiff(arg1:string,arg2:string,arg3:string):Promise<string>;
 
 export function SaveConfig(arg1:main.Config):Promise<void>;
 
 export function SelectFile():Promise<string>;
 
 export function SetWindowTitle(arg1:string):Promise<void>;
+
+export function UnwatchFile(arg1:string):Promise<void>;
 
 export function WatchFile(arg1:string):Promise<void>;
