@@ -77,7 +77,6 @@ const fontModalClose = document.getElementById('font-modal-close');
 const dropArea = document.getElementById('drop-area');
 const viewerContainer = document.getElementById('viewer-container');
 const toolbar = viewerContainer.querySelector('.toolbar');
-const fileNameLabel = document.getElementById('file-name');
 const btnUpdateBaseline = document.getElementById('btn-update-baseline');
 const btnMenu = document.getElementById('btn-menu');
 const appMenu = document.getElementById('app-menu');
@@ -492,7 +491,6 @@ async function openFile(path) {
         state.frontMatter = result.frontMatter || '';
         state.frontMatterCollapsed = false;
 
-        fileNameLabel.textContent = state.fileName;
         SetWindowTitle(`${state.fileName} - mdview`);
 
         segButtons.forEach(b => {

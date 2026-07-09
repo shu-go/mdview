@@ -127,26 +127,6 @@
     to { opacity: 0; }
 }
 
-.toolbar-left {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    max-width: 30%;
-}
-
-.file-icon {
-    font-size: 0.9rem;
-}
-
-.file-name {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
 .toolbar-center {
     display: flex;
     align-items: center;
