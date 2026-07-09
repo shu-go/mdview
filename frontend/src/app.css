@@ -97,6 +97,36 @@
     transform: translateY(0);
 }
 
+/* --- Edge-of-scroll flash (g/G jump-to-top/bottom indicator) --- */
+.edge-flash {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3em;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 60;
+}
+
+.edge-flash-top {
+    top: 0;
+    background: linear-gradient(to bottom, var(--text-primary), var(--bg-main));
+}
+
+.edge-flash-bottom {
+    bottom: 0;
+    background: linear-gradient(to top, var(--text-primary), var(--bg-main));
+}
+
+.edge-flash.flash {
+    animation: edge-flash-fade 0.5s ease-out;
+}
+
+@keyframes edge-flash-fade {
+    from { opacity: 0.25; }
+    to { opacity: 0; }
+}
+
 .toolbar-left {
     display: flex;
     align-items: center;

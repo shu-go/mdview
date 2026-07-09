@@ -85,6 +85,8 @@ const menuEditor = document.getElementById('menu-editor');
 const menuFont = document.getElementById('menu-font');
 const markdownBody = document.getElementById('markdown-body');
 const linkPreview = document.getElementById('link-preview');
+const edgeFlashTop = document.getElementById('edge-flash-top');
+const edgeFlashBottom = document.getElementById('edge-flash-bottom');
 const contentArea = viewerContainer.querySelector('.content-area');
 const segButtons = document.querySelectorAll('.segmented-control .seg-btn');
 const searchInput = searchPanel.querySelector('.search-input');
@@ -304,10 +306,12 @@ document.addEventListener('keydown', async (e) => {
         case 'g':
             e.preventDefault();
             contentArea.scrollTo({ top: 0, behavior: 'instant' });
+            flashEdge(edgeFlashTop);
             break;
         case 'G':
             e.preventDefault();
             contentArea.scrollTo({ top: contentArea.scrollHeight, behavior: 'instant' });
+            flashEdge(edgeFlashBottom);
             break;
         case 'q':
             e.preventDefault();
@@ -373,6 +377,13 @@ window.addEventListener('wheel', (e) => {
     e.preventDefault();
     changeZoom(e.deltaY < 0 ? 10 : -10);
 }, { passive: false });
+
+// Briefly flash a top/bottom edge overlay to indicate a g/G jump hit the start or end.
+function flashEdge(el) {
+    el.classList.remove('flash');
+    void el.offsetWidth; // force reflow so the animation restarts on rapid repeats
+    el.classList.add('flash');
+}
 
 viewerContainer.addEventListener('mousemove', (e) => {
     const rect = viewerContainer.getBoundingClientRect();
