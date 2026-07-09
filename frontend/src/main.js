@@ -500,6 +500,7 @@ async function openFile(path) {
 
         dropArea.classList.add('hidden');
         viewerContainer.classList.remove('hidden');
+        contentArea.scrollTo({ top: 0, behavior: 'instant' });
 
         await WatchFile(path);
         renderContent();
