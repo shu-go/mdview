@@ -258,7 +258,7 @@ document.addEventListener('keydown', async (e) => {
         toolbarHideTimer = setTimeout(() => toolbar.classList.remove('visible'), 1500);
         return;
     }
-    if (e.ctrlKey && e.key === 'w' || e.key === 'q') {
+    if (e.ctrlKey && e.key === 'w') {
         e.preventDefault();
         Quit();
         return;
@@ -308,6 +308,10 @@ document.addEventListener('keydown', async (e) => {
         case 'G':
             e.preventDefault();
             contentArea.scrollTo({ top: contentArea.scrollHeight, behavior: 'instant' });
+            break;
+        case 'q':
+            e.preventDefault();
+            Quit();
             break;
     }
 });
