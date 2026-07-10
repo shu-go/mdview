@@ -58,6 +58,11 @@ let collapsedGroups = new Set(); // dirPath values that are collapsed
 let listFocused = false;         // true while keyboard focus is in the file list panel
 let focusedItemKey = null;       // `group:${dirPath}` or `file:${path}`
 
+// TOC panel state
+let tocItems = [];       // [{ level, text, el }], rebuilt after every render
+let tocFocused = false;  // true while keyboard focus is in the TOC panel
+let focusedTocIndex = -1;
+
 // Persisted config (loaded at startup, updated on font/theme/editor/split change)
 let currentConfig = { font: '', themeMode: 'system', editorPath: '', fileListRatio: 0 };
 
@@ -79,6 +84,9 @@ const renderPane = document.querySelector('.render-pane');
 const btnToggleFileList = document.getElementById('btn-toggle-file-list');
 const fileListPanel = document.getElementById('file-list-panel');
 const fileListItems = document.getElementById('file-list-items');
+const btnToggleTOC = document.getElementById('btn-toggle-toc');
+const tocPanel = document.getElementById('toc-panel');
+const tocItemsEl = document.getElementById('toc-items');
 const splitter = document.getElementById('splitter');
 const btnUpdateBaseline = document.getElementById('btn-update-baseline');
 const btnMenu = document.getElementById('btn-menu');
@@ -159,6 +167,10 @@ btnToggleFileList.addEventListener('click', () => {
     toggleFileListViaButton();
 });
 
+btnToggleTOC.addEventListener('click', () => {
+    toggleTOCViaButton();
+});
+
 // Menu toggle
 btnMenu.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -228,11 +240,15 @@ btnSearchPrev.addEventListener('click', searchPrev);
 btnSearchNext.addEventListener('click', searchNext);
 btnSearchClose.addEventListener('click', closeSearch);
 
-// Clicking into the render area returns keyboard focus there from the file list.
+// Clicking into the render area returns keyboard focus there from the file list / TOC.
 contentArea.addEventListener('mousedown', () => {
     if (listFocused) {
         listFocused = false;
         renderFileList();
+    }
+    if (tocFocused) {
+        tocFocused = false;
+        renderTOCPanel();
     }
 });
 
@@ -291,9 +307,13 @@ document.addEventListener('keydown', async (e) => {
     const activeTag = document.activeElement?.tagName;
     const typingInInput = activeTag === 'INPUT' || activeTag === 'TEXTAREA';
 
-    // While the file list has keyboard focus, it owns all non-Ctrl shortcuts.
+    // While the file list or TOC has keyboard focus, it owns all non-Ctrl shortcuts.
     if (listFocused && !typingInInput && !e.ctrlKey && !e.altKey && !e.metaKey) {
         await handleFileListKeydown(e);
+        return;
+    }
+    if (tocFocused && !typingInInput && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        handleTocKeydown(e);
         return;
     }
 
@@ -301,6 +321,7 @@ document.addEventListener('keydown', async (e) => {
         if (!appMenu.classList.contains('hidden')) { appMenu.classList.add('hidden'); return; }
         if (!searchPanel.classList.contains('hidden')) { closeSearch(); return; }
         if (!fileListPanel.classList.contains('hidden')) { closeFileListPanel(); return; }
+        if (!tocPanel.classList.contains('hidden')) { closeTOCPanel(); return; }
     }
 
     // Vim-like scroll and / search opener: skip when a text input is focused
@@ -343,6 +364,10 @@ document.addEventListener('keydown', async (e) => {
         case 'f':
             e.preventDefault();
             openFileListFocused();
+            break;
+        case 't':
+            e.preventDefault();
+            openTOCFocused();
             break;
         case 'q':
             e.preventDefault();
@@ -713,6 +738,9 @@ async function postProcessHTML() {
 
     // 3. Syntax highlighting with Prism
     Prism.highlightAllUnder(markdownBody);
+
+    // 4. Rebuild the TOC from the headings now in the DOM
+    buildTOC();
 }
 
 function addCopyButtons() {
@@ -1002,6 +1030,7 @@ function getFlattenedItems() {
 
 function renderFileList() {
     fileListItems.innerHTML = getGroupedFiles().map(renderGroupHTML).join('');
+    fileListPanel.classList.toggle('area-focused', listFocused);
 }
 
 function renderGroupHTML(group) {
@@ -1118,6 +1147,7 @@ function closeFileListPanel() {
 }
 
 function openFileListFocused() {
+    if (!tocPanel.classList.contains('hidden')) closeTOCPanel();
     fileListPanel.classList.remove('hidden');
     splitter.classList.remove('hidden');
     listFocused = true;
@@ -1130,6 +1160,7 @@ function openFileListFocused() {
 function toggleFileListViaButton() {
     const isHidden = fileListPanel.classList.contains('hidden');
     if (isHidden) {
+        if (!tocPanel.classList.contains('hidden')) closeTOCPanel();
         fileListPanel.classList.remove('hidden');
         splitter.classList.remove('hidden');
         renderFileList();
@@ -1140,6 +1171,163 @@ function toggleFileListViaButton() {
             listFocused = false;
             contentArea.focus?.({ preventScroll: true });
         }
+    }
+}
+
+// --- TOC Panel ---
+
+// Rebuilds tocItems from the headings currently rendered in markdownBody.
+// Called after every render (postProcessHTML) so switching files, reloading,
+// or toggling diff mode keeps the TOC in sync with what's on screen.
+function buildTOC() {
+    const headings = markdownBody.querySelectorAll('h1, h2, h3, h4, h5, h6');
+    tocItems = [...headings].map(el => ({
+        level: Number(el.tagName.slice(1)),
+        text: el.textContent,
+        el,
+    }));
+    if (focusedTocIndex >= tocItems.length) focusedTocIndex = tocItems.length - 1;
+    if (!tocPanel.classList.contains('hidden')) renderTOCPanel();
+}
+
+function renderTOCPanel() {
+    tocItemsEl.innerHTML = tocItems.map((item, i) =>
+        `<div class="toc-item${i === focusedTocIndex ? ' focused' : ''}" style="--toc-level: ${item.level}" data-index="${i}">${escapeHTML(item.text)}</div>`
+    ).join('');
+    tocPanel.classList.toggle('area-focused', tocFocused);
+}
+
+// Finds the heading whose position is at or just above the current scroll
+// position, so opening the TOC starts focused on what's currently on screen.
+function nearestTocIndexToScroll() {
+    if (tocItems.length === 0) return -1;
+    const contentTop = contentArea.getBoundingClientRect().top;
+    let idx = 0;
+    for (let i = 0; i < tocItems.length; i++) {
+        if (tocItems[i].el.getBoundingClientRect().top - contentTop <= 1) idx = i;
+        else break;
+    }
+    return idx;
+}
+
+function scrollFocusedTocIntoView() {
+    const el = tocItemsEl.querySelector(`.toc-item[data-index="${focusedTocIndex}"]`);
+    el?.scrollIntoView({ block: 'nearest' });
+}
+
+// While the TOC panel is visible but keyboard focus stays in the render area,
+// keep the TOC selection tracking whatever heading is currently on screen.
+function syncFocusedTocToScroll() {
+    if (tocPanel.classList.contains('hidden') || tocFocused) return;
+    const idx = nearestTocIndexToScroll();
+    if (idx < 0 || idx === focusedTocIndex) return;
+    focusedTocIndex = idx;
+    renderTOCPanel();
+    scrollFocusedTocIntoView();
+}
+
+let tocScrollSyncScheduled = false;
+contentArea.addEventListener('scroll', () => {
+    if (tocScrollSyncScheduled) return;
+    tocScrollSyncScheduled = true;
+    requestAnimationFrame(() => {
+        tocScrollSyncScheduled = false;
+        syncFocusedTocToScroll();
+    });
+});
+
+function moveTocFocus(delta) {
+    if (tocItems.length === 0) return;
+    focusedTocIndex = Math.max(0, Math.min(tocItems.length - 1, focusedTocIndex + delta));
+    renderTOCPanel();
+    scrollFocusedTocIntoView();
+}
+
+// Scrolls the render area to the focused heading. Keeps the TOC panel open;
+// callers decide whether to also move focus back to the render area.
+function jumpToFocusedTocItem() {
+    const item = tocItems[focusedTocIndex];
+    if (!item) return;
+    item.el.scrollIntoView({ block: 'start', behavior: 'instant' });
+}
+
+function blurTocToRender() {
+    tocFocused = false;
+    renderTOCPanel();
+    contentArea.focus?.({ preventScroll: true });
+}
+
+function closeTOCPanel() {
+    tocPanel.classList.add('hidden');
+    splitter.classList.add('hidden');
+    tocFocused = false;
+    contentArea.focus?.({ preventScroll: true });
+}
+
+function openTOCFocused() {
+    if (!fileListPanel.classList.contains('hidden')) closeFileListPanel();
+    tocPanel.classList.remove('hidden');
+    splitter.classList.remove('hidden');
+    tocFocused = true;
+    focusedTocIndex = nearestTocIndexToScroll();
+    renderTOCPanel();
+    tocPanel.focus?.();
+    scrollFocusedTocIntoView();
+}
+
+function toggleTOCViaButton() {
+    const isHidden = tocPanel.classList.contains('hidden');
+    if (isHidden) {
+        if (!fileListPanel.classList.contains('hidden')) closeFileListPanel();
+        tocPanel.classList.remove('hidden');
+        splitter.classList.remove('hidden');
+        renderTOCPanel();
+    } else {
+        tocPanel.classList.add('hidden');
+        splitter.classList.add('hidden');
+        if (tocFocused) {
+            tocFocused = false;
+            contentArea.focus?.({ preventScroll: true });
+        }
+    }
+}
+
+tocItemsEl.addEventListener('click', (e) => {
+    const row = e.target.closest('.toc-item');
+    if (!row) return;
+    tocFocused = true;
+    focusedTocIndex = Number(row.dataset.index);
+    jumpToFocusedTocItem();
+    blurTocToRender();
+});
+
+function handleTocKeydown(e) {
+    switch (e.key) {
+        case 'ArrowDown':
+        case 'j':
+            e.preventDefault();
+            moveTocFocus(1);
+            break;
+        case 'ArrowUp':
+        case 'k':
+            e.preventDefault();
+            moveTocFocus(-1);
+            break;
+        case 'Enter':
+        case ' ':
+        case 't':
+            e.preventDefault();
+            jumpToFocusedTocItem();
+            blurTocToRender();
+            break;
+        case 'f':
+            e.preventDefault();
+            openFileListFocused();
+            break;
+        case 'Escape':
+            e.preventDefault();
+            closeTOCPanel();
+            break;
     }
 }
 
@@ -1172,6 +1360,10 @@ async function handleFileListKeydown(e) {
             e.preventDefault();
             await handleListQuit();
             break;
+        case 't':
+            e.preventDefault();
+            openTOCFocused();
+            break;
     }
 }
 
@@ -1185,12 +1377,20 @@ splitter.addEventListener('mousedown', (e) => {
     splitter.classList.add('dragging');
 });
 
+// The file list panel and TOC panel share one width setting since only one of
+// them is ever visible at a time (see AGENTS.md — they occupy the same slot).
+function applySidePanelWidth(ratio) {
+    const width = (ratio * 100) + '%';
+    fileListPanel.style.width = width;
+    tocPanel.style.width = width;
+}
+
 window.addEventListener('mousemove', (e) => {
     if (!isDraggingSplitter) return;
     const bodyRect = viewerBody.getBoundingClientRect();
     let ratio = (e.clientX - bodyRect.left) / bodyRect.width;
     ratio = Math.max(0.15, Math.min(0.6, ratio));
-    fileListPanel.style.width = (ratio * 100) + '%';
+    applySidePanelWidth(ratio);
     pendingFileListRatio = ratio;
 });
 
@@ -1224,7 +1424,7 @@ window.addEventListener('mouseup', async () => {
     applyTheme(currentConfig.themeMode);
 
     const initialRatio = currentConfig.fileListRatio > 0 ? currentConfig.fileListRatio : 0.3;
-    fileListPanel.style.width = (Math.max(0.15, Math.min(0.6, initialRatio)) * 100) + '%';
+    applySidePanelWidth(Math.max(0.15, Math.min(0.6, initialRatio)));
 
     if (initialFile) {
         await openFile(initialFile);

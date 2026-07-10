@@ -119,6 +119,11 @@
     overflow: hidden;
 }
 
+.file-list-panel.area-focused {
+    outline: 2px solid var(--focus-outline);
+    outline-offset: -2px;
+}
+
 .file-list-items {
     flex: 1;
     overflow-y: auto;
@@ -141,8 +146,8 @@
 
 .file-group-header.focused {
     background-color: var(--bg-surface-hover);
-    outline: 1px solid var(--accent);
-    outline-offset: -1px;
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
 }
 
 .fg-collapse-mark {
@@ -202,8 +207,8 @@
 }
 
 .file-row.focused {
-    outline: 1px solid var(--accent);
-    outline-offset: -1px;
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
 }
 
 .fr-name {
@@ -238,6 +243,37 @@
     border: 1px solid var(--border-color);
     border-radius: 3px;
     color: var(--text-secondary);
+}
+
+/* --- TOC Panel --- */
+.toc-items {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.toc-item {
+    display: block;
+    padding: 4px 10px;
+    padding-left: calc(10px + (var(--toc-level, 1) - 1) * 14px);
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background-color 0.1s ease;
+}
+
+.toc-item:hover {
+    background-color: var(--bg-surface-hover);
+}
+
+.toc-item.focused {
+    background-color: var(--bg-surface-hover);
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
 }
 
 /* --- Splitter --- */

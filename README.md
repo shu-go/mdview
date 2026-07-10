@@ -5,6 +5,7 @@ A lightweight standalone Markdown viewer for Windows, macOS, and Linux, built wi
 ## Features
 
 - **Multi-file support** — Open multiple files in one window and switch between them via a collapsible file list panel, grouped by folder
+- **Table of contents** — Jump between headings via a collapsible TOC panel that shares the same slot as the file list panel; the selected heading tracks the render area's scroll position
 - **Drag & drop** — Drop one or more Markdown files onto the window to open them; all are added to the file list, and the first one dropped is displayed, from either the start screen or the viewer
 - **CLI argument** — Open a file directly: `mdview.exe path/to/file.md`
 - **File watching** — Automatically reloads when the file is saved; files open in the background show an unread (●) indicator instead
@@ -88,6 +89,7 @@ The toolbar is always visible and spans the full width of the window, above both
 | Control | Description |
 |---|---|
 | **📁 (folder icon)** | Toggles the file list panel; opening this way does not move keyboard focus |
+| **TOC** | Toggles the table of contents panel; opening this way does not move keyboard focus |
 | **Normal** | Renders the current file as-is |
 | **Initial Diff** | Highlights changes since the file was first opened |
 | **Baseline Diff** | Highlights changes since the last **Update Baseline** |
@@ -127,6 +129,16 @@ Toggle the panel via the folder icon on the toolbar or the `f` shortcut. Open fi
 
 See [Keyboard shortcuts](#keyboard-shortcuts) below for the full set of file-list navigation keys.
 
+### Table of contents panel
+
+Toggle the panel via the **TOC** button on the toolbar or the `t` shortcut. It occupies the same slot as the file list panel, so opening one closes the other; the resize ratio is shared between them.
+
+- Lists every `h1`–`h6` heading found in the current file, indented by level
+- Click a heading (or select it and press `Enter`/`Space`/`t`) to scroll the render area to it
+- While the panel is visible and keyboard focus is in the render area, the selected heading automatically tracks the current scroll position
+
+See [Keyboard shortcuts](#keyboard-shortcuts) below for the full set of TOC navigation keys.
+
 ### Keyboard shortcuts
 
 Global (work regardless of which area has focus):
@@ -142,12 +154,13 @@ Global (work regardless of which area has focus):
 | `Ctrl+-` | Zoom out 10% |
 | `Ctrl+=` | Reset zoom to 100% |
 
-Render area (active when the file list panel doesn't have keyboard focus):
+Render area (active when neither the file list panel nor the TOC panel has keyboard focus):
 
 | Shortcut | Action |
 |---|---|
 | `f` | Show the file list panel and move focus to the current file's position |
-| `Escape` | Close the menu if open, else close the search panel if open, else hide the file list panel if visible |
+| `t` | Show the TOC panel and move focus to the heading nearest the current scroll position |
+| `Escape` | Close the menu if open, else close the search panel if open, else hide the file list panel or TOC panel if visible |
 | `q` or `Ctrl+W` | Close the current file and switch to the next (or previous) one; quits the app if it's the last file open |
 | `j` | Scroll down one line |
 | `k` | Scroll up one line |
@@ -163,6 +176,16 @@ File list panel (active once focused via `f` or a click):
 | `Escape` | Hide the panel and move focus to the render area |
 | `↑`/`↓` or `j`/`k` | Move focus between files and group headers |
 | `q` | Close the focused file; quits the app if it's the last file open |
+| `t` | Close the file list panel and show the TOC panel instead |
+
+TOC panel (active once focused via `t` or a click):
+
+| Shortcut | Action |
+|---|---|
+| `Enter` / `Space` / `t` | Scroll the render area to the selected heading and move focus there; the panel stays open |
+| `Escape` | Hide the panel and move focus to the render area |
+| `↑`/`↓` or `j`/`k` | Move focus between headings |
+| `f` | Close the TOC panel and show the file list panel instead |
 
 ### Settings file
 
