@@ -98,6 +98,7 @@ const linkPreview = document.getElementById('link-preview');
 const edgeFlashTop = document.getElementById('edge-flash-top');
 const edgeFlashBottom = document.getElementById('edge-flash-bottom');
 const contentArea = viewerContainer.querySelector('.content-area');
+const toolbar = viewerContainer.querySelector('.toolbar');
 const segButtons = document.querySelectorAll('.toolbar-center .seg-btn');
 const searchInput = searchPanel.querySelector('.search-input');
 const searchCountEl = searchPanel.querySelector('.search-count');
@@ -152,6 +153,7 @@ segButtons.forEach(btn => {
         if (entry.diffMode !== 'off') entry.lastDiffMode = entry.diffMode;
         syncDiffButtonsForActive();
         renderContent();
+        flashToolbar();
     });
 });
 
@@ -172,6 +174,11 @@ btnToggleTOC.addEventListener('click', () => {
 });
 
 // Menu toggle
+function closeAppMenu() {
+    appMenu.classList.add('hidden');
+    scheduleHideToolbar();
+}
+
 btnMenu.addEventListener('click', (e) => {
     e.stopPropagation();
     const rect = btnMenu.getBoundingClientRect();
@@ -179,14 +186,15 @@ btnMenu.addEventListener('click', (e) => {
         appMenu.style.top = (rect.bottom + 4) + 'px';
         appMenu.style.right = (window.innerWidth - rect.right) + 'px';
         appMenu.classList.remove('hidden');
+        showToolbar();
     } else {
-        appMenu.classList.add('hidden');
+        closeAppMenu();
     }
 });
 
 appMenu.addEventListener('click', (e) => e.stopPropagation());
 
-document.addEventListener('click', () => appMenu.classList.add('hidden'));
+document.addEventListener('click', () => closeAppMenu());
 
 // Menu items
 document.querySelectorAll('.theme-switch [data-theme]').forEach(item => {
@@ -194,7 +202,7 @@ document.querySelectorAll('.theme-switch [data-theme]').forEach(item => {
         const mode = item.dataset.theme;
         applyTheme(mode);
         currentConfig.themeMode = mode;
-        appMenu.classList.add('hidden');
+        closeAppMenu();
         try {
             await SaveConfig(currentConfig);
         } catch (err) {
@@ -204,7 +212,7 @@ document.querySelectorAll('.theme-switch [data-theme]').forEach(item => {
 });
 
 menuEditor.addEventListener('click', async () => {
-    appMenu.classList.add('hidden');
+    closeAppMenu();
     try {
         const editorPath = await ChooseEditor();
         if (editorPath) {
@@ -217,7 +225,7 @@ menuEditor.addEventListener('click', async () => {
 });
 
 menuFont.addEventListener('click', () => {
-    appMenu.classList.add('hidden');
+    closeAppMenu();
     openFontModal();
 });
 
@@ -318,7 +326,7 @@ document.addEventListener('keydown', async (e) => {
     }
 
     if (e.key === 'Escape') {
-        if (!appMenu.classList.contains('hidden')) { appMenu.classList.add('hidden'); return; }
+        if (!appMenu.classList.contains('hidden')) { closeAppMenu(); return; }
         if (!searchPanel.classList.contains('hidden')) { closeSearch(); return; }
         if (!fileListPanel.classList.contains('hidden')) { closeFileListPanel(); return; }
         if (!tocPanel.classList.contains('hidden')) { closeTOCPanel(); return; }
@@ -364,10 +372,12 @@ document.addEventListener('keydown', async (e) => {
         case 'f':
             e.preventDefault();
             openFileListFocused();
+            hideToolbar();
             break;
         case 't':
             e.preventDefault();
             openTOCFocused();
+            hideToolbar();
             break;
         case 'q':
             e.preventDefault();
@@ -438,6 +448,45 @@ renderPane.addEventListener('mouseleave', () => {
 });
 zoomBar.addEventListener('mouseenter', showZoomBar);
 zoomBar.addEventListener('mouseleave', scheduleHideZoomBar);
+
+// Toolbar visibility: hidden by default, revealed while the cursor is near the
+// top edge or briefly after a diff-mode change (mirrors the zoom bar). The t/f
+// shortcuts force it hidden instead, since they open a panel of their own.
+let toolbarHideTimer = null;
+
+function showToolbar() {
+    clearTimeout(toolbarHideTimer);
+    toolbar.classList.add('visible');
+}
+
+function scheduleHideToolbar(delay = 400) {
+    clearTimeout(toolbarHideTimer);
+    if (!appMenu.classList.contains('hidden')) return; // stay visible while the menu is open
+    toolbarHideTimer = setTimeout(() => toolbar.classList.remove('visible'), delay);
+}
+
+// Immediately hides the toolbar, overriding hover/menu state. Used when the
+// t/f shortcuts open a panel, since the toolbar shouldn't linger in that case.
+function hideToolbar() {
+    clearTimeout(toolbarHideTimer);
+    toolbar.classList.remove('visible');
+}
+
+// Briefly reveal the toolbar in response to a diff-mode change.
+function flashToolbar() {
+    showToolbar();
+    scheduleHideToolbar(1500);
+}
+
+viewerContainer.addEventListener('mousemove', (e) => {
+    if (e.clientY < 40) showToolbar();
+    else if (!toolbar.matches(':hover')) scheduleHideToolbar();
+});
+viewerContainer.addEventListener('mouseleave', () => {
+    scheduleHideToolbar();
+});
+toolbar.addEventListener('mouseenter', showToolbar);
+toolbar.addEventListener('mouseleave', scheduleHideToolbar);
 
 // Show link destination in status bar on hover (like browser status bar)
 markdownBody.addEventListener('mouseover', (e) => {
@@ -843,6 +892,7 @@ function cycleDiffMode() {
     entry.diffMode = next;
     syncDiffButtonsForActive();
     renderContent();
+    flashToolbar();
 }
 
 function applyPrismTheme(effective) {
@@ -1164,6 +1214,7 @@ function toggleFileListViaButton() {
         fileListPanel.classList.remove('hidden');
         splitter.classList.remove('hidden');
         renderFileList();
+        hideToolbar();
     } else {
         fileListPanel.classList.add('hidden');
         splitter.classList.add('hidden');
@@ -1282,6 +1333,7 @@ function toggleTOCViaButton() {
         tocPanel.classList.remove('hidden');
         splitter.classList.remove('hidden');
         renderTOCPanel();
+        hideToolbar();
     } else {
         tocPanel.classList.add('hidden');
         splitter.classList.add('hidden');
@@ -1323,6 +1375,7 @@ function handleTocKeydown(e) {
         case 'f':
             e.preventDefault();
             openFileListFocused();
+            hideToolbar();
             break;
         case 'Escape':
             e.preventDefault();
@@ -1363,6 +1416,7 @@ async function handleFileListKeydown(e) {
         case 't':
             e.preventDefault();
             openTOCFocused();
+            hideToolbar();
             break;
     }
 }
