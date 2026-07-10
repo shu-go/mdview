@@ -42,6 +42,7 @@ Rendered via [goldmark](https://github.com/yuin/goldmark) with the following ext
 - GitHub Flavored Markdown (GFM): tables, strikethrough, task lists, autolinks
 - Definition lists
 - Callouts / alerts (`NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`)
+- GitHub-style emoji shortcodes (e.g. `:smile:` → 😄), via [goldmark-emoji](https://github.com/yuin/goldmark-emoji)
 - Raw HTML passthrough (`html.WithUnsafe`)
 
 ## Syntax Highlighting

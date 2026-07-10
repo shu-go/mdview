@@ -9,6 +9,7 @@ require (
 	github.com/shu-go/findcfg v0.2.0
 	github.com/wailsapp/wails/v2 v2.13.0
 	github.com/yuin/goldmark v1.8.2
+	github.com/yuin/goldmark-emoji v1.0.6
 )
 
 require (

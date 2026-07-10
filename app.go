@@ -21,6 +21,7 @@ import (
 	"github.com/shu-go/findcfg"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/yuin/goldmark"
+	emoji "github.com/yuin/goldmark-emoji"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer/html"
 )
@@ -30,6 +31,7 @@ var mdParser = goldmark.New(
 		extension.GFM,
 		extension.DefinitionList,
 		Callout,
+		emoji.Emoji,
 	),
 	goldmark.WithRendererOptions(
 		html.WithUnsafe(),
