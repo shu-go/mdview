@@ -97,6 +97,7 @@ const markdownBody = document.getElementById('markdown-body');
 const linkPreview = document.getElementById('link-preview');
 const edgeFlashTop = document.getElementById('edge-flash-top');
 const edgeFlashBottom = document.getElementById('edge-flash-bottom');
+const diffScrollMarks = document.getElementById('diff-scroll-marks');
 const contentArea = viewerContainer.querySelector('.content-area');
 const toolbar = viewerContainer.querySelector('.toolbar');
 const segButtons = document.querySelectorAll('.toolbar-center .seg-btn');
@@ -800,6 +801,29 @@ async function postProcessHTML() {
 
     // 4. Rebuild the TOC from the headings now in the DOM
     buildTOC();
+
+    // 5. Mark diff insertions/deletions on the scrollbar track
+    renderDiffScrollMarks();
+}
+
+// Places a colored tick on the scrollbar track for every ins/del element
+// currently in the DOM (none, if diff mode is off). Positions are expressed
+// as a percentage of the content's total scroll height, so they stay correct
+// across zoom changes without needing to be recomputed.
+function renderDiffScrollMarks() {
+    const marks = markdownBody.querySelectorAll('ins, del');
+    const totalHeight = contentArea.scrollHeight;
+    if (marks.length === 0 || totalHeight === 0) {
+        diffScrollMarks.innerHTML = '';
+        return;
+    }
+    const contentTop = contentArea.getBoundingClientRect().top;
+    diffScrollMarks.innerHTML = [...marks].map(el => {
+        const offset = el.getBoundingClientRect().top - contentTop + contentArea.scrollTop;
+        const relTop = Math.max(0, Math.min(100, (offset / totalHeight) * 100));
+        const kind = el.tagName === 'INS' ? 'ins' : 'del';
+        return `<div class="diff-scroll-mark ${kind}" style="top: ${relTop}%"></div>`;
+    }).join('');
 }
 
 function addCopyButtons() {

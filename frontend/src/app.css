@@ -353,6 +353,35 @@
     to { opacity: 0; }
 }
 
+/* --- Diff scrollbar marks: overlays the native scrollbar track with ticks
+   showing where diff insertions/deletions are, in the same colors used for
+   inline diff highlighting --- */
+.diff-scroll-marks {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 100%;
+    pointer-events: none;
+    z-index: 50;
+}
+
+.diff-scroll-mark {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 1px;
+}
+
+.diff-scroll-mark.ins {
+    background-color: #34d399;
+}
+
+.diff-scroll-mark.del {
+    background-color: #f87171;
+}
+
 .toolbar-center {
     display: flex;
     align-items: center;
