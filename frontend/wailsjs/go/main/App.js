@@ -6,6 +6,10 @@ export function ChooseEditor() {
   return window['go']['main']['App']['ChooseEditor']();
 }
 
+export function ExpandDroppedPaths(arg1) {
+  return window['go']['main']['App']['ExpandDroppedPaths'](arg1);
+}
+
 export function GetInitialFile() {
   return window['go']['main']['App']['GetInitialFile']();
 }

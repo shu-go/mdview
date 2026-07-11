@@ -6,7 +6,7 @@ A lightweight standalone Markdown viewer for Windows, macOS, and Linux, built wi
 
 - **Multi-file support** — Open multiple files in one window and switch between them via a collapsible file list panel, grouped by folder
 - **Table of contents** — Jump between headings via a collapsible TOC panel that shares the same slot as the file list panel; the selected heading tracks the render area's scroll position
-- **Drag & drop** — Drop one or more Markdown files onto the window to open them; all are added to the file list, and the first one dropped is displayed, from either the start screen or the viewer
+- **Drag & drop** — Drop one or more Markdown files, or folders, onto the window to open them; folders are expanded recursively into their Markdown files. All are added to the file list, and the first one found is displayed, from either the start screen or the viewer
 - **CLI argument** — Open a file directly: `mdview.exe path/to/file.md`
 - **File watching** — Automatically reloads when the file is saved; files open in the background show an unread (●) indicator instead
 - **Inline diff** — View changes against two baselines:
@@ -79,7 +79,7 @@ mdview.exe [file]
 | Action | Result |
 |---|---|
 | Launch with no argument | Shows the drop screen |
-| Drag & drop one or more `.md` files | Adds all of them to the file list; the first one dropped is shown in the viewer |
+| Drag & drop one or more `.md` files, or folders | Adds all of them to the file list (folders are expanded recursively); the first one found is shown in the viewer |
 | Click the drop area | Opens a file picker dialog |
 | `mdview.exe path/to/file.md` | Opens the file directly on launch |
 

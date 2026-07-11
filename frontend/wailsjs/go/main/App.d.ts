@@ -4,6 +4,8 @@ import {main} from '../models';
 
 export function ChooseEditor():Promise<string>;
 
+export function ExpandDroppedPaths(arg1:Array<string>):Promise<Array<string>>;
+
 export function GetInitialFile():Promise<string>;
 
 export function LoadConfig():Promise<main.Config>;

@@ -751,3 +751,34 @@ func (a *App) SelectFile() (string, error) {
 	}
 	return path, nil
 }
+
+// ExpandDroppedPaths takes the paths from a drag-and-drop event and expands
+// any directories into the files they contain (recursively), returning a
+// flat list of file paths; non-directory paths are passed through unchanged.
+// Extension filtering (.md, .markdown, ...) stays the frontend's concern.
+func (a *App) ExpandDroppedPaths(paths []string) ([]string, error) {
+	var result []string
+	for _, p := range paths {
+		info, err := os.Stat(p)
+		if err != nil {
+			continue
+		}
+		if !info.IsDir() {
+			result = append(result, p)
+			continue
+		}
+		err = filepath.Walk(p, func(path string, fi os.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+			if !fi.IsDir() {
+				result = append(result, path)
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+	return result, nil
+}

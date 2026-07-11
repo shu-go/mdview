@@ -1,7 +1,7 @@
 import './style.css';
 import './app.css';
 
-import { LoadFile, ParseMarkdownWithDiff, WatchFile, UnwatchFile, SelectFile, GetInitialFile, OpenInNewInstance, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig } from '../wailsjs/go/main/App';
+import { LoadFile, ParseMarkdownWithDiff, WatchFile, UnwatchFile, SelectFile, GetInitialFile, OpenInNewInstance, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig, ExpandDroppedPaths } from '../wailsjs/go/main/App';
 import { EventsOn, OnFileDrop, Quit, WindowUnminimise } from '../wailsjs/runtime/runtime';
 import prismDarkTheme from 'prismjs/themes/prism-tomorrow.css?inline';
 import prismLightTheme from 'prismjs/themes/prism.css?inline';
@@ -116,11 +116,21 @@ const btnZoomReset = document.getElementById('btn-zoom-reset');
 let searchMatches = [];
 let currentMatchIdx = -1;
 
-// Wails native drag and drop handler
-OnFileDrop((x, y, paths) => {
+// Wails native drag and drop handler. Dropped directories are expanded
+// (recursively) into the files they contain before extension filtering, so
+// dropping a folder opens every Markdown file inside it at once.
+OnFileDrop(async (x, y, paths) => {
     if (!paths || paths.length === 0) return;
 
-    const validPaths = paths.filter(p => {
+    let expanded;
+    try {
+        expanded = await ExpandDroppedPaths(paths);
+    } catch (err) {
+        console.error('Failed to expand dropped paths:', err);
+        expanded = paths;
+    }
+
+    const validPaths = expanded.filter(p => {
         const lower = p.toLowerCase();
         return lower.endsWith('.md') || lower.endsWith('.markdown') || lower.endsWith('.txt');
     });
@@ -128,7 +138,7 @@ OnFileDrop((x, y, paths) => {
     if (validPaths.length > 0) {
         openFiles(validPaths);
     } else {
-        alert('Please drop a Markdown file (.md, .markdown, .txt).');
+        alert('Please drop a Markdown file (.md, .markdown, .txt) or a folder containing one.');
     }
 }, true);
 
