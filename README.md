@@ -25,6 +25,7 @@ A lightweight standalone Markdown viewer for Windows, macOS, and Linux, built wi
   - `.md` / `.markdown` links → opens a new instance of mdview
   - `http://`, `https://`, `mailto:` links → opens in the system default browser
   - Other local file links → opens in the system default browser
+  - `#heading` links → scrolls to the matching heading in the current file (headings get GitHub-style slug IDs, including non-ASCII text such as Japanese)
   - Hovering a link shows the resolved destination in a status bar at the bottom
 - **Persistent toolbar** — Spans both the file list panel and the render area at the top of the window
 - **Font selection** — Set the rendering font via an in-app dialog using any CSS `font` shorthand value (e.g. `bold 1.1em "Yu Gothic", sans-serif`); a live preview updates as you type; the value is saved and restored on next launch
@@ -137,6 +138,7 @@ Toggle the panel via the **TOC** button on the toolbar or the `t` shortcut. It o
 - Lists every `h1`–`h6` heading found in the current file, indented by level
 - Click a heading (or select it and press `Enter`/`Space`/`t`) to scroll the render area to it
 - While the panel is visible and keyboard focus is in the render area, the selected heading automatically tracks the current scroll position
+- Jumps (from the TOC or an in-document link) are tracked per file, so `h`/`l` in the render area — or the mouse's back/forward side buttons — step back and forward through them
 
 See [Keyboard shortcuts](#keyboard-shortcuts) below for the full set of TOC navigation keys.
 
@@ -168,6 +170,8 @@ Render area (active when neither the file list panel nor the TOC panel has keybo
 | `b` or `Shift+Space` | Scroll up one page |
 | `g` | Scroll to top |
 | `Shift+G` | Scroll to bottom |
+| `h` | Jump back to the position before the last TOC selection or in-document link click |
+| `l` | Jump forward again after `h` |
 
 File list panel (active once focused via `f` or a click):
 

@@ -380,6 +380,14 @@ document.addEventListener('keydown', async (e) => {
             contentArea.scrollTo({ top: contentArea.scrollHeight, behavior: 'instant' });
             flashEdge(edgeFlashBottom);
             break;
+        case 'h':
+            e.preventDefault();
+            navigateBack();
+            break;
+        case 'l':
+            e.preventDefault();
+            navigateForward();
+            break;
         case 'f':
             e.preventDefault();
             openFileListFocused();
@@ -442,11 +450,62 @@ window.addEventListener('wheel', (e) => {
     changeZoom(e.deltaY < 0 ? 10 : -10);
 }, { passive: false });
 
+// Mouse "back"/"forward" side buttons (button 3/4) drive the same jump
+// history as the h/l shortcuts, instead of any native browser navigation.
+window.addEventListener('mouseup', (e) => {
+    if (e.button === 3) {
+        e.preventDefault();
+        navigateBack();
+    } else if (e.button === 4) {
+        e.preventDefault();
+        navigateForward();
+    }
+});
+
 // Briefly flash a top/bottom edge overlay to indicate a g/G jump hit the start or end.
 function flashEdge(el) {
     el.classList.remove('flash');
     void el.offsetWidth; // force reflow so the animation restarts on rapid repeats
     el.classList.add('flash');
+}
+
+// --- Jump navigation (TOC selections and in-document links) ---
+// Each file keeps its own back/forward stack (entry.navHistory / navIndex),
+// mirroring browser session history: jumping truncates any forward entries
+// past the current position, then appends the new one.
+
+// Returns the scrollTop that would bring el to the top of contentArea.
+function scrollTopForElement(el) {
+    const contentTop = contentArea.getBoundingClientRect().top;
+    return el.getBoundingClientRect().top - contentTop + contentArea.scrollTop;
+}
+
+function navigateTo(targetScrollTop, behavior = 'smooth') {
+    const entry = filesByPath.get(activePath);
+    if (entry) {
+        if (entry.navIndex === -1) {
+            entry.navHistory = [contentArea.scrollTop];
+            entry.navIndex = 0;
+        }
+        entry.navHistory = entry.navHistory.slice(0, entry.navIndex + 1);
+        entry.navHistory.push(targetScrollTop);
+        entry.navIndex = entry.navHistory.length - 1;
+    }
+    contentArea.scrollTo({ top: targetScrollTop, behavior });
+}
+
+function navigateBack() {
+    const entry = filesByPath.get(activePath);
+    if (!entry || entry.navIndex <= 0) return;
+    entry.navIndex--;
+    contentArea.scrollTo({ top: entry.navHistory[entry.navIndex], behavior: 'instant' });
+}
+
+function navigateForward() {
+    const entry = filesByPath.get(activePath);
+    if (!entry || entry.navIndex === -1 || entry.navIndex >= entry.navHistory.length - 1) return;
+    entry.navIndex++;
+    contentArea.scrollTo({ top: entry.navHistory[entry.navIndex], behavior: 'instant' });
 }
 
 renderPane.addEventListener('mousemove', (e) => {
@@ -559,7 +618,7 @@ markdownBody.addEventListener('click', async (e) => {
             // Malformed escape sequence — fall back to the raw fragment.
         }
         const target = markdownBody.querySelector(`#${CSS.escape(fragment)}`);
-        target?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        if (target) navigateTo(scrollTopForElement(target), 'instant');
         return;
     }
 
@@ -644,6 +703,8 @@ async function ensureFileLoaded(path) {
             lastDiffMode: 'baseline',
             unseen: false,
             scrollTop: 0,
+            navHistory: [],
+            navIndex: -1,
         };
         filesByPath.set(path, entry);
         await WatchFile(path);
@@ -1362,7 +1423,7 @@ function moveTocFocus(delta) {
 function jumpToFocusedTocItem() {
     const item = tocItems[focusedTocIndex];
     if (!item) return;
-    item.el.scrollIntoView({ block: 'start', behavior: 'instant' });
+    navigateTo(scrollTopForElement(item.el), 'instant');
 }
 
 function blurTocToRender() {
