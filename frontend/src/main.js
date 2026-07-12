@@ -1,7 +1,7 @@
 import './style.css';
 import './app.css';
 
-import { LoadFile, ParseMarkdownWithDiff, WatchFile, UnwatchFile, SelectFile, GetInitialFile, OpenInNewInstance, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig, ExpandDroppedPaths } from '../wailsjs/go/main/App';
+import { LoadFile, ParseMarkdownWithDiff, WatchFile, UnwatchFile, SelectFile, GetInitialFile, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig, ExpandDroppedPaths } from '../wailsjs/go/main/App';
 import { EventsOn, OnFileDrop, Quit, WindowUnminimise } from '../wailsjs/runtime/runtime';
 import prismDarkTheme from 'prismjs/themes/prism-tomorrow.css?inline';
 import prismLightTheme from 'prismjs/themes/prism.css?inline';
@@ -631,7 +631,7 @@ markdownBody.addEventListener('click', async (e) => {
     const resolved = resolveFilePath(activePath, href);
     const lower = resolved.toLowerCase();
     if (lower.endsWith('.md') || lower.endsWith('.markdown')) {
-        await OpenInNewInstance(resolved);
+        await openFile(resolved);
     } else {
         await OpenInBrowser('file:///' + resolved.replace(/\\/g, '/'));
     }

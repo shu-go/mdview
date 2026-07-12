@@ -22,7 +22,7 @@ A lightweight standalone Markdown viewer for Windows, macOS, and Linux, built wi
   ```
   Supported types: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`
 - **Link handling**
-  - `.md` / `.markdown` links → opens a new instance of mdview
+  - `.md` / `.markdown` links → opens the file in the same window, adding it to the file list (like a drag & drop)
   - `http://`, `https://`, `mailto:` links → opens in the system default browser
   - Other local file links → opens in the system default browser
   - `#heading` links → scrolls to the matching heading in the current file (headings get GitHub-style slug IDs, including non-ASCII text such as Japanese)
