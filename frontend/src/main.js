@@ -514,7 +514,11 @@ markdownBody.addEventListener('mouseover', (e) => {
 
     let display;
     if (href.startsWith('#')) {
-        display = href;
+        try {
+            display = '#' + decodeURIComponent(href.slice(1));
+        } catch {
+            display = href;
+        }
     } else if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:')) {
         display = href;
     } else {
@@ -541,9 +545,23 @@ markdownBody.addEventListener('click', async (e) => {
     if (!anchor) return;
 
     const href = anchor.getAttribute('href');
-    if (!href || href.startsWith('#')) return; // let in-page anchors work normally
+    if (!href) return;
 
     e.preventDefault();
+
+    if (href.startsWith('#')) {
+        // goldmark percent-encodes non-ASCII link destinations (e.g. Japanese
+        // headings), so the raw href won't match the heading's literal id.
+        let fragment = href.slice(1);
+        try {
+            fragment = decodeURIComponent(fragment);
+        } catch {
+            // Malformed escape sequence — fall back to the raw fragment.
+        }
+        const target = markdownBody.querySelector(`#${CSS.escape(fragment)}`);
+        target?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        return;
+    }
 
     if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:')) {
         await OpenInBrowser(href);

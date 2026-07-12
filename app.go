@@ -32,6 +32,7 @@ var mdParser = goldmark.New(
 		extension.DefinitionList,
 		Callout,
 		emoji.Emoji,
+		HeadingID,
 	),
 	goldmark.WithRendererOptions(
 		html.WithUnsafe(),
