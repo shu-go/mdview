@@ -353,10 +353,10 @@
     to { opacity: 0; }
 }
 
-/* --- Diff scrollbar marks: overlays the native scrollbar track with ticks
-   showing where diff insertions/deletions are, in the same colors used for
-   inline diff highlighting --- */
-.diff-scroll-marks {
+/* --- Scrollbar marks: overlays the native scrollbar track with ticks showing
+   where diff insertions/deletions and search matches are, in the same colors
+   used for their inline highlighting --- */
+.scroll-marks {
     position: absolute;
     top: 0;
     right: 0;
@@ -366,7 +366,7 @@
     z-index: 50;
 }
 
-.diff-scroll-mark {
+.scroll-mark {
     position: absolute;
     left: 0;
     right: 0;
@@ -374,12 +374,20 @@
     border-radius: 1px;
 }
 
-.diff-scroll-mark.ins {
+.scroll-mark.ins {
     background-color: #34d399;
 }
 
-.diff-scroll-mark.del {
+.scroll-mark.del {
     background-color: #f87171;
+}
+
+.scroll-mark.search {
+    background-color: #ffd200;
+}
+
+.scroll-mark.search-current {
+    background-color: #ff8c00;
 }
 
 .toolbar-center {
