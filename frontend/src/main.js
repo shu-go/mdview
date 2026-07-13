@@ -214,6 +214,7 @@ document.querySelectorAll('.theme-switch [data-theme]').forEach(item => {
         applyTheme(mode);
         currentConfig.themeMode = mode;
         closeAppMenu();
+        if (activePath) await renderContent();
         try {
             await SaveConfig(currentConfig);
         } catch (err) {
@@ -846,6 +847,7 @@ function stripEventHandlers(root) {
 }
 
 let mermaidInitialized = false;
+let mermaidThemeIsLight = null;
 
 async function postProcessHTML() {
     // 1. Process Mermaid blocks before prism highlights them
@@ -866,9 +868,11 @@ async function postProcessHTML() {
     if (mermaidContainers.length > 0) {
         try {
             const { default: mermaid } = await import('mermaid');
-            if (!mermaidInitialized) {
-                mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
+            const wantLight = isEffectiveThemeLight();
+            if (!mermaidInitialized || mermaidThemeIsLight !== wantLight) {
+                mermaid.initialize({ startOnLoad: false, theme: wantLight ? 'default' : 'dark', securityLevel: 'loose' });
                 mermaidInitialized = true;
+                mermaidThemeIsLight = wantLight;
             }
             await mermaid.run({ nodes: mermaidContainers });
         } catch (err) {
@@ -1023,6 +1027,16 @@ function applyPrismTheme(effective) {
     prismStyleEl.textContent = effective === 'light' ? prismLightTheme : prismDarkTheme;
 }
 
+// Returns true if the effective (resolved) color scheme is light, accounting
+// for "system" mode following the OS preference. Shared by Prism and Mermaid
+// so both stay in sync with the active theme.
+function isEffectiveThemeLight() {
+    const root = document.documentElement;
+    if (root.classList.contains('theme-light')) return true;
+    if (root.classList.contains('theme-dark')) return false;
+    return window.matchMedia('(prefers-color-scheme: light)').matches;
+}
+
 function applyTheme(mode) {
     const root = document.documentElement;
     root.classList.remove('theme-light', 'theme-dark', 'theme-system');
@@ -1032,15 +1046,14 @@ function applyTheme(mode) {
         item.classList.toggle('active', item.dataset.theme === validMode);
     });
 
-    const isLight = validMode === 'light' ||
-        (validMode === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches);
-    applyPrismTheme(isLight ? 'light' : 'dark');
+    applyPrismTheme(isEffectiveThemeLight() ? 'light' : 'dark');
 }
 
-// Keep Prism in sync when OS preference changes while "System" mode is active
+// Keep Prism/Mermaid in sync when OS preference changes while "System" mode is active
 window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', (e) => {
     if (currentConfig.themeMode === 'system') {
         applyPrismTheme(e.matches ? 'light' : 'dark');
+        if (activePath) renderContent();
     }
 });
 
