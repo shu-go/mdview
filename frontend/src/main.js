@@ -487,6 +487,10 @@ function navigateTo(targetScrollTop, behavior = 'smooth') {
             entry.navHistory = [contentArea.scrollTop];
             entry.navIndex = 0;
         }
+        // Refresh the current checkpoint with wherever the user actually
+        // scrolled to since the last jump, so "back" returns to that spot
+        // rather than the position of the last jump's destination.
+        entry.navHistory[entry.navIndex] = contentArea.scrollTop;
         entry.navHistory = entry.navHistory.slice(0, entry.navIndex + 1);
         entry.navHistory.push(targetScrollTop);
         entry.navIndex = entry.navHistory.length - 1;
