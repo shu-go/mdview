@@ -1230,7 +1230,7 @@ function renderGroupHTML(group) {
     const groupKey = `group:${group.dirPath}`;
     const filesHTML = collapsed ? '' : group.files.map(renderFileRowHTML).join('');
     return `<div class="file-group">
-      <div class="file-group-header${focusedItemKey === groupKey ? ' focused' : ''}" data-group="${escapeHTML(group.dirPath)}">
+      <div class="file-group-header${focusedItemKey === groupKey ? ' focused' : ''}" data-group="${escapeHTML(group.dirPath)}" title="${escapeHTML(group.dirPath)}">
         <span class="fg-collapse-mark">${collapsed ? '▶' : '▼'}</span>
         <span class="fg-label"><span class="fg-label-prefix">${escapeHTML(group.label.prefix)}</span><span class="fg-label-last">${escapeHTML(group.label.last)}</span></span>
         <span class="fg-dot${hasUnseen ? ' visible' : ''}">●</span>
@@ -1242,7 +1242,7 @@ function renderGroupHTML(group) {
 function renderFileRowHTML(f) {
     const fileKey = `file:${f.path}`;
     const active = f.path === activePath;
-    return `<div class="file-row${active ? ' active' : ''}${focusedItemKey === fileKey ? ' focused' : ''}" data-file="${escapeHTML(f.path)}">
+    return `<div class="file-row${active ? ' active' : ''}${focusedItemKey === fileKey ? ' focused' : ''}" data-file="${escapeHTML(f.path)}" title="${escapeHTML(f.name)}">
       <span class="fr-name">${escapeHTML(f.name)}</span>
       <span class="fr-dot${f.unseen ? ' visible' : ''}">●</span>
     </div>`;
