@@ -35,6 +35,7 @@ A lightweight standalone Markdown viewer for Windows, macOS, and Linux, built wi
 - **Front matter display** — YAML front matter (`---` blocks) is parsed and shown as a collapsible metadata table above the document body
 - **Local image rendering** — Relative image paths are resolved against the markdown file's directory and embedded as base64 data URLs
 - **Code block copy** — A **Copy** button appears on hover over any code block; clicking it copies the raw code to the clipboard
+- **In-document search** — `Ctrl+F` or `/` opens a search bar; the `.*` button toggles regex matching (plain string search by default)
 
 ## Supported Markdown
 

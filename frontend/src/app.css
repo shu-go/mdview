@@ -1188,6 +1188,31 @@
     color: var(--text-primary);
 }
 
+.search-regex-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 1px 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    border-radius: 4px;
+    cursor: pointer;
+    line-height: 1.4;
+    transition: all 0.15s ease;
+}
+
+.search-regex-btn:hover {
+    background-color: var(--bg-surface-hover);
+    color: var(--text-primary);
+}
+
+.search-regex-btn.active {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
+
 .search-close-btn {
     background: none;
     border: none;

@@ -106,6 +106,7 @@ const searchCountEl = searchPanel.querySelector('.search-count');
 const btnSearchPrev = searchPanel.querySelector('.search-prev');
 const btnSearchNext = searchPanel.querySelector('.search-next');
 const btnSearchClose = searchPanel.querySelector('.search-close-btn');
+const btnSearchRegex = searchPanel.querySelector('.search-regex-btn');
 
 const zoomBar = document.getElementById('zoom-bar');
 const zoomLabel = document.getElementById('zoom-label');
@@ -116,6 +117,7 @@ const btnZoomReset = document.getElementById('btn-zoom-reset');
 // Search state
 let searchMatches = [];
 let currentMatchIdx = -1;
+let searchRegexMode = false; // false = plain string search (default), true = regex
 
 // Wails native drag and drop handler. Dropped directories are expanded
 // (recursively) into the files they contain before extension filtering, so
@@ -254,6 +256,12 @@ searchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         closeSearch();
     }
+});
+
+btnSearchRegex.addEventListener('click', () => {
+    searchRegexMode = !searchRegexMode;
+    btnSearchRegex.classList.toggle('active', searchRegexMode);
+    runSearch(searchInput.value);
 });
 
 btnSearchPrev.addEventListener('click', searchPrev);
@@ -1093,7 +1101,16 @@ function runSearch(query) {
         return;
     }
 
-    const regex = new RegExp(escapeRegex(query), 'gi');
+    let regex;
+    try {
+        regex = new RegExp(searchRegexMode ? query : escapeRegex(query), 'gi');
+    } catch {
+        searchCountEl.classList.add('no-match');
+        searchCountEl.textContent = 'Invalid regex';
+        searchInput.classList.add('no-match');
+        renderScrollMarks();
+        return;
+    }
 
     // Collect all text nodes first to avoid mutation issues during traversal
     const walker = document.createTreeWalker(markdownBody, NodeFilter.SHOW_TEXT);
@@ -1111,6 +1128,13 @@ function runSearch(query) {
         let last = 0;
         let m;
         while ((m = regex.exec(text)) !== null) {
+            // Zero-length regex matches (e.g. "a*" against text with no "a")
+            // would otherwise loop forever at the same lastIndex — skip them.
+            if (m[0].length === 0) {
+                regex.lastIndex++;
+                if (regex.lastIndex > text.length) break;
+                continue;
+            }
             if (last < m.index) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
             const mark = document.createElement('mark');
             mark.className = 'search-match';
