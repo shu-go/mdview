@@ -95,6 +95,7 @@ const menuEditor = document.getElementById('menu-editor');
 const menuFont = document.getElementById('menu-font');
 const markdownBody = document.getElementById('markdown-body');
 const linkPreview = document.getElementById('link-preview');
+const linkContentPopup = document.getElementById('link-content-popup');
 const edgeFlashTop = document.getElementById('edge-flash-top');
 const edgeFlashBottom = document.getElementById('edge-flash-bottom');
 const scrollMarks = document.getElementById('scroll-marks');
@@ -118,6 +119,15 @@ const btnZoomReset = document.getElementById('btn-zoom-reset');
 let searchMatches = [];
 let currentMatchIdx = -1;
 let searchRegexMode = false; // false = plain string search (default), true = regex
+
+// Ctrl+hover link content popup state
+let ctrlDown = false;
+let hoverAnchorEl = null;       // <a> currently under the mouse in markdownBody, or null
+let lastHoverPos = { x: 0, y: 0 };
+let linkPopupShowTimer = null;
+let linkPopupHideTimer = null;
+let linkPopupRequestId = 0;     // invalidates stale async preview fetches
+const filePreviewCache = new Map(); // resolved path -> rendered HTML, for files not currently open
 
 // Wails native drag and drop handler. Dropped directories are expanded
 // (recursively) into the files they contain before extension filtering, so
@@ -574,13 +584,18 @@ toolbar.addEventListener('mouseleave', scheduleHideToolbar);
 // Show link destination in status bar on hover (like browser status bar)
 markdownBody.addEventListener('mouseover', (e) => {
     const anchor = e.target.closest('a');
+    hoverAnchorEl = anchor;
+    lastHoverPos = { x: e.clientX, y: e.clientY };
+
     if (!anchor) {
         linkPreview.classList.remove('visible');
+        scheduleHideLinkPopup();
         return;
     }
     const href = anchor.getAttribute('href');
     if (!href) {
         linkPreview.classList.remove('visible');
+        scheduleHideLinkPopup();
         return;
     }
 
@@ -605,14 +620,162 @@ markdownBody.addEventListener('mouseover', (e) => {
 
     linkPreview.textContent = display;
     linkPreview.classList.add('visible');
+
+    if (ctrlDown) scheduleShowLinkPopup(anchor, e.clientX, e.clientY);
 });
 
 markdownBody.addEventListener('mouseleave', () => {
     linkPreview.classList.remove('visible');
+    hoverAnchorEl = null;
+    scheduleHideLinkPopup();
 });
+
+// --- Ctrl+hover link content popup ---
+// Holding Ctrl while hovering a link (in-document heading anchor or local
+// Markdown file link) shows a floating preview of the target content,
+// similar to "peek definition" in code editors.
+
+window.addEventListener('keydown', (e) => {
+    if (e.key !== 'Control' || ctrlDown) return;
+    ctrlDown = true;
+    if (hoverAnchorEl) scheduleShowLinkPopup(hoverAnchorEl, lastHoverPos.x, lastHoverPos.y);
+});
+
+window.addEventListener('keyup', (e) => {
+    if (e.key !== 'Control') return;
+    ctrlDown = false;
+    hideLinkContentPopup();
+});
+
+window.addEventListener('blur', () => {
+    ctrlDown = false;
+    hideLinkContentPopup();
+});
+
+contentArea.addEventListener('scroll', () => hideLinkContentPopup());
+
+linkContentPopup.addEventListener('mouseenter', () => clearTimeout(linkPopupHideTimer));
+linkContentPopup.addEventListener('mouseleave', () => scheduleHideLinkPopup());
+
+function scheduleShowLinkPopup(anchor, x, y) {
+    clearTimeout(linkPopupShowTimer);
+    clearTimeout(linkPopupHideTimer);
+    linkPopupShowTimer = setTimeout(() => showLinkContentPopup(anchor, x, y), 150);
+}
+
+function scheduleHideLinkPopup() {
+    clearTimeout(linkPopupShowTimer);
+    clearTimeout(linkPopupHideTimer);
+    linkPopupHideTimer = setTimeout(hideLinkContentPopup, 120);
+}
+
+function hideLinkContentPopup() {
+    clearTimeout(linkPopupShowTimer);
+    clearTimeout(linkPopupHideTimer);
+    linkPopupRequestId++;
+    linkContentPopup.classList.remove('visible');
+}
+
+async function showLinkContentPopup(anchor, x, y) {
+    if (!ctrlDown) return;
+    const href = anchor.getAttribute('href');
+    if (!href || href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:')) return;
+
+    const requestId = ++linkPopupRequestId;
+    let preview;
+    try {
+        preview = await buildLinkPreview(href);
+    } catch (err) {
+        preview = { title: null, html: `<p class="link-popup-error">Preview unavailable: ${escapeHTML(String(err))}</p>` };
+    }
+    if (requestId !== linkPopupRequestId || !ctrlDown || !preview) return;
+
+    const titleHTML = preview.title ? `<div class="link-popup-title">${escapeHTML(preview.title)}</div>` : '';
+    linkContentPopup.innerHTML = `${titleHTML}<div class="markdown-body link-popup-body">${preview.html}</div>`;
+    linkContentPopup.classList.add('visible');
+    positionLinkContentPopup(x, y);
+}
+
+// Resolves an anchor's href to preview HTML: the target heading's section for
+// in-document "#fragment" links, or a Markdown file's content (optionally
+// narrowed to a "#fragment" heading within it) for local file links.
+async function buildLinkPreview(href) {
+    if (href.startsWith('#')) {
+        return { title: null, html: extractSectionHTML(markdownBody, decodeFragment(href.slice(1))) };
+    }
+
+    const hashIdx = href.indexOf('#');
+    const pathPart = hashIdx === -1 ? href : href.slice(0, hashIdx);
+    const fragment = hashIdx === -1 ? '' : decodeFragment(href.slice(hashIdx + 1));
+
+    const resolved = resolveFilePath(activePath, pathPart);
+    const lower = resolved.toLowerCase();
+    if (!(lower.endsWith('.md') || lower.endsWith('.markdown'))) return null; // no preview for non-Markdown files
+
+    const html = await getFilePreviewHTML(resolved);
+    const title = resolved.split(/[\\/]/).pop();
+    if (!fragment) return { title, html };
+
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    return { title, html: extractSectionHTML(container, fragment) };
+}
+
+function decodeFragment(raw) {
+    try {
+        return decodeURIComponent(raw);
+    } catch {
+        return raw;
+    }
+}
+
+// Extracts the HTML for the heading matching `fragment` plus everything up to
+// (but excluding) the next heading of equal or higher level — i.e. its section.
+function extractSectionHTML(root, fragment) {
+    const target = root.querySelector(`#${CSS.escape(fragment)}`);
+    if (!target) return `<p class="link-popup-error">Section not found: #${escapeHTML(fragment)}</p>`;
+    if (!/^H[1-6]$/.test(target.tagName)) return target.outerHTML;
+
+    const level = Number(target.tagName[1]);
+    const parts = [target.outerHTML];
+    let sib = target.nextElementSibling;
+    while (sib && !(/^H[1-6]$/.test(sib.tagName) && Number(sib.tagName[1]) <= level)) {
+        parts.push(sib.outerHTML);
+        sib = sib.nextElementSibling;
+    }
+    return parts.join('');
+}
+
+// Returns rendered HTML for a Markdown file: the live copy if it's already
+// open (so previews reflect unsaved diff state), otherwise a cached fetch.
+async function getFilePreviewHTML(resolvedPath) {
+    const openEntry = filesByPath.get(resolvedPath);
+    if (openEntry) return openEntry.html;
+    if (filePreviewCache.has(resolvedPath)) return filePreviewCache.get(resolvedPath);
+    const result = await LoadFile(resolvedPath);
+    filePreviewCache.set(resolvedPath, result.html);
+    return result.html;
+}
+
+// Positions the popup near (x, y) while keeping it fully within the viewport.
+function positionLinkContentPopup(x, y) {
+    const margin = 14;
+    linkContentPopup.style.left = '-9999px';
+    linkContentPopup.style.top = '-9999px';
+    const rect = linkContentPopup.getBoundingClientRect();
+
+    let left = x + margin;
+    let top = y + margin;
+    if (left + rect.width > window.innerWidth - 8) left = Math.max(8, x - rect.width - margin);
+    if (top + rect.height > window.innerHeight - 8) top = Math.max(8, y - rect.height - margin);
+
+    linkContentPopup.style.left = `${left}px`;
+    linkContentPopup.style.top = `${top}px`;
+}
 
 // Intercept link clicks in the rendered markdown
 markdownBody.addEventListener('click', async (e) => {
+    hideLinkContentPopup();
     const anchor = e.target.closest('a');
     if (!anchor) return;
 
