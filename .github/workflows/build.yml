@@ -6,35 +6,50 @@ on:
       - 'v*'
   workflow_dispatch:
 
+env:
+  WAILS_VERSION: v3.0.0-beta.5
+
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows-latest
-            platform: windows/amd64
             artifact-name: mdview-windows-amd64
             binary: mdview.exe
+            package: false
+            build-tags: ''
+            apt-packages: ''
             upx: true
-            extra-args: ''
-          - os: macos-13
-            platform: darwin/amd64
+          - os: macos-15-intel
             artifact-name: mdview-darwin-amd64
             binary: mdview.app
+            package: true
+            build-tags: ''
+            apt-packages: ''
             upx: false
-            extra-args: ''
           - os: macos-latest
-            platform: darwin/arm64
             artifact-name: mdview-darwin-arm64
             binary: mdview.app
+            package: true
+            build-tags: ''
+            apt-packages: ''
             upx: false
-            extra-args: ''
           - os: ubuntu-22.04
-            platform: linux/amd64
-            artifact-name: mdview-linux-amd64
+            artifact-name: mdview-linux-amd64-gtk3
             binary: mdview
+            package: false
+            build-tags: gtk3
+            apt-packages: libgtk-3-dev libwebkit2gtk-4.1-dev libsoup-3.0-dev
             upx: true
-            extra-args: ''
+          - os: ubuntu-24.04
+            artifact-name: mdview-linux-amd64-gtk4
+            binary: mdview
+            package: false
+            build-tags: ''
+            apt-packages: libgtk-4-dev libwebkitgtk-6.0-dev libsoup-3.0-dev
+            upx: true
 
     runs-on: ${{ matrix.os }}
 
@@ -50,19 +65,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Set up Task
+        uses: arduino/setup-task@v3.0.0
+        with:
+          version: 3.x
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev
+          sudo apt-get install -y ${{ matrix.apt-packages }}
 
-      - name: Install Wails
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
-
-      - name: Install frontend dependencies
-        run: npm install
-        working-directory: frontend
+      - name: Install Wails3
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ env.WAILS_VERSION }}
 
       - name: Set up UPX
         if: matrix.upx
@@ -71,33 +89,42 @@ jobs:
           install-only: true
 
       - name: Build
-        run: wails build -platform ${{ matrix.platform }}${{ matrix.upx && ' -upx' || '' }} ${{ matrix.extra-args }}
+        if: '!matrix.package'
+        run: wails3 build${{ matrix.build-tags && format(' -tags {0}', matrix.build-tags) || '' }}
+
+      - name: Build and package (.app bundle)
+        if: matrix.package
+        run: wails3 package
+
+      - name: Compress with UPX
+        if: matrix.upx
+        run: upx --best "bin/${{ matrix.binary }}"
 
       - name: Package release zip (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Copy-Item README.md build/bin/
-          Copy-Item LICENSE build/bin/
-          Compress-Archive -Path build/bin/${{ matrix.binary }}, build/bin/README.md, build/bin/LICENSE -DestinationPath build/bin/${{ matrix.artifact-name }}.zip
+          Copy-Item README.md bin/
+          Copy-Item LICENSE bin/
+          Compress-Archive -Path bin/${{ matrix.binary }}, bin/README.md, bin/LICENSE -DestinationPath bin/${{ matrix.artifact-name }}.zip
 
       - name: Package release zip (macOS/Linux)
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          cp README.md build/bin/
-          cp LICENSE build/bin/
-          cd build/bin
+          cp README.md bin/
+          cp LICENSE bin/
+          cd bin
           zip -r ${{ matrix.artifact-name }}.zip ${{ matrix.binary }} README.md LICENSE
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact-name }}
-          path: build/bin/${{ matrix.artifact-name }}.zip
+          path: bin/${{ matrix.artifact-name }}.zip
 
       - name: Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: build/bin/${{ matrix.artifact-name }}.zip
+          files: bin/${{ matrix.artifact-name }}.zip

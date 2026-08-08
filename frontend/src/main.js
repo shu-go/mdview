@@ -1,8 +1,8 @@
 import './style.css';
 import './app.css';
 
-import { LoadFile, ParseMarkdownWithDiff, WatchFile, UnwatchFile, SelectFiles, GetInitialFile, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig, ExpandDroppedPaths } from '../wailsjs/go/main/App';
-import { EventsOn, OnFileDrop, Quit, WindowUnminimise } from '../wailsjs/runtime/runtime';
+import { LoadFile, ParseMarkdownWithDiff, WatchFile, UnwatchFile, SelectFiles, GetInitialFile, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig, ExpandDroppedPaths } from '../bindings/mdview/app.js';
+import { Events, Application, Window as WailsWindow } from '@wailsio/runtime';
 import prismDarkTheme from 'prismjs/themes/prism-tomorrow.css?inline';
 import prismLightTheme from 'prismjs/themes/prism.css?inline';
 import Prism from 'prismjs';
@@ -129,10 +129,12 @@ let linkPopupHideTimer = null;
 let linkPopupRequestId = 0;     // invalidates stale async preview fetches
 const filePreviewCache = new Map(); // resolved path -> rendered HTML, for files not currently open
 
-// Wails native drag and drop handler. Dropped directories are expanded
-// (recursively) into the files they contain before extension filtering, so
-// dropping a folder opens every Markdown file inside it at once.
-OnFileDrop(async (x, y, paths) => {
+// Wails native drag and drop handler (relayed from Go — see main.go's
+// OnWindowEvent(events.Common.WindowFilesDropped, ...)). Dropped directories
+// are expanded (recursively) into the files they contain before extension
+// filtering, so dropping a folder opens every Markdown file inside it at once.
+Events.On('files-dropped', async (event) => {
+    const paths = event.data;
     if (!paths || paths.length === 0) return;
 
     let expanded;
@@ -153,7 +155,7 @@ OnFileDrop(async (x, y, paths) => {
     } else {
         alert('Please drop a Markdown file (.md, .markdown, .txt) or a folder containing one.');
     }
-}, true);
+});
 
 // Click to select file dialog (only reachable from the empty drop-area state)
 dropArea.addEventListener('click', async () => {
@@ -350,7 +352,7 @@ document.addEventListener('keydown', async (e) => {
     }
     if (e.ctrlKey && e.key === 'q') {
         e.preventDefault();
-        Quit();
+        Application.Quit();
         return;
     }
     if (e.key === 'F3') {
@@ -948,7 +950,7 @@ async function closeFile(path) {
 
     const remainingFiles = getOrderedFilePaths();
     if (remainingFiles.length === 0) {
-        Quit();
+        Application.Quit();
         return;
     }
 
@@ -971,7 +973,7 @@ async function closeFile(path) {
 // render-area q / Ctrl+W: close the current file, or quit if it's the last one.
 async function handleRenderAreaClose() {
     if (!activePath) {
-        Quit();
+        Application.Quit();
         return;
     }
     await closeFile(activePath);
@@ -980,7 +982,8 @@ async function handleRenderAreaClose() {
 // File change detected by watcher — refresh the file's content. If it's the
 // currently displayed file, re-render immediately; otherwise just flag it as
 // unseen (●) in the file list.
-EventsOn('file-changed', async (changedPath) => {
+Events.On('file-changed', async (event) => {
+    const changedPath = event.data;
     const entry = filesByPath.get(changedPath);
     if (!entry) return;
     try {
@@ -1836,7 +1839,7 @@ window.addEventListener('mouseup', async () => {
         await openFile(initialFile);
         // On Windows the app is launched minimised (see main.go) to hide the
         // drop-area flash; restore the window now that content is rendered.
-        WindowUnminimise();
+        WailsWindow.UnMinimise();
     } else {
         dropArea.classList.remove('hidden');
     }

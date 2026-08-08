@@ -1,6 +1,6 @@
 # mdview
 
-A lightweight standalone Markdown viewer for Windows, macOS, and Linux, built with [Wails](https://wails.io/) (Go + WebView2).
+A lightweight standalone Markdown viewer for Windows, macOS, and Linux, built with [Wails v3](https://v3.wails.io/) (Go + WebView2).
 
 ## Features
 
@@ -222,21 +222,23 @@ The `font` field accepts any valid CSS `font` shorthand string. `fileListRatio` 
 
 ## Building
 
-Prerequisites: [Go](https://go.dev/), [Wails CLI](https://wails.io/docs/gettingstarted/installation), [Node.js](https://nodejs.org/)
+Prerequisites: [Go](https://go.dev/), [Wails v3 CLI](https://v3.wails.io/getting-started/installation/), [Node.js](https://nodejs.org/), [Task](https://taskfile.dev/) (`go-task`)
 
 ```sh
 # Development (hot reload)
-wails dev
+wails3 dev
+# or: task dev
 
-# Production binary → build/bin/mdview.exe
-wails build
+# Production binary → bin/mdview.exe
+wails3 build
+# or: task build
 ```
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Desktop framework | [Wails v2](https://wails.io/) |
+| Desktop framework | [Wails v3](https://v3.wails.io/) |
 | Markdown parser | [goldmark](https://github.com/yuin/goldmark) |
 | Diff engine | [go-diff / diffmatchpatch](https://github.com/sergi/go-diff) |
 | File watching | [fsnotify](https://github.com/fsnotify/fsnotify) |

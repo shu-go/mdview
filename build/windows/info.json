@@ -1,15 +1,15 @@
 {
 	"fixed": {
-		"file_version": "{{.Info.ProductVersion}}"
+		"file_version": "1.7.0"
 	},
 	"info": {
 		"0000": {
-			"ProductVersion": "{{.Info.ProductVersion}}",
-			"CompanyName": "{{.Info.CompanyName}}",
-			"FileDescription": "{{.Info.ProductName}}",
-			"LegalCopyright": "{{.Info.Copyright}}",
-			"ProductName": "{{.Info.ProductName}}",
-			"Comments": "{{.Info.Comments}}"
+			"ProductVersion": "1.7.0",
+			"CompanyName": "Shuhei Kubota",
+			"FileDescription": "A lightweight standalone Markdown viewer",
+			"LegalCopyright": "(c) Shuhei Kubota",
+			"ProductName": "mdview",
+			"Comments": "https://github.com/shu-go/mdview"
 		}
 	}
 }

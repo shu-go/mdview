@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=mdview
+Comment=A lightweight standalone Markdown viewer
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/mdview %u
+Terminal=false
+Type=Application
+Icon=mdview
+Categories=Utility;
+StartupWMClass=mdview
+
+ 

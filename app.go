@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -19,7 +18,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/shu-go/findcfg"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/yuin/goldmark"
 	emoji "github.com/yuin/goldmark-emoji"
 	"github.com/yuin/goldmark/extension"
@@ -90,8 +89,6 @@ type dirWatch struct {
 
 // App struct
 type App struct {
-	ctx context.Context
-
 	watchMutex   sync.Mutex
 	dirWatches   map[string]*dirWatch    // parent dir -> shared watcher
 	watchedFiles map[string]struct{}     // cleaned file paths currently watched
@@ -161,15 +158,10 @@ func NewApp() *App {
 	return &App{}
 }
 
-// startup is called when the app starts. The context is saved
-// so we can call the runtime methods
-func (a *App) startup(ctx context.Context) {
-	a.ctx = ctx
-}
-
-// shutdown is called when the app exits. Clean up resources.
-func (a *App) shutdown(ctx context.Context) {
+// ServiceShutdown is called when the app exits. Clean up resources.
+func (a *App) ServiceShutdown() error {
 	a.stopAllWatchers()
+	return nil
 }
 
 // stopAllWatchers stops every active per-directory file watcher.
@@ -618,7 +610,7 @@ func (a *App) runDirWatcher(dw *dirWatch) {
 
 			if watched && debounced != nil {
 				debounced(func() {
-					runtime.EventsEmit(a.ctx, "file-changed", clean)
+					application.Get().Event.Emit("file-changed", clean)
 				})
 			}
 		case _, ok := <-dw.watcher.Errors:
@@ -633,7 +625,9 @@ func (a *App) runDirWatcher(dw *dirWatch) {
 
 // SetWindowTitle sets the OS window title bar text.
 func (a *App) SetWindowTitle(title string) {
-	runtime.WindowSetTitle(a.ctx, title)
+	if win := application.Get().Window.Current(); win != nil {
+		win.SetTitle(title)
+	}
 }
 
 // OpenInNewInstance launches a new instance of this app with the given file path.
@@ -647,7 +641,7 @@ func (a *App) OpenInNewInstance(filePath string) error {
 
 // OpenInBrowser opens the given URL in the system's default browser or application.
 func (a *App) OpenInBrowser(url string) {
-	runtime.BrowserOpenURL(a.ctx, url)
+	_ = application.Get().Browser.OpenURL(url)
 }
 
 // Config holds user preferences persisted to mdview.json.
@@ -710,16 +704,12 @@ func (a *App) SaveConfig(cfg Config) error {
 // ChooseEditor opens a native file dialog to select an editor executable.
 // Returns the selected path, or empty string if the user cancelled.
 func (a *App) ChooseEditor() (string, error) {
-	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+	return application.Get().Dialog.OpenFileWithOptions(&application.OpenFileDialogOptions{
 		Title: "Select Editor Executable",
-		Filters: []runtime.FileFilter{
+		Filters: []application.FileFilter{
 			{DisplayName: "All Files (*.*)", Pattern: "*.*"},
 		},
-	})
-	if err != nil {
-		return "", err
-	}
-	return path, nil
+	}).PromptForSingleSelection()
 }
 
 // OpenInEditor launches the given editor executable with filePath as its argument.
@@ -738,37 +728,18 @@ func (a *App) GetInitialFile() string {
 	return ""
 }
 
-// SelectFile opens a native file dialog to select a markdown file and returns its path.
-func (a *App) SelectFile() (string, error) {
-	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
-		Title: "Select Markdown File",
-		Filters: []runtime.FileFilter{
-			{DisplayName: "Markdown Files (*.md;*.markdown)", Pattern: "*.md;*.markdown"},
-			{DisplayName: "All Files (*.*)", Pattern: "*.*"},
-		},
-	})
-	if err != nil {
-		return "", err
-	}
-	return path, nil
-}
-
 // SelectFiles opens a native file dialog allowing multiple Markdown files to
 // be selected at once, and returns their paths. initialDir, if non-empty, is
 // used as the dialog's starting directory (on platforms that support it).
 func (a *App) SelectFiles(initialDir string) ([]string, error) {
-	paths, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{
-		Title:            "Select Markdown Files",
-		DefaultDirectory: initialDir,
-		Filters: []runtime.FileFilter{
+	return application.Get().Dialog.OpenFileWithOptions(&application.OpenFileDialogOptions{
+		Title:     "Select Markdown Files",
+		Directory: initialDir,
+		Filters: []application.FileFilter{
 			{DisplayName: "Markdown Files (*.md;*.markdown)", Pattern: "*.md;*.markdown"},
 			{DisplayName: "All Files (*.*)", Pattern: "*.*"},
 		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	return paths, nil
+	}).PromptForMultipleSelection()
 }
 
 // ExpandDroppedPaths takes the paths from a drag-and-drop event and expands

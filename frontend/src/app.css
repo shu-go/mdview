@@ -14,7 +14,7 @@
     transition: background-color 0.3s ease;
 }
 
-.drop-area.wails-drop-target-active {
+.drop-area.file-drop-target-active {
     background-color: rgba(59, 130, 246, 0.08);
 }
 
@@ -30,7 +30,7 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.drop-area.wails-drop-target-active .drop-content {
+.drop-area.file-drop-target-active .drop-content {
     border-color: var(--accent);
     transform: scale(1.02);
     box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.1), 0 10px 10px -5px rgba(59, 130, 246, 0.04);
@@ -44,7 +44,7 @@
     transition: color 0.3s ease, transform 0.3s ease;
 }
 
-.drop-area.wails-drop-target-active .drop-icon {
+.drop-area.file-drop-target-active .drop-icon {
     color: var(--accent);
     transform: translateY(-8px);
 }
