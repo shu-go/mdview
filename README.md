@@ -82,7 +82,7 @@ mdview.exe [file]
 |---|---|
 | Launch with no argument | Shows the drop screen |
 | Drag & drop one or more `.md` files, or folders | Adds all of them to the file list (folders are expanded recursively); the first one found is shown in the viewer |
-| Click the drop area | Opens a file picker dialog |
+| Click the drop area or `Ctrl+O` | Opens a file picker dialog (multiple files can be selected at once) |
 | `mdview.exe path/to/file.md` | Opens the file directly on launch |
 
 ### Toolbar
@@ -149,6 +149,7 @@ Global (work regardless of which area has focus):
 
 | Shortcut | Action |
 |---|---|
+| `Ctrl+O` | Open a file picker dialog (supports selecting multiple files at once) |
 | `Ctrl+E` | Open current file in the configured editor |
 | `Ctrl+F` or `/` | Open search panel |
 | `F3` | Next match |

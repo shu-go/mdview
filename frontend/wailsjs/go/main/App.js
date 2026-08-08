@@ -46,6 +46,10 @@ export function SelectFile() {
   return window['go']['main']['App']['SelectFile']();
 }
 
+export function SelectFiles() {
+  return window['go']['main']['App']['SelectFiles']();
+}
+
 export function SetWindowTitle(arg1) {
   return window['go']['main']['App']['SetWindowTitle'](arg1);
 }

@@ -753,6 +753,22 @@ func (a *App) SelectFile() (string, error) {
 	return path, nil
 }
 
+// SelectFiles opens a native file dialog allowing multiple Markdown files to
+// be selected at once, and returns their paths.
+func (a *App) SelectFiles() ([]string, error) {
+	paths, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Select Markdown Files",
+		Filters: []runtime.FileFilter{
+			{DisplayName: "Markdown Files (*.md;*.markdown)", Pattern: "*.md;*.markdown"},
+			{DisplayName: "All Files (*.*)", Pattern: "*.*"},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return paths, nil
+}
+
 // ExpandDroppedPaths takes the paths from a drag-and-drop event and expands
 // any directories into the files they contain (recursively), returning a
 // flat list of file paths; non-directory paths are passed through unchanged.

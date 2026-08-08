@@ -1,7 +1,7 @@
 import './style.css';
 import './app.css';
 
-import { LoadFile, ParseMarkdownWithDiff, WatchFile, UnwatchFile, SelectFile, GetInitialFile, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig, ExpandDroppedPaths } from '../wailsjs/go/main/App';
+import { LoadFile, ParseMarkdownWithDiff, WatchFile, UnwatchFile, SelectFiles, GetInitialFile, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig, ExpandDroppedPaths } from '../wailsjs/go/main/App';
 import { EventsOn, OnFileDrop, Quit, WindowUnminimise } from '../wailsjs/runtime/runtime';
 import prismDarkTheme from 'prismjs/themes/prism-tomorrow.css?inline';
 import prismLightTheme from 'prismjs/themes/prism.css?inline';
@@ -158,9 +158,9 @@ OnFileDrop(async (x, y, paths) => {
 // Click to select file dialog (only reachable from the empty drop-area state)
 dropArea.addEventListener('click', async () => {
     try {
-        const path = await SelectFile();
-        if (path) {
-            await openFile(path);
+        const paths = await SelectFiles();
+        if (paths && paths.length > 0) {
+            await openFiles(paths);
         }
     } catch (err) {
         console.error('Failed to select file:', err);
@@ -334,6 +334,18 @@ document.addEventListener('keydown', async (e) => {
     if (e.ctrlKey && e.key === 'w') {
         e.preventDefault();
         await handleRenderAreaClose();
+        return;
+    }
+    if (e.ctrlKey && e.key === 'o') {
+        e.preventDefault();
+        try {
+            const paths = await SelectFiles();
+            if (paths && paths.length > 0) {
+                await openFiles(paths);
+            }
+        } catch (err) {
+            console.error('Failed to select files:', err);
+        }
         return;
     }
     if (e.key === 'F3') {
