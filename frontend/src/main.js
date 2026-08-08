@@ -158,7 +158,7 @@ OnFileDrop(async (x, y, paths) => {
 // Click to select file dialog (only reachable from the empty drop-area state)
 dropArea.addEventListener('click', async () => {
     try {
-        const paths = await SelectFiles();
+        const paths = await SelectFiles(currentDocDir());
         if (paths && paths.length > 0) {
             await openFiles(paths);
         }
@@ -339,7 +339,7 @@ document.addEventListener('keydown', async (e) => {
     if (e.ctrlKey && e.key === 'o') {
         e.preventDefault();
         try {
-            const paths = await SelectFiles();
+            const paths = await SelectFiles(currentDocDir());
             if (paths && paths.length > 0) {
                 await openFiles(paths);
             }
@@ -844,6 +844,13 @@ function resolveFilePath(basePath, relativePath) {
 }
 
 // --- File Handling Functions ---
+
+// Returns the directory of the currently displayed document, or '' if none is open.
+// Used as the file-picker dialog's starting directory.
+function currentDocDir() {
+    const entry = filesByPath.get(activePath);
+    return entry ? entry.dirPath : '';
+}
 
 // Opens (or switches to, if already open) the file at path, adding it to the
 // file list if it's new. Each file's diff-mode state and scroll position are

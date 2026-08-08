@@ -754,10 +754,12 @@ func (a *App) SelectFile() (string, error) {
 }
 
 // SelectFiles opens a native file dialog allowing multiple Markdown files to
-// be selected at once, and returns their paths.
-func (a *App) SelectFiles() ([]string, error) {
+// be selected at once, and returns their paths. initialDir, if non-empty, is
+// used as the dialog's starting directory (on platforms that support it).
+func (a *App) SelectFiles(initialDir string) ([]string, error) {
 	paths, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{
-		Title: "Select Markdown Files",
+		Title:            "Select Markdown Files",
+		DefaultDirectory: initialDir,
 		Filters: []runtime.FileFilter{
 			{DisplayName: "Markdown Files (*.md;*.markdown)", Pattern: "*.md;*.markdown"},
 			{DisplayName: "All Files (*.*)", Pattern: "*.*"},

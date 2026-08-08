@@ -24,7 +24,7 @@ export function SaveConfig(arg1:main.Config):Promise<void>;
 
 export function SelectFile():Promise<string>;
 
-export function SelectFiles():Promise<Array<string>>;
+export function SelectFiles(arg1:string):Promise<Array<string>>;
 
 export function SetWindowTitle(arg1:string):Promise<void>;
 
