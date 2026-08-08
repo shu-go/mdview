@@ -348,6 +348,11 @@ document.addEventListener('keydown', async (e) => {
         }
         return;
     }
+    if (e.ctrlKey && e.key === 'q') {
+        e.preventDefault();
+        Quit();
+        return;
+    }
     if (e.key === 'F3') {
         e.preventDefault();
         if (e.shiftKey) searchPrev(); else searchNext();

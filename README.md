@@ -149,7 +149,8 @@ Global (work regardless of which area has focus):
 
 | Shortcut | Action |
 |---|---|
-| `Ctrl+O` | Open a file picker dialog (supports selecting multiple files at once) |
+| `Ctrl+O` | Open a file picker dialog (supports selecting multiple files at once); starts in the current document's directory, if one is open and the platform supports it |
+| `Ctrl+Q` | Quit the application |
 | `Ctrl+E` | Open current file in the configured editor |
 | `Ctrl+F` or `/` | Open search panel |
 | `F3` | Next match |
