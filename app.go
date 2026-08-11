@@ -720,12 +720,12 @@ func (a *App) OpenInEditor(editorPath, filePath string) error {
 	return exec.Command(editorPath, filePath).Start()
 }
 
-// GetInitialFile returns the file path passed as the first command-line argument, or empty string.
-func (a *App) GetInitialFile() string {
+// GetInitialArgs returns the file/folder paths passed as command-line arguments, if any.
+func (a *App) GetInitialArgs() []string {
 	if len(os.Args) > 1 {
-		return os.Args[1]
+		return os.Args[1:]
 	}
-	return ""
+	return nil
 }
 
 // SelectFiles opens a native file dialog allowing multiple Markdown files to

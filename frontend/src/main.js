@@ -1,7 +1,7 @@
 import './style.css';
 import './app.css';
 
-import { LoadFile, ParseMarkdownWithDiff, WatchFile, UnwatchFile, SelectFiles, GetInitialFile, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig, ExpandDroppedPaths } from '../bindings/mdview/app.js';
+import { LoadFile, ParseMarkdownWithDiff, WatchFile, UnwatchFile, SelectFiles, GetInitialArgs, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig, ExpandDroppedPaths } from '../bindings/mdview/app.js';
 import { Events, Application, Window as WailsWindow } from '@wailsio/runtime';
 import prismDarkTheme from 'prismjs/themes/prism-tomorrow.css?inline';
 import prismLightTheme from 'prismjs/themes/prism.css?inline';
@@ -129,12 +129,12 @@ let linkPopupHideTimer = null;
 let linkPopupRequestId = 0;     // invalidates stale async preview fetches
 const filePreviewCache = new Map(); // resolved path -> rendered HTML, for files not currently open
 
-// Wails native drag and drop handler (relayed from Go — see main.go's
-// OnWindowEvent(events.Common.WindowFilesDropped, ...)). Dropped directories
-// are expanded (recursively) into the files they contain before extension
-// filtering, so dropping a folder opens every Markdown file inside it at once.
-Events.On('files-dropped', async (event) => {
-    const paths = event.data;
+// Expands dropped directories (recursively) into the files they contain,
+// filters to supported extensions, and opens the result. Shared by native
+// drag & drop, CLI startup args, and paths forwarded from a second mdview
+// instance (see main.go's OnSecondInstanceLaunch) — all three are meant to
+// behave identically.
+async function openDroppedPaths(paths) {
     if (!paths || paths.length === 0) return;
 
     let expanded;
@@ -151,10 +151,18 @@ Events.On('files-dropped', async (event) => {
     });
 
     if (validPaths.length > 0) {
-        openFiles(validPaths);
+        await openFiles(validPaths);
     } else {
         alert('Please drop a Markdown file (.md, .markdown, .txt) or a folder containing one.');
     }
+}
+
+// Wails native drag and drop handler (relayed from Go — see main.go's
+// OnWindowEvent(events.Common.WindowFilesDropped, ...)) and second-instance
+// file forwarding (relayed via the same "files-dropped" event — see
+// main.go's OnSecondInstanceLaunch).
+Events.On('files-dropped', (event) => {
+    openDroppedPaths(event.data);
 });
 
 // Click to select file dialog (only reachable from the empty drop-area state)
@@ -1818,9 +1826,9 @@ window.addEventListener('mouseup', async () => {
     }
 });
 
-// --- Startup: load config and open CLI file if provided ---
+// --- Startup: load config and open CLI files/folders if provided ---
 (async () => {
-    const [config, initialFile] = await Promise.all([LoadConfig(), GetInitialFile()]);
+    const [config, initialArgs] = await Promise.all([LoadConfig(), GetInitialArgs()]);
     currentConfig = {
         font: config.font || '',
         themeMode: config.themeMode || 'system',
@@ -1835,11 +1843,16 @@ window.addEventListener('mouseup', async () => {
     const initialRatio = currentConfig.fileListRatio > 0 ? currentConfig.fileListRatio : 0.3;
     applySidePanelWidth(Math.max(0.15, Math.min(0.6, initialRatio)));
 
-    if (initialFile) {
-        await openFile(initialFile);
+    if (initialArgs && initialArgs.length > 0) {
+        await openDroppedPaths(initialArgs);
         // On Windows the app is launched minimised (see main.go) to hide the
         // drop-area flash; restore the window now that content is rendered.
         WailsWindow.UnMinimise();
+        if (!activePath) {
+            // Nothing ended up open (e.g. no argument matched a supported
+            // extension) — fall back to the empty drop-target state.
+            dropArea.classList.remove('hidden');
+        }
     } else {
         dropArea.classList.remove('hidden');
     }

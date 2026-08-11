@@ -4,6 +4,7 @@ import (
 	"embed"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -24,6 +25,28 @@ func main() {
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
+		},
+		// Route a second `mdview` launch into this instance instead of opening
+		// a separate process: bring the window to front, and if paths were
+		// passed, open them the same way a native drag & drop would.
+		SingleInstance: &application.SingleInstanceOptions{
+			UniqueID: "com.github.shu-go.mdview", // matches build/config.yml's productIdentifier
+			OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
+				if win := application.Get().Window.Current(); win != nil {
+					win.Show()
+					// Plain Focus() often only blinks the taskbar icon instead
+					// of raising the window — Windows' foreground-lock denies
+					// SetForegroundWindow requests that aren't tied to a live
+					// input event on this process. Cycling minimise→restore
+					// forces the window manager to actually raise it.
+					win.Minimise()
+					win.UnMinimise()
+					win.Focus()
+				}
+				if paths := resolveArgPaths(data); len(paths) > 0 {
+					application.Get().Event.Emit("files-dropped", paths)
+				}
+			},
 		},
 	})
 
@@ -57,4 +80,24 @@ func main() {
 	if err := appl.Run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// resolveArgPaths extracts the file/folder paths passed to a second instance
+// launch, resolving any relative paths against that instance's working
+// directory (which may differ from this, the first instance's, cwd).
+func resolveArgPaths(data application.SecondInstanceData) []string {
+	if len(data.Args) <= 1 {
+		return nil
+	}
+	paths := make([]string, 0, len(data.Args)-1)
+	for _, arg := range data.Args[1:] {
+		if arg == "" {
+			continue
+		}
+		if !filepath.IsAbs(arg) && data.WorkingDir != "" {
+			arg = filepath.Join(data.WorkingDir, arg)
+		}
+		paths = append(paths, arg)
+	}
+	return paths
 }

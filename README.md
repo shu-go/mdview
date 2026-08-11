@@ -7,7 +7,8 @@ A lightweight standalone Markdown viewer for Windows, macOS, and Linux, built wi
 - **Multi-file support** — Open multiple files in one window and switch between them via a collapsible file list panel, grouped by folder
 - **Table of contents** — Jump between headings via a collapsible TOC panel that shares the same slot as the file list panel; the selected heading tracks the render area's scroll position
 - **Drag & drop** — Drop one or more Markdown files, or folders, onto the window to open them; folders are expanded recursively into their Markdown files. All are added to the file list, and the first one found is displayed, from either the start screen or the viewer
-- **CLI argument** — Open a file directly: `mdview.exe path/to/file.md`
+- **CLI argument** — Open one or more files/folders directly: `mdview.exe path/to/file.md [more paths...]`; folders are expanded recursively, same as drag & drop
+- **Single instance** — If an `mdview` window is already open, launching `mdview.exe` again (with or without arguments) doesn't start a second process: the existing window is brought to front, and any paths passed are opened in it, same as a drag & drop
 - **File watching** — Automatically reloads when the file is saved; files open in the background show an unread (●) indicator instead
 - **Inline diff** — View changes against two baselines:
   - *Initial Diff* — diff against the content when the file was first opened
@@ -83,7 +84,8 @@ mdview.exe [file]
 | Launch with no argument | Shows the drop screen |
 | Drag & drop one or more `.md` files, or folders | Adds all of them to the file list (folders are expanded recursively); the first one found is shown in the viewer |
 | Click the drop area or `Ctrl+O` | Opens a file picker dialog (multiple files can be selected at once) |
-| `mdview.exe path/to/file.md` | Opens the file directly on launch |
+| `mdview.exe path/to/file.md [more...]` | Opens the file(s)/folder(s) directly on launch — same handling as drag & drop |
+| Launching `mdview.exe` while another instance is already running | No new window opens; the existing window is brought to front. Any paths given are opened in it, same as drag & drop |
 
 ### Toolbar
 
