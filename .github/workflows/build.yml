@@ -36,13 +36,6 @@ jobs:
             build-tags: ''
             apt-packages: ''
             upx: false
-          - os: ubuntu-22.04
-            artifact-name: mdview-linux-amd64-gtk3
-            binary: mdview
-            package: false
-            build-tags: gtk3
-            apt-packages: libgtk-3-dev libwebkit2gtk-4.1-dev libsoup-3.0-dev
-            upx: true
           - os: ubuntu-24.04
             artifact-name: mdview-linux-amd64-gtk4
             binary: mdview
