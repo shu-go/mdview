@@ -10,6 +10,7 @@ A lightweight standalone Markdown viewer for Windows, macOS, and Linux, built wi
 - **CLI argument** — Open one or more files/folders directly: `mdview.exe path/to/file.md [more paths...]`; folders are expanded recursively, same as drag & drop
 - **Single instance** — If an `mdview` window is already open, launching `mdview.exe` again (with or without arguments) doesn't start a second process: the existing window is brought to front, and any paths passed are opened in it, same as a drag & drop
 - **File watching** — Automatically reloads when the file is saved; files open in the background show an unread (●) indicator instead
+- **Folder watching** — Folders opened via drag & drop, `Ctrl+Shift+O`, or the CLI are watched recursively; Markdown files created later (including in new subfolders) are added to the file list automatically, flagged unread
 - **Inline diff** — View changes against two baselines:
   - *Initial Diff* — diff against the content when the file was first opened
   - *Baseline Diff* — diff against a snapshot you set manually with **Update Baseline**
@@ -152,6 +153,7 @@ Global (work regardless of which area has focus):
 | Shortcut | Action |
 |---|---|
 | `Ctrl+O` | Open a file picker dialog (supports selecting multiple files at once); starts in the current document's directory, if one is open and the platform supports it |
+| `Ctrl+Shift+O` | Open a folder picker dialog; the folder's Markdown files are added to the file list (same as drag & drop) and then watched recursively for new files |
 | `Ctrl+Q` | Quit the application |
 | `Ctrl+E` | Open current file in the configured editor |
 | `Ctrl+F` or `/` | Open search panel |

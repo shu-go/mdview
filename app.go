@@ -93,6 +93,23 @@ type App struct {
 	dirWatches   map[string]*dirWatch    // parent dir -> shared watcher
 	watchedFiles map[string]struct{}     // cleaned file paths currently watched
 	debouncers   map[string]func(func()) // cleaned file path -> its own debounce function
+
+	folderMutex    sync.Mutex
+	folderWatchers map[string]*folderWatcher // root dir -> its recursive watcher
+}
+
+// folderWatcher recursively watches a folder tree (a root opened via drag &
+// drop, the folder picker, or a CLI/second-instance argument) for newly
+// created supported files, so documents added after the folder was opened —
+// including in new subdirectories — are picked up automatically without
+// touching the currently displayed document. This is distinct from dirWatch,
+// which only reloads content for files the user has explicitly opened.
+type folderWatcher struct {
+	root       string
+	watcher    *fsnotify.Watcher
+	stop       chan struct{}
+	mu         sync.Mutex
+	debouncers map[string]func(func()) // file path -> its own debounce function
 }
 
 // detectImageMIME returns the MIME type for a local image file based on its extension.
@@ -164,11 +181,10 @@ func (a *App) ServiceShutdown() error {
 	return nil
 }
 
-// stopAllWatchers stops every active per-directory file watcher.
+// stopAllWatchers stops every active per-directory file watcher and every
+// recursive folder watcher.
 func (a *App) stopAllWatchers() {
 	a.watchMutex.Lock()
-	defer a.watchMutex.Unlock()
-
 	for _, dw := range a.dirWatches {
 		close(dw.stop)
 		dw.watcher.Close()
@@ -176,6 +192,15 @@ func (a *App) stopAllWatchers() {
 	a.dirWatches = nil
 	a.watchedFiles = nil
 	a.debouncers = nil
+	a.watchMutex.Unlock()
+
+	a.folderMutex.Lock()
+	for _, fw := range a.folderWatchers {
+		close(fw.stop)
+		fw.watcher.Close()
+	}
+	a.folderWatchers = nil
+	a.folderMutex.Unlock()
 }
 
 // LoadFile reads a Markdown file, parses it to HTML, and returns both raw text and HTML.
@@ -623,6 +648,158 @@ func (a *App) runDirWatcher(dw *dirWatch) {
 	}
 }
 
+// supportedDocExts lists the file extensions treated as documents. Kept in
+// sync with the frontend's own filter in openDroppedPaths (main.js).
+var supportedDocExts = map[string]bool{
+	".md":       true,
+	".markdown": true,
+	".txt":      true,
+}
+
+func isSupportedDoc(path string) bool {
+	return supportedDocExts[strings.ToLower(filepath.Ext(path))]
+}
+
+// WatchFolder recursively watches rootPath for newly created supported
+// documents, emitting a "file-added" event for each one (including files
+// inside subdirectories created after the watch started). Calling it again
+// for an already-watched root is a no-op. It does not affect which files are
+// currently displayed or open.
+func (a *App) WatchFolder(rootPath string) error {
+	clean := filepath.Clean(rootPath)
+
+	a.folderMutex.Lock()
+	if a.folderWatchers == nil {
+		a.folderWatchers = make(map[string]*folderWatcher)
+	}
+	if _, exists := a.folderWatchers[clean]; exists {
+		a.folderMutex.Unlock()
+		return nil
+	}
+	a.folderMutex.Unlock()
+
+	w, err := fsnotify.NewWatcher()
+	if err != nil {
+		return fmt.Errorf("failed to create folder watcher: %w", err)
+	}
+
+	err = filepath.Walk(clean, func(path string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return nil // skip unreadable entries rather than aborting the whole watch
+		}
+		if fi.IsDir() {
+			_ = w.Add(path)
+		}
+		return nil
+	})
+	if err != nil {
+		w.Close()
+		return fmt.Errorf("failed to walk folder %s: %w", clean, err)
+	}
+
+	fw := &folderWatcher{root: clean, watcher: w, stop: make(chan struct{})}
+
+	a.folderMutex.Lock()
+	a.folderWatchers[clean] = fw
+	a.folderMutex.Unlock()
+
+	go a.runFolderWatcher(fw)
+	return nil
+}
+
+// runFolderWatcher processes fsnotify events for a single recursive folder
+// watch. New subdirectories are added to the watch as they appear (fsnotify
+// itself has no recursive mode), and their existing contents are scanned so
+// files that arrive together with a new subdirectory (e.g. a folder moved in
+// via the OS) aren't missed.
+func (a *App) runFolderWatcher(fw *folderWatcher) {
+	for {
+		select {
+		case event, ok := <-fw.watcher.Events:
+			if !ok {
+				return
+			}
+			if !event.Has(fsnotify.Create) {
+				continue
+			}
+			a.handleFolderCreate(fw, event.Name)
+		case _, ok := <-fw.watcher.Errors:
+			if !ok {
+				return
+			}
+		case <-fw.stop:
+			return
+		}
+	}
+}
+
+// handleFolderCreate reacts to a Create event within a watched folder tree:
+// new directories are watched and scanned recursively, new supported files
+// are announced to the frontend (debounced, so a file still being written
+// doesn't get picked up half-finished).
+func (a *App) handleFolderCreate(fw *folderWatcher, path string) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return // gone again already, or unreadable
+	}
+	if info.IsDir() {
+		_ = fw.watcher.Add(path)
+		a.scanFolderContents(fw, path)
+		return
+	}
+	if !isSupportedDoc(path) {
+		return
+	}
+
+	fw.mu.Lock()
+	if fw.debouncers == nil {
+		fw.debouncers = make(map[string]func(func()))
+	}
+	debounced, ok := fw.debouncers[path]
+	if !ok {
+		debounced = debounce.New(300 * time.Millisecond)
+		fw.debouncers[path] = debounced
+	}
+	fw.mu.Unlock()
+
+	debounced(func() {
+		application.Get().Event.Emit("file-added", path)
+	})
+}
+
+// scanFolderContents walks dir (a subdirectory that just appeared inside a
+// watched folder tree), adding a watch for every nested directory and
+// announcing every supported file already present.
+func (a *App) scanFolderContents(fw *folderWatcher, dir string) {
+	_ = filepath.Walk(dir, func(path string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+		if fi.IsDir() {
+			if path != dir {
+				_ = fw.watcher.Add(path)
+			}
+			return nil
+		}
+		if isSupportedDoc(path) {
+			application.Get().Event.Emit("file-added", path)
+		}
+		return nil
+	})
+}
+
+// SelectFolder opens a native folder-picker dialog and returns the chosen
+// path, or an empty string if the user cancelled. initialDir, if non-empty,
+// is used as the dialog's starting directory (on platforms that support it).
+func (a *App) SelectFolder(initialDir string) (string, error) {
+	return application.Get().Dialog.OpenFileWithOptions(&application.OpenFileDialogOptions{
+		Title:                "Select Folder",
+		Directory:            initialDir,
+		CanChooseDirectories: true,
+		CanChooseFiles:       false,
+	}).PromptForSingleSelection()
+}
+
 // SetWindowTitle sets the OS window title bar text.
 func (a *App) SetWindowTitle(title string) {
 	if win := application.Get().Window.Current(); win != nil {
@@ -742,32 +919,42 @@ func (a *App) SelectFiles(initialDir string) ([]string, error) {
 	}).PromptForMultipleSelection()
 }
 
-// ExpandDroppedPaths takes the paths from a drag-and-drop event and expands
-// any directories into the files they contain (recursively), returning a
-// flat list of file paths; non-directory paths are passed through unchanged.
-// Extension filtering (.md, .markdown, ...) stays the frontend's concern.
-func (a *App) ExpandDroppedPaths(paths []string) ([]string, error) {
-	var result []string
+// ExpandResult is the result of expanding a set of dropped/CLI paths.
+type ExpandResult struct {
+	Files       []string `json:"files"`       // flat list of file paths (directories expanded)
+	FolderRoots []string `json:"folderRoots"` // input paths that were directories
+}
+
+// ExpandDroppedPaths takes the paths from a drag-and-drop event (or CLI args,
+// or a second-instance launch) and expands any directories into the files
+// they contain (recursively); non-directory paths are passed through
+// unchanged. Directories among the input are also reported separately as
+// FolderRoots, so the caller can set up recursive watching (see WatchFolder)
+// for documents added to them later. Extension filtering (.md, .markdown,
+// ...) stays the frontend's concern.
+func (a *App) ExpandDroppedPaths(paths []string) (ExpandResult, error) {
+	var result ExpandResult
 	for _, p := range paths {
 		info, err := os.Stat(p)
 		if err != nil {
 			continue
 		}
 		if !info.IsDir() {
-			result = append(result, p)
+			result.Files = append(result.Files, p)
 			continue
 		}
+		result.FolderRoots = append(result.FolderRoots, filepath.Clean(p))
 		err = filepath.Walk(p, func(path string, fi os.FileInfo, err error) error {
 			if err != nil {
 				return nil
 			}
 			if !fi.IsDir() {
-				result = append(result, path)
+				result.Files = append(result.Files, path)
 			}
 			return nil
 		})
 		if err != nil {
-			return nil, err
+			return ExpandResult{}, err
 		}
 	}
 	return result, nil

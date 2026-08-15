@@ -1,7 +1,7 @@
 import './style.css';
 import './app.css';
 
-import { LoadFile, ParseMarkdownWithDiff, WatchFile, UnwatchFile, SelectFiles, GetInitialArgs, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig, ExpandDroppedPaths } from '../bindings/mdview/app.js';
+import { LoadFile, ParseMarkdownWithDiff, WatchFile, UnwatchFile, SelectFiles, SelectFolder, WatchFolder, GetInitialArgs, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig, ExpandDroppedPaths } from '../bindings/mdview/app.js';
 import { Events, Application, Window as WailsWindow } from '@wailsio/runtime';
 import prismDarkTheme from 'prismjs/themes/prism-tomorrow.css?inline';
 import prismLightTheme from 'prismjs/themes/prism.css?inline';
@@ -91,6 +91,7 @@ const splitter = document.getElementById('splitter');
 const btnUpdateBaseline = document.getElementById('btn-update-baseline');
 const btnMenu = document.getElementById('btn-menu');
 const appMenu = document.getElementById('app-menu');
+const menuOpenFolder = document.getElementById('menu-open-folder');
 const menuEditor = document.getElementById('menu-editor');
 const menuFont = document.getElementById('menu-font');
 const markdownBody = document.getElementById('markdown-body');
@@ -142,18 +143,42 @@ async function openDroppedPaths(paths) {
         expanded = await ExpandDroppedPaths(paths);
     } catch (err) {
         console.error('Failed to expand dropped paths:', err);
-        expanded = paths;
+        expanded = { files: paths, folderRoots: [] };
     }
 
-    const validPaths = expanded.filter(p => {
+    const validPaths = (expanded.files || []).filter(p => {
         const lower = p.toLowerCase();
         return lower.endsWith('.md') || lower.endsWith('.markdown') || lower.endsWith('.txt');
     });
+
+    // Any directory among the dropped/CLI paths keeps being watched
+    // recursively, so documents added to it later (including in new
+    // subfolders) show up automatically — see the 'file-added' listener.
+    for (const root of expanded.folderRoots || []) {
+        try {
+            await WatchFolder(root);
+        } catch (err) {
+            console.error('Failed to watch folder:', root, err);
+        }
+    }
 
     if (validPaths.length > 0) {
         await openFiles(validPaths);
     } else {
         alert('Please drop a Markdown file (.md, .markdown, .txt) or a folder containing one.');
+    }
+}
+
+// Opens a native folder picker (Ctrl+Shift+O / Menu > Open Folder...) and,
+// if the user picked one, loads its documents the same way a folder D&D does.
+async function openFolderDialog() {
+    try {
+        const folder = await SelectFolder(currentDocDir());
+        if (folder) {
+            await openDroppedPaths([folder]);
+        }
+    } catch (err) {
+        console.error('Failed to select folder:', err);
     }
 }
 
@@ -243,6 +268,11 @@ document.querySelectorAll('.theme-switch [data-theme]').forEach(item => {
             console.error('Failed to save theme:', err);
         }
     });
+});
+
+menuOpenFolder.addEventListener('click', async () => {
+    closeAppMenu();
+    await openFolderDialog();
 });
 
 menuEditor.addEventListener('click', async () => {
@@ -344,6 +374,11 @@ document.addEventListener('keydown', async (e) => {
     if (e.ctrlKey && e.key === 'w') {
         e.preventDefault();
         await handleRenderAreaClose();
+        return;
+    }
+    if (e.ctrlKey && e.shiftKey && (e.key === 'o' || e.key === 'O')) {
+        e.preventDefault();
+        await openFolderDialog();
         return;
     }
     if (e.ctrlKey && e.key === 'o') {
@@ -1009,6 +1044,21 @@ Events.On('file-changed', async (event) => {
         }
     } catch (err) {
         console.error('Failed to reload file:', err);
+    }
+});
+
+// New document detected inside a watched folder (see WatchFolder in app.go
+// and the 'folderRoots' handling in openDroppedPaths). Adds it to the file
+// list, flagged unseen, without disturbing the currently displayed document.
+Events.On('file-added', async (event) => {
+    const addedPath = event.data;
+    if (filesByPath.has(addedPath)) return;
+    try {
+        const entry = await ensureFileLoaded(addedPath);
+        entry.unseen = true;
+        renderFileList();
+    } catch (err) {
+        console.error('Failed to load newly added file:', addedPath, err);
     }
 });
 
