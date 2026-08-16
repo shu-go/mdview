@@ -301,7 +301,7 @@ searchInput.addEventListener('input', () => {
 searchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         e.preventDefault();
-        if (e.shiftKey) searchPrev(); else searchNext();
+        contentArea.focus?.({ preventScroll: true });
     }
     if (e.key === 'Escape') {
         closeSearch();
@@ -403,6 +403,16 @@ document.addEventListener('keydown', async (e) => {
         if (e.shiftKey) searchPrev(); else searchNext();
         return;
     }
+    if (e.altKey && e.key === 'ArrowLeft') {
+        e.preventDefault();
+        navigateBack();
+        return;
+    }
+    if (e.altKey && e.key === 'ArrowRight') {
+        e.preventDefault();
+        navigateForward();
+        return;
+    }
 
     const activeTag = document.activeElement?.tagName;
     const typingInInput = activeTag === 'INPUT' || activeTag === 'TEXTAREA';
@@ -468,6 +478,14 @@ document.addEventListener('keydown', async (e) => {
         case 'l':
             e.preventDefault();
             navigateForward();
+            break;
+        case 'n':
+            e.preventDefault();
+            searchNext();
+            break;
+        case 'N':
+            e.preventDefault();
+            searchPrev();
             break;
         case 'f':
             e.preventDefault();

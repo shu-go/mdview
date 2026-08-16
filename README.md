@@ -157,6 +157,7 @@ Global (work regardless of which area has focus):
 | `Ctrl+Q` | Quit the application |
 | `Ctrl+E` | Open current file in the configured editor |
 | `Ctrl+F` or `/` | Open search panel |
+| `Enter` (in search field) | Move keyboard focus to the render area; use `n`/`N` or `F3`/`Shift+F3` there to step through matches |
 | `F3` | Next match |
 | `Shift+F3` | Previous match |
 | `Ctrl+D` | Toggle diff mode: Normal ⇔ last used diff mode (Initial Diff or Baseline Diff) |
@@ -176,9 +177,11 @@ Render area (active when neither the file list panel nor the TOC panel has keybo
 | `k` | Scroll up one line |
 | `b` or `Shift+Space` | Scroll up one page |
 | `g` | Scroll to top |
-| `Shift+G` | Scroll to bottom |
-| `h` | Jump back to the position before the last TOC selection or in-document link click |
-| `l` | Jump forward again after `h` |
+| `G` | Scroll to bottom |
+| `h` or `Alt+Left` | Jump back to the position before the last TOC selection or in-document link click |
+| `l` or `Alt+Right` | Jump forward again after `h`/`Alt+Left` |
+| `n` | Next search match (same as `F3`) |
+| `N` | Previous search match (same as `Shift+F3`) |
 
 File list panel (active once focused via `f` or a click):
 
