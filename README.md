@@ -6,11 +6,11 @@ A lightweight standalone Markdown viewer for Windows, macOS, and Linux, built wi
 
 - **Multi-file support** — Open multiple files in one window and switch between them via a collapsible file list panel, grouped by folder
 - **Table of contents** — Jump between headings via a collapsible TOC panel that shares the same slot as the file list panel; the selected heading tracks the render area's scroll position
-- **Drag & drop** — Drop one or more Markdown files, or folders, onto the window to open them; folders are expanded recursively into their Markdown files. All are added to the file list, and the first one found is displayed, from either the start screen or the viewer
-- **CLI argument** — Open one or more files/folders directly: `mdview.exe path/to/file.md [more paths...]`; folders are expanded recursively, same as drag & drop
+- **Drag & drop** — Drop one or more Markdown files, or folders, onto the window to open them; folders are expanded recursively into their Markdown files (hidden directories and `node_modules` are skipped). All are added to the file list, and the first one found is displayed, from either the start screen or the viewer
+- **CLI argument** — Open one or more files/folders directly: `mdview.exe path/to/file.md [more paths...]`; folders (including `.`, the current directory) are expanded recursively, same as drag & drop
 - **Single instance** — If an `mdview` window is already open, launching `mdview.exe` again (with or without arguments) doesn't start a second process: the existing window is brought to front, and any paths passed are opened in it, same as a drag & drop
 - **File watching** — Automatically reloads when the file is saved; files open in the background show an unread (●) indicator instead
-- **Folder watching** — Folders opened via drag & drop, `Ctrl+Shift+O`, or the CLI are watched recursively; Markdown files created later (including in new subfolders) are added to the file list automatically, flagged unread
+- **Folder watching** — Folders opened via drag & drop, `Ctrl+Shift+O`, or the CLI are watched recursively (again skipping hidden directories and `node_modules`); Markdown files created later (including in new subfolders) are added to the file list automatically, flagged unread
 - **Inline diff** — View changes against two baselines:
   - *Initial Diff* — diff against the content when the file was first opened
   - *Baseline Diff* — diff against a snapshot you set manually with **Update Baseline**

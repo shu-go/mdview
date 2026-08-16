@@ -660,6 +660,32 @@ func isSupportedDoc(path string) bool {
 	return supportedDocExts[strings.ToLower(filepath.Ext(path))]
 }
 
+// ignoredDirNames lists directory names that are skipped (not descended into)
+// when expanding or watching a folder, since they're typically huge and never
+// contain documents worth showing (VCS metadata, package manager caches).
+var ignoredDirNames = map[string]bool{
+	"node_modules": true,
+	".git":         true,
+	".hg":          true,
+	".svn":         true,
+}
+
+// isIgnoredDirName reports whether a directory with the given base name
+// should never be descended into (see ignoredDirNames).
+func isIgnoredDirName(name string) bool {
+	return ignoredDirNames[name] || strings.HasPrefix(name, ".")
+}
+
+// shouldSkipDir reports whether a directory encountered while walking root
+// should be skipped entirely. The root itself is never skipped, even if its
+// name would otherwise match (e.g. the user explicitly opened a ".git" folder).
+func shouldSkipDir(path, root string, isDir bool) bool {
+	if !isDir || path == root {
+		return false
+	}
+	return isIgnoredDirName(filepath.Base(path))
+}
+
 // WatchFolder recursively watches rootPath for newly created supported
 // documents, emitting a "file-added" event for each one (including files
 // inside subdirectories created after the watch started). Calling it again
@@ -686,6 +712,9 @@ func (a *App) WatchFolder(rootPath string) error {
 	err = filepath.Walk(clean, func(path string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return nil // skip unreadable entries rather than aborting the whole watch
+		}
+		if shouldSkipDir(path, clean, fi.IsDir()) {
+			return filepath.SkipDir
 		}
 		if fi.IsDir() {
 			_ = w.Add(path)
@@ -743,6 +772,9 @@ func (a *App) handleFolderCreate(fw *folderWatcher, path string) {
 		return // gone again already, or unreadable
 	}
 	if info.IsDir() {
+		if isIgnoredDirName(filepath.Base(path)) {
+			return
+		}
 		_ = fw.watcher.Add(path)
 		a.scanFolderContents(fw, path)
 		return
@@ -774,6 +806,9 @@ func (a *App) scanFolderContents(fw *folderWatcher, dir string) {
 	_ = filepath.Walk(dir, func(path string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return nil
+		}
+		if shouldSkipDir(path, dir, fi.IsDir()) {
+			return filepath.SkipDir
 		}
 		if fi.IsDir() {
 			if path != dir {
@@ -947,6 +982,9 @@ func (a *App) ExpandDroppedPaths(paths []string) (ExpandResult, error) {
 		err = filepath.Walk(p, func(path string, fi os.FileInfo, err error) error {
 			if err != nil {
 				return nil
+			}
+			if shouldSkipDir(path, p, fi.IsDir()) {
+				return filepath.SkipDir
 			}
 			if !fi.IsDir() {
 				result.Files = append(result.Files, path)
