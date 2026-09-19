@@ -9,11 +9,11 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^8.2.1"
+    "vite": "^8.3.0"
   },
   "dependencies": {
-    "@wailsio/runtime": "3.0.0-beta.8",
-    "mermaid": "^11.16.1",
+    "@wailsio/runtime": "3.0.0-beta.23",
+    "mermaid": "^11.17.2",
     "prismjs": "^1.30.0"
   }
 }
