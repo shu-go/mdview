@@ -726,7 +726,6 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => {
     if (e.key !== 'Control') return;
     ctrlDown = false;
-    hideLinkContentPopup();
 });
 
 window.addEventListener('blur', () => {
@@ -738,6 +737,14 @@ contentArea.addEventListener('scroll', () => hideLinkContentPopup());
 
 linkContentPopup.addEventListener('mouseenter', () => clearTimeout(linkPopupHideTimer));
 linkContentPopup.addEventListener('mouseleave', () => scheduleHideLinkPopup());
+
+// Clicking anywhere outside the popup dismisses it (the main way to close it
+// now that releasing Ctrl no longer does — see keyup handler above).
+document.addEventListener('click', (e) => {
+    if (!linkContentPopup.classList.contains('visible')) return;
+    if (linkContentPopup.contains(e.target)) return;
+    hideLinkContentPopup();
+});
 
 function scheduleShowLinkPopup(anchor, x, y) {
     clearTimeout(linkPopupShowTimer);

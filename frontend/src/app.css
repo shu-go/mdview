@@ -574,6 +574,7 @@
     max-width: 480px;
     max-height: 360px;
     overflow: auto;
+    overscroll-behavior: contain;
     padding: 0.7rem 1rem;
     background-color: var(--overlay-bg);
     border: 1px solid var(--border-color);
