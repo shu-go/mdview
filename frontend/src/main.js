@@ -64,7 +64,7 @@ let tocFocused = false;  // true while keyboard focus is in the TOC panel
 let focusedTocIndex = -1;
 
 // Persisted config (loaded at startup, updated on font/theme/editor/split change)
-let currentConfig = { font: '', themeMode: 'system', editorPath: '', fileListRatio: 0 };
+let currentConfig = { font: '', themeMode: 'system', editorPath: '', fileListRatio: 0, closeFileListOnSelect: false, closeTocOnSelect: false };
 
 // DOM Elements (pre-rendered in index.html)
 const searchPanel = document.querySelector('.search-panel');
@@ -84,9 +84,11 @@ const renderPane = document.querySelector('.render-pane');
 const btnToggleFileList = document.getElementById('btn-toggle-file-list');
 const fileListPanel = document.getElementById('file-list-panel');
 const fileListItems = document.getElementById('file-list-items');
+const fileListCloseOnSelectCheckbox = document.getElementById('file-list-close-on-select');
 const btnToggleTOC = document.getElementById('btn-toggle-toc');
 const tocPanel = document.getElementById('toc-panel');
 const tocItemsEl = document.getElementById('toc-items');
+const tocCloseOnSelectCheckbox = document.getElementById('toc-close-on-select');
 const splitter = document.getElementById('splitter');
 const btnUpdateBaseline = document.getElementById('btn-update-baseline');
 const btnMenu = document.getElementById('btn-menu');
@@ -1555,7 +1557,11 @@ fileListItems.addEventListener('click', async (e) => {
         const path = fileRow.dataset.file;
         focusedItemKey = `file:${path}`;
         await openFile(path);
-        renderFileList();
+        if (currentConfig.closeFileListOnSelect) {
+            closeFileListPanel();
+        } else {
+            renderFileList();
+        }
     }
 });
 
@@ -1603,6 +1609,8 @@ async function activateFocusedItemAndBlur() {
     if (wasGroup) {
         renderFileList();
         scrollFocusedIntoView();
+    } else if (currentConfig.closeFileListOnSelect) {
+        closeFileListPanel();
     } else {
         blurFileListToRender();
     }
@@ -1781,7 +1789,11 @@ tocItemsEl.addEventListener('click', (e) => {
     tocFocused = true;
     focusedTocIndex = Number(row.dataset.index);
     jumpToFocusedTocItem();
-    blurTocToRender();
+    if (currentConfig.closeTocOnSelect) {
+        closeTOCPanel();
+    } else {
+        blurTocToRender();
+    }
 });
 
 function handleTocKeydown(e) {
@@ -1801,7 +1813,11 @@ function handleTocKeydown(e) {
         case 't':
             e.preventDefault();
             jumpToFocusedTocItem();
-            blurTocToRender();
+            if (currentConfig.closeTocOnSelect) {
+                closeTOCPanel();
+            } else {
+                blurTocToRender();
+            }
             break;
         case 'f':
             e.preventDefault();
@@ -1894,6 +1910,24 @@ window.addEventListener('mouseup', async () => {
     }
 });
 
+fileListCloseOnSelectCheckbox.addEventListener('change', async () => {
+    currentConfig.closeFileListOnSelect = fileListCloseOnSelectCheckbox.checked;
+    try {
+        await SaveConfig(currentConfig);
+    } catch (err) {
+        console.error('Failed to save close-on-select setting:', err);
+    }
+});
+
+tocCloseOnSelectCheckbox.addEventListener('change', async () => {
+    currentConfig.closeTocOnSelect = tocCloseOnSelectCheckbox.checked;
+    try {
+        await SaveConfig(currentConfig);
+    } catch (err) {
+        console.error('Failed to save close-on-select setting:', err);
+    }
+});
+
 // --- Startup: load config and open CLI files/folders if provided ---
 (async () => {
     const [config, initialArgs] = await Promise.all([LoadConfig(), GetInitialArgs()]);
@@ -1902,7 +1936,11 @@ window.addEventListener('mouseup', async () => {
         themeMode: config.themeMode || 'system',
         editorPath: config.editorPath || '',
         fileListRatio: config.fileListRatio || 0,
+        closeFileListOnSelect: !!config.closeFileListOnSelect,
+        closeTocOnSelect: !!config.closeTocOnSelect,
     };
+    fileListCloseOnSelectCheckbox.checked = currentConfig.closeFileListOnSelect;
+    tocCloseOnSelectCheckbox.checked = currentConfig.closeTocOnSelect;
     if (currentConfig.font) {
         applyFont(currentConfig.font);
     }

@@ -858,10 +858,12 @@ func (a *App) OpenInBrowser(url string) {
 
 // Config holds user preferences persisted to mdview.json.
 type Config struct {
-	Font          string  `json:"font"`
-	ThemeMode     string  `json:"themeMode"` // "light" | "dark" | "system"
-	EditorPath    string  `json:"editorPath"`
-	FileListRatio float64 `json:"fileListRatio"` // width fraction (0-1) given to the file list area
+	Font                  string  `json:"font"`
+	ThemeMode             string  `json:"themeMode"` // "light" | "dark" | "system"
+	EditorPath            string  `json:"editorPath"`
+	FileListRatio         float64 `json:"fileListRatio"`         // width fraction (0-1) given to the file list area
+	CloseFileListOnSelect bool    `json:"closeFileListOnSelect"` // close the file list panel after selecting a file
+	CloseTocOnSelect      bool    `json:"closeTocOnSelect"`      // close the TOC panel after selecting a heading
 }
 
 func configFinder() *findcfg.Finder {
