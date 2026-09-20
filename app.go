@@ -70,8 +70,8 @@ func extractFrontMatter(content string) (yamlStr, body string) {
 		return "", content
 	}
 	rest := norm[4:]
-	if idx := strings.Index(rest, "\n---\n"); idx != -1 {
-		return rest[:idx], rest[idx+5:]
+	if before, after, ok := strings.Cut(rest, "\n---\n"); ok {
+		return before, after
 	}
 	if strings.HasSuffix(rest, "\n---") {
 		return rest[:len(rest)-4], ""
