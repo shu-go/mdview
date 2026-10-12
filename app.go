@@ -864,6 +864,7 @@ type Config struct {
 	FileListRatio         float64 `json:"fileListRatio"`         // width fraction (0-1) given to the file list area
 	CloseFileListOnSelect bool    `json:"closeFileListOnSelect"` // close the file list panel after selecting a file
 	CloseTocOnSelect      bool    `json:"closeTocOnSelect"`      // close the TOC panel after selecting a heading
+	TocMaxLevel           int     `json:"tocMaxLevel"`           // deepest heading level (1-6) listed in the TOC; 0 means all
 }
 
 func configFinder() *findcfg.Finder {

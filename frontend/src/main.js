@@ -64,7 +64,7 @@ let tocFocused = false;  // true while keyboard focus is in the TOC panel
 let focusedTocIndex = -1;
 
 // Persisted config (loaded at startup, updated on font/theme/editor/split change)
-let currentConfig = { font: '', themeMode: 'system', editorPath: '', fileListRatio: 0, closeFileListOnSelect: false, closeTocOnSelect: false };
+let currentConfig = { font: '', themeMode: 'system', editorPath: '', fileListRatio: 0, closeFileListOnSelect: false, closeTocOnSelect: false, tocMaxLevel: 6 };
 
 // DOM Elements (pre-rendered in index.html)
 const searchPanel = document.querySelector('.search-panel');
@@ -89,6 +89,7 @@ const btnToggleTOC = document.getElementById('btn-toggle-toc');
 const tocPanel = document.getElementById('toc-panel');
 const tocItemsEl = document.getElementById('toc-items');
 const tocCloseOnSelectCheckbox = document.getElementById('toc-close-on-select');
+const tocLevelControl = document.getElementById('toc-level-control');
 const splitter = document.getElementById('splitter');
 const btnUpdateBaseline = document.getElementById('btn-update-baseline');
 const btnMenu = document.getElementById('btn-menu');
@@ -1676,13 +1677,15 @@ function toggleFileListViaButton() {
 // Rebuilds tocItems from the headings currently rendered in markdownBody.
 // Called after every render (postProcessHTML) so switching files, reloading,
 // or toggling diff mode keeps the TOC in sync with what's on screen.
+// Headings deeper than currentConfig.tocMaxLevel are left out of the TOC only;
+// the render area still shows them.
 function buildTOC() {
     const headings = markdownBody.querySelectorAll('h1, h2, h3, h4, h5, h6');
     tocItems = [...headings].map(el => ({
         level: Number(el.tagName.slice(1)),
         text: el.textContent,
         el,
-    }));
+    })).filter(item => item.level <= currentConfig.tocMaxLevel);
     if (focusedTocIndex >= tocItems.length) focusedTocIndex = tocItems.length - 1;
     if (!tocPanel.classList.contains('hidden')) renderTOCPanel();
 }
@@ -1935,6 +1938,34 @@ tocCloseOnSelectCheckbox.addEventListener('change', async () => {
     }
 });
 
+function updateTocLevelButtons() {
+    tocLevelControl.querySelectorAll('.seg-btn').forEach(btn => {
+        btn.classList.toggle('active', Number(btn.dataset.level) === currentConfig.tocMaxLevel);
+    });
+}
+
+// Keep DOM focus off the level buttons so Space/Enter keep acting as shortcuts.
+tocLevelControl.addEventListener('mousedown', (e) => e.preventDefault());
+
+tocLevelControl.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.seg-btn');
+    if (!btn) return;
+    const level = Number(btn.dataset.level);
+    if (level === currentConfig.tocMaxLevel) return;
+    currentConfig.tocMaxLevel = level;
+    updateTocLevelButtons();
+    buildTOC();
+    // The item list changed under the old index; re-anchor to what's on screen.
+    focusedTocIndex = nearestTocIndexToScroll();
+    renderTOCPanel();
+    scrollFocusedTocIntoView();
+    try {
+        await SaveConfig(currentConfig);
+    } catch (err) {
+        console.error('Failed to save TOC level setting:', err);
+    }
+});
+
 // --- Startup: load config and open CLI files/folders if provided ---
 (async () => {
     const [config, initialArgs] = await Promise.all([LoadConfig(), GetInitialArgs()]);
@@ -1945,9 +1976,11 @@ tocCloseOnSelectCheckbox.addEventListener('change', async () => {
         fileListRatio: config.fileListRatio || 0,
         closeFileListOnSelect: !!config.closeFileListOnSelect,
         closeTocOnSelect: !!config.closeTocOnSelect,
+        tocMaxLevel: config.tocMaxLevel >= 1 && config.tocMaxLevel <= 6 ? config.tocMaxLevel : 6,
     };
     fileListCloseOnSelectCheckbox.checked = currentConfig.closeFileListOnSelect;
     tocCloseOnSelectCheckbox.checked = currentConfig.closeTocOnSelect;
+    updateTocLevelButtons();
     if (currentConfig.font) {
         applyFont(currentConfig.font);
     }

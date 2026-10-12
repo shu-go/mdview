@@ -248,6 +248,14 @@
     user-select: none;
 }
 
+.toc-level-option {
+    cursor: default;
+}
+
+.toc-level-label {
+    font-weight: 600;
+}
+
 .file-list-shortcuts {
     flex-shrink: 0;
     padding: 6px 10px;
