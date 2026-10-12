@@ -75,6 +75,23 @@ jobs:
       - name: Install Wails3
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ env.WAILS_VERSION }}
 
+      # Release builds take their version from the pushed tag (v2.4.0 -> 2.4.0)
+      # rather than the value committed in build/config.yml.
+      - name: Apply tag version to build assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${VERSION%%[-+]*}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag '${GITHUB_REF_NAME}' does not contain an x.y.z version"
+            exit 1
+          fi
+          sed -i.bak -E "s/^(  version: ).*/\1\"${VERSION}\"/" build/config.yml
+          rm build/config.yml.bak
+          grep -q "^  version: \"${VERSION}\"" build/config.yml
+          wails3 task common:update:build-assets
+
       - name: Set up UPX
         if: matrix.upx
         uses: crazy-max/ghaction-upx@v3
