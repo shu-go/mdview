@@ -1838,6 +1838,15 @@ function handleTocKeydown(e) {
             e.preventDefault();
             closeTOCPanel();
             break;
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+            e.preventDefault();
+            setTocMaxLevel(Number(e.key));
+            break;
     }
 }
 
@@ -1947,10 +1956,13 @@ function updateTocLevelButtons() {
 // Keep DOM focus off the level buttons so Space/Enter keep acting as shortcuts.
 tocLevelControl.addEventListener('mousedown', (e) => e.preventDefault());
 
-tocLevelControl.addEventListener('click', async (e) => {
+tocLevelControl.addEventListener('click', (e) => {
     const btn = e.target.closest('.seg-btn');
     if (!btn) return;
-    const level = Number(btn.dataset.level);
+    setTocMaxLevel(Number(btn.dataset.level));
+});
+
+async function setTocMaxLevel(level) {
     if (level === currentConfig.tocMaxLevel) return;
     currentConfig.tocMaxLevel = level;
     updateTocLevelButtons();
@@ -1964,7 +1976,7 @@ tocLevelControl.addEventListener('click', async (e) => {
     } catch (err) {
         console.error('Failed to save TOC level setting:', err);
     }
-});
+}
 
 // --- Startup: load config and open CLI files/folders if provided ---
 (async () => {
