@@ -1,10 +1,13 @@
 import './style.css';
 import './app.css';
 
-import { LoadFile, ParseMarkdownWithDiff, WatchFile, UnwatchFile, SelectFiles, SelectFolder, WatchFolder, GetInitialArgs, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig, ExpandDroppedPaths } from '../bindings/mdview/app.js';
+import { LoadFile, ParseMarkdownWithDiff, WatchFile, UnwatchFile, SelectFiles, SelectFolder, WatchFolder, GetInitialArgs, OpenInBrowser, OpenInEditor, SetWindowTitle, ChooseEditor, LoadConfig, SaveConfig, ExpandDroppedPaths, ExportHTML } from '../bindings/mdview/app.js';
 import { Events, Application, Window as WailsWindow } from '@wailsio/runtime';
 import prismDarkTheme from 'prismjs/themes/prism-tomorrow.css?inline';
 import prismLightTheme from 'prismjs/themes/prism.css?inline';
+// The app's own stylesheets as strings, embedded into exported HTML files.
+import baseCSS from './style.css?inline';
+import appCSS from './app.css?inline';
 import Prism from 'prismjs';
 // Core-independent languages
 import 'prismjs/components/prism-bash';
@@ -95,6 +98,8 @@ const btnUpdateBaseline = document.getElementById('btn-update-baseline');
 const btnMenu = document.getElementById('btn-menu');
 const appMenu = document.getElementById('app-menu');
 const menuOpenFolder = document.getElementById('menu-open-folder');
+const menuExportHTML = document.getElementById('menu-export-html');
+const menuPrint = document.getElementById('menu-print');
 const menuEditor = document.getElementById('menu-editor');
 const menuFont = document.getElementById('menu-font');
 const markdownBody = document.getElementById('markdown-body');
@@ -278,6 +283,97 @@ menuOpenFolder.addEventListener('click', async () => {
     await openFolderDialog();
 });
 
+// Opens the native print dialog for the rendered document (Ctrl+P / Menu >
+// Print...). The print layout itself lives in app.css (@media print).
+async function printDocument() {
+    if (!activePath) return;
+    try {
+        await WailsWindow.Print();
+    } catch (err) {
+        console.error('Failed to print:', err);
+    }
+}
+
+// Overrides layered on top of the embedded app CSS so the exported page
+// scrolls as a normal document instead of inside the app's fixed viewport.
+const exportCSS = `
+html, body { height: auto; overflow: visible; }
+body { padding: 2rem 1.5rem; }
+.content-inner { margin: 0 auto; }
+.fm-header { cursor: default; }
+`;
+
+// Builds a self-contained HTML document from what the render area currently
+// shows: front matter panel + rendered body, in the active diff mode and the
+// resolved color theme. Styles are embedded and no script is included — code
+// highlighting, Mermaid diagrams and local images are already baked into the DOM.
+function buildExportHTML(entry) {
+    const content = markdownBody.closest('.content-inner').cloneNode(true);
+    const body = content.querySelector('.markdown-body');
+    body.removeAttribute('id');
+    body.style.zoom = '';
+    if (!body.getAttribute('style')) body.removeAttribute('style');
+    content.querySelectorAll('.copy-btn').forEach(el => el.remove());
+    content.querySelectorAll('mark.search-match').forEach(mark => {
+        mark.replaceWith(...mark.childNodes);
+    });
+    body.normalize();
+
+    // No script in the export, so the panel can't be toggled: always expanded.
+    const fm = content.querySelector('.front-matter-panel');
+    fm.removeAttribute('id');
+    if (fm.classList.contains('hidden')) {
+        fm.remove();
+    } else {
+        fm.querySelector('.fm-toggle')?.remove();
+        fm.querySelector('.fm-body')?.classList.remove('hidden');
+    }
+
+    const light = isEffectiveThemeLight();
+    return `<!DOCTYPE html>
+<html lang="ja" class="${light ? 'theme-light' : 'theme-dark'}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="mdview">
+<title>${escapeHTML(entry.name)}</title>
+<style>
+${baseCSS}
+${appCSS}
+${light ? prismLightTheme : prismDarkTheme}
+${exportCSS}</style>
+</head>
+<body>
+${content.outerHTML}
+</body>
+</html>
+`;
+}
+
+// Saves the rendered document as a single HTML file (Ctrl+S / Menu > Export HTML...).
+async function exportHTML() {
+    const entry = filesByPath.get(activePath);
+    if (!entry) return;
+    try {
+        const defaultName = entry.name.replace(/\.[^.]*$/, '') + '.html';
+        const saved = await ExportHTML(entry.dirPath, defaultName, buildExportHTML(entry));
+        if (saved) showToast('Exported: ' + saved.split(/[\\/]/).pop());
+    } catch (err) {
+        console.error('Failed to export HTML:', err);
+        showToast('Failed to export HTML');
+    }
+}
+
+menuExportHTML.addEventListener('click', async () => {
+    closeAppMenu();
+    await exportHTML();
+});
+
+menuPrint.addEventListener('click', async () => {
+    closeAppMenu();
+    await printDocument();
+});
+
 menuEditor.addEventListener('click', async () => {
     closeAppMenu();
     try {
@@ -394,6 +490,16 @@ document.addEventListener('keydown', async (e) => {
         } catch (err) {
             console.error('Failed to select files:', err);
         }
+        return;
+    }
+    if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        await exportHTML();
+        return;
+    }
+    if (e.ctrlKey && e.key === 'p') {
+        e.preventDefault();
+        await printDocument();
         return;
     }
     if (e.ctrlKey && e.key === 'q') {

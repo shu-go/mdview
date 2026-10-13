@@ -935,6 +935,31 @@ func (a *App) OpenInEditor(editorPath, filePath string) error {
 	return exec.Command(editorPath, filePath).Start()
 }
 
+// ExportHTML opens a native save dialog and writes content (a self-contained
+// HTML document built by the frontend) to the chosen path. Returns the saved
+// path, or empty string if the user cancelled.
+func (a *App) ExportHTML(initialDir, defaultName, content string) (string, error) {
+	path, err := application.Get().Dialog.SaveFileWithOptions(&application.SaveFileDialogOptions{
+		Title:                "Export HTML",
+		Directory:            initialDir,
+		Filename:             defaultName,
+		CanCreateDirectories: true,
+		Filters: []application.FileFilter{
+			{DisplayName: "HTML Files (*.html)", Pattern: "*.html"},
+		},
+	}).PromptForSingleSelection()
+	if err != nil || path == "" {
+		return "", err
+	}
+	if filepath.Ext(path) == "" {
+		path += ".html"
+	}
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
 // GetInitialArgs returns the file/folder paths passed as command-line arguments, if any.
 func (a *App) GetInitialArgs() []string {
 	if len(os.Args) > 1 {

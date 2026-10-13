@@ -1315,3 +1315,82 @@ mark.search-match.current {
     background-color: rgba(255, 140, 0, 0.65);
     outline: 1px solid rgba(255, 140, 0, 0.8);
 }
+
+/* --- Print (Ctrl+P / Menu > Print...): only the rendered document, flowed
+   across pages instead of clipped to the scrolling viewport --- */
+@media print {
+    html,
+    body,
+    #app,
+    .viewer-container:not(.hidden),
+    .viewer-body,
+    .render-pane,
+    .content-area,
+    .content-inner {
+        display: block;
+        height: auto;
+        overflow: visible;
+    }
+
+    body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .toolbar,
+    .file-list-panel,
+    .splitter,
+    .edge-flash,
+    .scroll-marks,
+    .link-preview,
+    .link-content-popup,
+    .zoom-bar,
+    .search-panel,
+    .app-menu,
+    .modal-backdrop,
+    .toast,
+    .copy-btn {
+        display: none !important;
+    }
+
+    .content-area {
+        padding: 0;
+    }
+
+    .content-inner {
+        max-width: none;
+    }
+
+    /* On-screen zoom is a viewing aid; the print dialog has its own scale. */
+    .markdown-body {
+        zoom: 1 !important;
+    }
+
+    .markdown-body h1,
+    .markdown-body h2,
+    .markdown-body h3,
+    .markdown-body h4,
+    .markdown-body h5,
+    .markdown-body h6 {
+        break-after: avoid;
+    }
+
+    .markdown-body pre,
+    .markdown-body blockquote,
+    .markdown-body .markdown-callout,
+    .markdown-body tr,
+    .markdown-body img,
+    .mermaid {
+        break-inside: avoid;
+    }
+
+    /* Nothing can scroll on paper, so wrap long code lines instead of clipping them. */
+    .markdown-body pre {
+        overflow: visible;
+    }
+
+    .markdown-body pre code {
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+}
