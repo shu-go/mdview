@@ -865,6 +865,7 @@ type Config struct {
 	CloseFileListOnSelect bool    `json:"closeFileListOnSelect"` // close the file list panel after selecting a file
 	CloseTocOnSelect      bool    `json:"closeTocOnSelect"`      // close the TOC panel after selecting a heading
 	TocMaxLevel           int     `json:"tocMaxLevel"`           // deepest heading level (1-6) listed in the TOC; 0 means all
+	ContentWidth          int     `json:"contentWidth"`          // body width as % (30-100) of the render area; 0 means auto (800px cap)
 }
 
 func configFinder() *findcfg.Finder {

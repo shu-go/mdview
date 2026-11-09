@@ -498,7 +498,8 @@
     right: 0;
     z-index: 55;
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     gap: 1px;
     padding: 2px 6px;
     background-color: var(--overlay-bg);
@@ -515,6 +516,13 @@
 .zoom-bar.visible {
     opacity: 1;
     pointer-events: auto;
+}
+
+.zoom-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1px;
 }
 
 .zoom-btn {
@@ -547,6 +555,11 @@
 .zoom-reset-btn {
     font-size: 0.7rem;
     color: var(--text-muted);
+}
+
+/* "Auto 62%" is wider than a plain percentage */
+.width-label {
+    min-width: 64px;
 }
 
 /* --- Link Preview Status Bar --- */
@@ -1357,8 +1370,9 @@ mark.search-match.current {
         padding: 0;
     }
 
+    /* !important: beats the on-screen content width set inline (zoom bar) */
     .content-inner {
-        max-width: none;
+        max-width: none !important;
     }
 
     /* On-screen zoom is a viewing aid; the print dialog has its own scale. */

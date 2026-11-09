@@ -117,10 +117,19 @@
 
                 <!-- Zoom bar (bottom-right corner) -->
                 <div id="zoom-bar" class="zoom-bar">
-                    <button id="btn-zoom-out" class="zoom-btn" title="Zoom out (Ctrl+-)">−</button>
-                    <span id="zoom-label" class="zoom-label">100%</span>
-                    <button id="btn-zoom-in" class="zoom-btn" title="Zoom in (Ctrl++)">+</button>
-                    <button id="btn-zoom-reset" class="zoom-btn zoom-reset-btn" title="Reset zoom (Ctrl+=)">1:1</button>
+                    <!-- Body width as a share of the render area -->
+                    <div class="zoom-row" title="Content width">
+                        <button id="btn-width-narrow" class="zoom-btn" title="Narrower">−</button>
+                        <span id="width-label" class="zoom-label width-label">Auto</span>
+                        <button id="btn-width-wide" class="zoom-btn" title="Wider">+</button>
+                        <button id="btn-width-auto" class="zoom-btn zoom-reset-btn" title="Auto width (up to 800px)">Auto</button>
+                    </div>
+                    <div class="zoom-row">
+                        <button id="btn-zoom-out" class="zoom-btn" title="Zoom out (Ctrl+-)">−</button>
+                        <span id="zoom-label" class="zoom-label">100%</span>
+                        <button id="btn-zoom-in" class="zoom-btn" title="Zoom in (Ctrl++)">+</button>
+                        <button id="btn-zoom-reset" class="zoom-btn zoom-reset-btn" title="Reset zoom (Ctrl+=)">1:1</button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -67,7 +67,7 @@ let tocFocused = false;  // true while keyboard focus is in the TOC panel
 let focusedTocIndex = -1;
 
 // Persisted config (loaded at startup, updated on font/theme/editor/split change)
-let currentConfig = { font: '', themeMode: 'system', editorPath: '', fileListRatio: 0, closeFileListOnSelect: false, closeTocOnSelect: false, tocMaxLevel: 6 };
+let currentConfig = { font: '', themeMode: 'system', editorPath: '', fileListRatio: 0, closeFileListOnSelect: false, closeTocOnSelect: false, tocMaxLevel: 6, contentWidth: 0 };
 
 // DOM Elements (pre-rendered in index.html)
 const searchPanel = document.querySelector('.search-panel');
@@ -123,6 +123,11 @@ const zoomLabel = document.getElementById('zoom-label');
 const btnZoomOut = document.getElementById('btn-zoom-out');
 const btnZoomIn = document.getElementById('btn-zoom-in');
 const btnZoomReset = document.getElementById('btn-zoom-reset');
+const widthLabel = document.getElementById('width-label');
+const btnWidthNarrow = document.getElementById('btn-width-narrow');
+const btnWidthWide = document.getElementById('btn-width-wide');
+const btnWidthAuto = document.getElementById('btn-width-auto');
+const contentInner = document.querySelector('.content-inner');
 
 // Search state
 let searchMatches = [];
@@ -308,7 +313,8 @@ body { padding: 2rem 1.5rem; }
 // resolved color theme. Styles are embedded and no script is included — code
 // highlighting, Mermaid diagrams and local images are already baked into the DOM.
 function buildExportHTML(entry) {
-    const content = markdownBody.closest('.content-inner').cloneNode(true);
+    const content = contentInner.cloneNode(true);
+    content.removeAttribute('style'); // on-screen content width isn't carried over
     const body = content.querySelector('.markdown-body');
     body.removeAttribute('id');
     body.style.zoom = '';
@@ -624,6 +630,7 @@ function applyZoom() {
 
 function showZoomBar() {
     clearTimeout(zoomBarHideTimer);
+    if (!zoomBar.classList.contains('visible')) updateWidthLabel();
     zoomBar.classList.add('visible');
 }
 
@@ -649,6 +656,63 @@ function resetZoom() {
 btnZoomOut.addEventListener('click', () => changeZoom(-10));
 btnZoomIn.addEventListener('click', () => changeZoom(10));
 btnZoomReset.addEventListener('click', resetZoom);
+
+// Content width: the body's share (%) of the render area, adjusted from the
+// row above the zoom controls. 0 (Auto) keeps the stylesheet's 800px cap, in
+// which case the label shows the share that cap currently works out to.
+const CONTENT_WIDTH_MIN = 30;
+const CONTENT_WIDTH_MAX = 100;
+const CONTENT_WIDTH_STEP = 10;
+
+// Width actually available to the body: the content area minus its padding.
+function contentAreaInnerWidth() {
+    const style = getComputedStyle(contentArea);
+    return contentArea.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+}
+
+function actualContentWidthPercent() {
+    const available = contentAreaInnerWidth();
+    if (available <= 0) return CONTENT_WIDTH_MAX;
+    return Math.min(CONTENT_WIDTH_MAX, Math.round(contentInner.offsetWidth / available * 100));
+}
+
+function updateWidthLabel() {
+    widthLabel.textContent = currentConfig.contentWidth
+        ? currentConfig.contentWidth + '%'
+        : 'Auto ' + actualContentWidthPercent() + '%';
+}
+
+function applyContentWidth() {
+    contentInner.style.maxWidth = currentConfig.contentWidth ? currentConfig.contentWidth + '%' : '';
+    updateWidthLabel();
+}
+
+async function setContentWidth(width) {
+    if (width === currentConfig.contentWidth) return;
+    currentConfig.contentWidth = width;
+    applyContentWidth();
+    try {
+        await SaveConfig(currentConfig);
+    } catch (err) {
+        console.error('Failed to save content width:', err);
+    }
+}
+
+// From Auto, the first step starts at the share the 800px cap currently gives.
+function changeContentWidth(delta) {
+    const base = currentConfig.contentWidth
+        || Math.round(actualContentWidthPercent() / CONTENT_WIDTH_STEP) * CONTENT_WIDTH_STEP;
+    setContentWidth(Math.max(CONTENT_WIDTH_MIN, Math.min(CONTENT_WIDTH_MAX, base + delta)));
+}
+
+btnWidthNarrow.addEventListener('click', () => changeContentWidth(-CONTENT_WIDTH_STEP));
+btnWidthWide.addEventListener('click', () => changeContentWidth(CONTENT_WIDTH_STEP));
+btnWidthAuto.addEventListener('click', () => setContentWidth(0));
+
+// Keep the Auto share current as the window, splitter or side panels resize the render area.
+new ResizeObserver(() => {
+    if (!currentConfig.contentWidth) updateWidthLabel();
+}).observe(contentArea);
 
 // Ctrl+wheel zoom: prevent the native browser/webview zoom and route through
 // changeZoom() instead, so the zoom bar stays in sync with the actual zoom level.
@@ -722,7 +786,10 @@ function navigateForward() {
 
 renderPane.addEventListener('mousemove', (e) => {
     const rect = renderPane.getBoundingClientRect();
-    if (e.clientY > rect.bottom - 40 && e.clientX > rect.right - 130) showZoomBar();
+    // Hot zone: the bar's own footprint (zoom + content width rows) plus a small margin.
+    const nearBar = e.clientY > rect.bottom - zoomBar.offsetHeight - 16
+        && e.clientX > rect.right - Math.max(130, zoomBar.offsetWidth + 16);
+    if (nearBar) showZoomBar();
     else if (!zoomBar.matches(':hover')) scheduleHideZoomBar();
 });
 renderPane.addEventListener('mouseleave', () => {
@@ -2095,7 +2162,9 @@ async function setTocMaxLevel(level) {
         closeFileListOnSelect: !!config.closeFileListOnSelect,
         closeTocOnSelect: !!config.closeTocOnSelect,
         tocMaxLevel: config.tocMaxLevel >= 1 && config.tocMaxLevel <= 6 ? config.tocMaxLevel : 6,
+        contentWidth: config.contentWidth >= CONTENT_WIDTH_MIN && config.contentWidth <= CONTENT_WIDTH_MAX ? config.contentWidth : 0,
     };
+    applyContentWidth();
     fileListCloseOnSelectCheckbox.checked = currentConfig.closeFileListOnSelect;
     tocCloseOnSelectCheckbox.checked = currentConfig.closeTocOnSelect;
     updateTocLevelButtons();
