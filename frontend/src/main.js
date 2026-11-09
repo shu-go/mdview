@@ -274,7 +274,6 @@ document.querySelectorAll('.theme-switch [data-theme]').forEach(item => {
         applyTheme(mode);
         currentConfig.themeMode = mode;
         closeAppMenu();
-        if (activePath) await renderContent();
         try {
             await SaveConfig(currentConfig);
         } catch (err) {
@@ -1303,35 +1302,49 @@ function stripEventHandlers(root) {
     }
 }
 
-let mermaidInitialized = false;
-let mermaidThemeIsLight = null;
+// Renders Mermaid source into the container with pele. Colors come from the
+// --pele-* CSS variables (mapped to the app theme in app.css), so theme changes
+// need no re-render. On failure the source and the error message are shown.
+function renderMermaidBlock(pele, div, source, idx) {
+    // Measure and draw text with the font the diagram actually inherits
+    // (the user-selected body font when set).
+    const fontFamily = getComputedStyle(div).fontFamily;
+    div.style.setProperty('--pele-font', fontFamily);
+    try {
+        const { svg } = pele.render(source, { fontFamily, idPrefix: `mermaid-${idx}-` });
+        div.innerHTML = svg;
+    } catch (err) {
+        console.error('Mermaid render error:', err);
+        div.classList.add('mermaid-error');
+        const msg = document.createElement('div');
+        msg.className = 'mermaid-error-message';
+        msg.textContent = err?.message || String(err);
+        const pre = document.createElement('pre');
+        pre.textContent = source;
+        div.replaceChildren(msg, pre);
+    }
+}
 
 async function postProcessHTML() {
     // 1. Process Mermaid blocks before prism highlights them
     const codeBlocks = document.querySelectorAll('pre code.language-mermaid');
-    const mermaidContainers = [];
+    const mermaidBlocks = [];
 
     codeBlocks.forEach((block, idx) => {
         const pre = block.parentNode;
         const div = document.createElement('div');
         div.className = 'mermaid';
         div.id = `mermaid-${idx}`;
-        div.textContent = block.textContent;
-
         pre.parentNode.replaceChild(div, pre);
-        mermaidContainers.push(div);
+        mermaidBlocks.push({ div, source: block.textContent });
     });
 
-    if (mermaidContainers.length > 0) {
+    if (mermaidBlocks.length > 0) {
         try {
-            const { default: mermaid } = await import('mermaid');
-            const wantLight = isEffectiveThemeLight();
-            if (!mermaidInitialized || mermaidThemeIsLight !== wantLight) {
-                mermaid.initialize({ startOnLoad: false, theme: wantLight ? 'default' : 'dark', securityLevel: 'loose' });
-                mermaidInitialized = true;
-                mermaidThemeIsLight = wantLight;
-            }
-            await mermaid.run({ nodes: mermaidContainers });
+            // pele/lazy loads only the diagram types actually used
+            const pele = await import('pele/lazy');
+            await Promise.all(mermaidBlocks.map(({ source }) => pele.load(pele.detectType(source))));
+            mermaidBlocks.forEach(({ div, source }, idx) => renderMermaidBlock(pele, div, source, idx));
         } catch (err) {
             console.error('Mermaid render error:', err);
         }
@@ -1485,8 +1498,7 @@ function applyPrismTheme(effective) {
 }
 
 // Returns true if the effective (resolved) color scheme is light, accounting
-// for "system" mode following the OS preference. Shared by Prism and Mermaid
-// so both stay in sync with the active theme.
+// for "system" mode following the OS preference.
 function isEffectiveThemeLight() {
     const root = document.documentElement;
     if (root.classList.contains('theme-light')) return true;
@@ -1506,11 +1518,11 @@ function applyTheme(mode) {
     applyPrismTheme(isEffectiveThemeLight() ? 'light' : 'dark');
 }
 
-// Keep Prism/Mermaid in sync when OS preference changes while "System" mode is active
+// Keep Prism in sync when OS preference changes while "System" mode is active
+// (Mermaid diagrams follow the CSS variables without re-rendering)
 window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', (e) => {
     if (currentConfig.themeMode === 'system') {
         applyPrismTheme(e.matches ? 'light' : 'dark');
-        if (activePath) renderContent();
     }
 });
 

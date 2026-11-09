@@ -980,8 +980,20 @@
     color: var(--text-secondary);
 }
 
-/* --- Mermaid --- */
+/* --- Mermaid (rendered by pele) --- */
 .mermaid {
+    /* pele reads its colors from these variables, so diagrams follow the
+       app theme (incl. "system" mode) without being re-rendered. */
+    --pele-bg: var(--bg-surface);
+    --pele-fg: var(--text-primary);
+    --pele-muted: var(--text-secondary);
+    --pele-line: var(--text-secondary);
+    --pele-surface: var(--bg-surface-hover);
+    --pele-surface-alt: var(--bg-main);
+    --pele-border: var(--border-color);
+    --pele-accent: var(--accent);
+    --pele-error: var(--danger);
+    --pele-font-mono: var(--font-mono);
     background-color: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 8px;
@@ -989,6 +1001,24 @@
     display: flex;
     justify-content: center;
     margin-bottom: 1rem;
+}
+
+.mermaid.mermaid-error {
+    flex-direction: column;
+    gap: 0.75rem;
+    border-color: var(--danger);
+    background-color: var(--error-bg);
+}
+
+.mermaid-error-message {
+    color: var(--danger);
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    white-space: pre-wrap;
+}
+
+.mermaid.mermaid-error pre {
+    margin: 0;
 }
 
 /* --- Diff Highlighting --- */
