@@ -150,6 +150,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       const maximised = await WailsWindow.IsMaximised().catch(() => false);
       max.innerHTML = maximised ? windowIcons.restore : windowIcons.maximise;
       max.title = maximised ? 'Restore' : 'Maximise';
+      document.documentElement.classList.toggle('is-maximised', maximised);
     };
     let timer = 0;
     window.addEventListener('resize', () => {
@@ -241,6 +242,12 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     const app = h('div', { class: 'mdv-app', 'data-file-drop-target': true }, this.toolbar, main, statusbar);
     document.body.className = 'mdv';
     document.body.replaceChildren(app);
+    // Resize grips on the window edges (frameless window). They sit above
+    // everything - e.g. the document's scrollbar at the right edge, which would
+    // otherwise take the mouse - and the Wails runtime resizes from their position.
+    for (const edge of ['top', 'right', 'bottom', 'left', 'top-left', 'top-right', 'bottom-left', 'bottom-right']) {
+      document.body.append(h('div', { class: `mdv-resize-edge mdv-resize-edge-${edge}`, 'aria-hidden': 'true' }));
+    }
   }
 
   diffDetail(): DiffDetail {

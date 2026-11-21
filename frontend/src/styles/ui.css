@@ -80,6 +80,28 @@ button {
   color: #ffffff;
 }
 
+/* resize grips on the edges of the frameless window (5px, as the runtime's
+   resize handle; corners 15px). Not used when maximised or on macOS. */
+.mdv-resize-edge {
+  position: fixed;
+  z-index: 1000;
+  background: transparent;
+}
+
+.is-maximised .mdv-resize-edge,
+[data-platform="darwin"] .mdv-resize-edge {
+  display: none;
+}
+
+.mdv-resize-edge-top { top: 0; left: 0; right: 0; height: 5px; cursor: ns-resize; }
+.mdv-resize-edge-bottom { bottom: 0; left: 0; right: 0; height: 5px; cursor: ns-resize; }
+.mdv-resize-edge-left { top: 0; bottom: 0; left: 0; width: 5px; cursor: ew-resize; }
+.mdv-resize-edge-right { top: 0; bottom: 0; right: 0; width: 5px; cursor: ew-resize; }
+.mdv-resize-edge-top-left { top: 0; left: 0; width: 15px; height: 15px; cursor: nwse-resize; z-index: 1001; }
+.mdv-resize-edge-bottom-right { bottom: 0; right: 0; width: 15px; height: 15px; cursor: nwse-resize; z-index: 1001; }
+.mdv-resize-edge-top-right { top: 0; right: 0; width: 15px; height: 5px; cursor: nesw-resize; z-index: 1001; }
+.mdv-resize-edge-bottom-left { bottom: 0; left: 0; width: 15px; height: 15px; cursor: nesw-resize; z-index: 1001; }
+
 /* app icon + window title; also a window drag region (like the title bar) */
 .mdv-toolbar-brand {
   flex: 1;
