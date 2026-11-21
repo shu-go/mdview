@@ -30,13 +30,21 @@ export function tokenize(text: string, detail: 'word' | 'char'): string[] {
   return Array.from(segmenter.segment(text), (s) => s.segment);
 }
 
+/**
+ * Elements whose direct text children are only formatting whitespace: marks
+ * placed there (e.g. <ins> directly in a <tr>) would break the table / list
+ * layout, so that text is not compared.
+ */
+const structural = new Set(['table', 'thead', 'tbody', 'tfoot', 'tr', 'colgroup', 'ul', 'ol', 'dl', 'details']);
+
 /** Text nodes of a block, skipping UI parts and diagrams. */
 function textNodes(root: Node): Text[] {
   const out: Text[] = [];
   const walk = (n: Node) => {
+    const skipText = n.nodeType === Node.ELEMENT_NODE && structural.has((n as Element).tagName.toLowerCase());
     for (let c = n.firstChild; c; c = c.nextSibling) {
       if (c.nodeType === Node.TEXT_NODE) {
-        if ((c as Text).data) out.push(c as Text);
+        if ((c as Text).data && !skipText) out.push(c as Text);
       } else if (c.nodeType === Node.ELEMENT_NODE) {
         const el = c as Element;
         const tag = el.tagName.toLowerCase();

@@ -101,6 +101,26 @@ describe('applyInlineDiffs', () => {
     ]);
   });
 
+  it('never puts marks directly into table or list structure', () => {
+    const row = (k: string, v: string) => `<tr>\n<td><code>${k}</code></td>\n<td>${v}</td>\n</tr>\n`;
+    const table = (rows: string) => `<table>\n<thead>\n<tr>\n<th>Key</th>\n<th>Action</th>\n</tr>\n</thead>\n<tbody>\n${rows}</tbody>\n</table>`;
+    const before = row('q', 'Quit') + row('v', 'Open in the editor');
+    const after = before + row('v', 'Open in the editor') + row('v', 'Open in the editor');
+    const root = doc(run(table(before), table(after)));
+    expect(applyInlineDiffs(root, 'word')).toBe(1);
+    for (const m of Array.from(root.querySelectorAll('ins.mdv-diff-word-ins, del.mdv-diff-word-del'))) {
+      expect(['TD', 'TH', 'CODE']).toContain(m.parentElement!.tagName);
+    }
+    // every row still has exactly two cells
+    for (const tr of Array.from(root.querySelectorAll('tr'))) {
+      expect(Array.from(tr.children).map((c) => c.tagName)).toEqual(tr.parentElement!.tagName === 'THEAD' ? ['TH', 'TH'] : ['TD', 'TD']);
+    }
+    const lists = doc(run('<ul>\n<li>A</li>\n<li>B</li>\n</ul>', '<ul>\n<li>A</li>\n<li>B</li>\n<li>C</li>\n</ul>'));
+    applyInlineDiffs(lists, 'word');
+    const ul = lists.querySelector('.mdv-diff-ins ul')!;
+    expect(Array.from(ul.children).map((c) => c.tagName)).toEqual(['LI', 'LI', 'LI']);
+  });
+
   it('does nothing in block mode', () => {
     const root = doc(run('<p>a b c</p>', '<p>a x c</p>'));
     expect(applyInlineDiffs(root, 'block')).toBe(0);
