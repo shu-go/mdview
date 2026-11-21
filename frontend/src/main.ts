@@ -128,9 +128,6 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       tb('Open…', 'Open files (Ctrl+O)', 'open-file'),
       tb('Folder…', 'Open folder (Ctrl+Shift+O)', 'open-folder'),
       sep(),
-      tb('◫', 'Split right (Ctrl+\\)', 'split-right'),
-      tb('⬓', 'Split down (Ctrl+Shift+\\)', 'split-down'),
-      sep(),
       this.diffSelect,
       tb('Baseline', 'Use current content as diff baseline (B)', 'set-baseline'),
       tb('⟳', 'Reload (r)', 'reload'),
@@ -567,6 +564,13 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     if (!f) return;
     for (const t of [...f.pane.tabs]) if (t.id !== tabId) this.layout.removeTab(t.id);
     this.renderAll();
+  }
+
+  splitPane(paneId: string, side: 'right' | 'bottom'): void {
+    const p = this.layout.pane(paneId);
+    const t = p?.tabs.find((x) => x.id === p.active);
+    if (t) this.splitTab(t, side);
+    this.focusDoc();
   }
 
   private splitTab(tab: Tab, side: Side): void {

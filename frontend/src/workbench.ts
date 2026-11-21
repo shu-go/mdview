@@ -29,7 +29,23 @@ export interface WorkbenchHost {
   dragOut(data: DragTab, screenX: number, screenY: number): void;
   layoutResized(): void;
   emptyView(): HTMLElement;
+  /** Opens the pane's active tab in a new pane on that side. */
+  splitPane(paneId: string, side: 'right' | 'bottom'): void;
 }
+
+// Static, trusted icon markup (no user data).
+const splitButtons: ['right' | 'bottom', string, string][] = [
+  [
+    'right',
+    'Split right (Ctrl+\\)',
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 2.5v11" stroke="currentColor" stroke-width="1.3"/></svg>',
+  ],
+  [
+    'bottom',
+    'Split down (Ctrl+Shift+\\)',
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M1.5 8h13" stroke="currentColor" stroke-width="1.3"/></svg>',
+  ],
+];
 
 /** The tab being dragged from this window, if any. */
 let localDrag: { tabId: string; handled: boolean } | null = null;
@@ -49,6 +65,14 @@ export class Workbench {
     this.overlays.clear();
     const root = this.node(layout.root, layout, activePaneId);
     this.el.replaceChildren(root);
+    // keep each pane's active tab visible in its (scrolling) tab list
+    this.el.querySelectorAll<HTMLElement>('.mdv-pane-tabs').forEach((bar) => {
+      const tab = bar.querySelector<HTMLElement>('.mdv-pane-tab.is-active');
+      if (!tab) return;
+      const left = tab.offsetLeft - bar.offsetLeft;
+      if (left < bar.scrollLeft) bar.scrollLeft = left;
+      else if (left + tab.offsetWidth > bar.scrollLeft + bar.clientWidth) bar.scrollLeft = left + tab.offsetWidth - bar.clientWidth;
+    });
   }
 
   private node(n: LayoutNode, layout: Layout, activePaneId: string): HTMLElement {
@@ -123,7 +147,22 @@ export class Workbench {
     this.overlays.set(p.id, overlay);
     this.bodyDrop(body, p, overlay);
 
-    const el = h('div', { class: `mdv-pane${isActive ? ' is-active' : ''}`, 'data-pane-id': p.id }, tabs, body);
+    // tab bar: scrolling tab list + actions fixed at the right end
+    const actions = h('div', { class: 'mdv-pane-actions' });
+    if (active) {
+      for (const [side, title, svg] of splitButtons) {
+        const b = h('button', { class: 'mdv-pane-action', type: 'button', title, 'data-side': side });
+        b.innerHTML = svg; // static icon markup
+        b.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.host.splitPane(p.id, side);
+        });
+        actions.append(b);
+      }
+    }
+    const header = h('div', { class: 'mdv-pane-header' }, tabs, actions);
+
+    const el = h('div', { class: `mdv-pane${isActive ? ' is-active' : ''}`, 'data-pane-id': p.id }, header, body);
     el.addEventListener('mousedown', () => this.host.activatePane(p.id), true);
     tabs.addEventListener('dblclick', (e) => {
       if (e.target === tabs || e.target === filler) this.host.activatePane(p.id);

@@ -454,16 +454,56 @@ button {
   position: relative;
 }
 
-.mdv-pane-tabs {
+/* tab bar: scrolling tab list + actions (split buttons) fixed at the right */
+.mdv-pane-header {
   display: flex;
   align-items: stretch;
   min-height: 32px;
-  overflow-x: auto;
-  overflow-y: hidden;
   background: var(--mdv-color-chrome-bg);
   border-bottom: 1px solid var(--mdv-color-border);
-  scrollbar-width: thin;
   user-select: none;
+}
+
+.mdv-pane-tabs {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.mdv-pane-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 4px;
+}
+
+.mdv-pane-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--mdv-color-muted);
+  cursor: pointer;
+}
+
+.mdv-pane-action:hover {
+  background: var(--mdv-color-hover);
+  color: var(--mdv-color-fg);
+}
+
+.mdv-pane-action svg {
+  width: 15px;
+  height: 15px;
 }
 
 .mdv-pane-tab {

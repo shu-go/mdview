@@ -22,7 +22,8 @@
          .mdv-workbench            pane area
            .mdv-split              (.mdv-split-row / .mdv-split-column) + .mdv-split-gutter
            .mdv-pane               (.is-active)
-             .mdv-pane-tabs        tab bar (.mdv-pane-tab .is-active, -title, -close)
+             .mdv-pane-header      tab bar: .mdv-pane-tabs (.mdv-pane-tab .is-active, -title, -close)
+                                   + .mdv-pane-actions (.mdv-pane-action: split buttons)
              .mdv-pane-body
                .mdv-search         search bar
                .mdv-doc            scrolling document area
