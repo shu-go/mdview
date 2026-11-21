@@ -58,12 +58,6 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Set up Task
-        uses: arduino/setup-task@v2
-        with:
-          version: 3.x
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
@@ -170,7 +164,8 @@ jobs:
           merge-multiple: true
 
       - name: Release
-        uses: softprops/action-gh-release@v2
+        # third-party action: pinned to a commit (v2.6.2)
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
         with:
           body_path: release-notes.md
           prerelease: ${{ contains(github.ref_name, '-') }}
