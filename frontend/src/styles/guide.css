@@ -1,0 +1,99 @@
+/* ==========================================================================
+   mdview custom stylesheet template
+   --------------------------------------------------------------------------
+   This file is the built-in stylesheet of mdview (a Markdown viewer),
+   exported as a starting point. It is written for both people and LLMs:
+   the notes below describe how the stylesheet is applied and how the UI is
+   structured, so that changes can be made without seeing the app.
+
+   HOW IT IS APPLIED
+   - Settings > Appearance > Custom CSS loads a file AFTER the built-in
+     stylesheet and reloads it when the file is saved. Keep only the rules
+     you change; delete the rest of this template.
+   - Prefer overriding the CSS variables (--mdv-*) in :root and in
+     [data-theme="light"] / [data-theme="dark"]; most colours, fonts and
+     sizes come from them (see the definitions right after this comment).
+   - Fonts, font size, zoom, text width and side margin set in Settings are
+     written as inline styles on <html> (--mdv-font-body, --mdv-font-code,
+     --mdv-font-size, --mdv-zoom, --mdv-content-max-width,
+     --mdv-content-padding), so they win over :root rules. Change them in
+     Settings, or override with !important.
+   - Content Security Policy: no scripts, no remote @import / @font-face.
+     Use locally installed fonts by name; images may use data: or http(s) URLs.
+
+   SELECTORS
+   - Every UI class starts with "mdv-"; hyphens express the hierarchy
+     (.mdv-sidebar > .mdv-sidebar-files > .mdv-sidebar-files-item).
+   - States are separate classes: .is-active .is-current .is-hidden
+     .is-missing .is-changed .is-collapsed .is-inline .is-flash
+   - <html> attributes: data-theme="light|dark", data-platform="windows|darwin|linux";
+     class is-maximised while the window is maximised.
+   - The rendered Markdown is plain HTML (h1-h6, p, a, ul, ol, li, table, pre,
+     code, blockquote, img, hr, ...) inside .mdv-content; style it with
+     descendant selectors such as ".mdv-content h2".
+
+   UI STRUCTURE
+   .mdv-app                          the window
+     .mdv-toolbar                    top bar; the frameless window's title bar
+       .mdv-toolbar-button           icon buttons (sidebar, search, editor, settings, help)
+       .mdv-toolbar-brand            app icon + title; drag to move the window
+         .mdv-toolbar-brand-icon / .mdv-toolbar-brand-title
+       .mdv-window-controls          minimise / maximise / close (hidden on macOS)
+         .mdv-window-button (-minimise -maximise -close)
+     .mdv-main
+       .mdv-sidebar                  left side bar (.is-hidden)
+         .mdv-sidebar-tabs > .mdv-sidebar-tab (-icon -label)   FILES / OUTLINE / SEARCH
+         .mdv-sidebar-files          file list, grouped by directory
+           .mdv-sidebar-files-group (.is-collapsed)
+             .mdv-sidebar-files-group-title (-toggle -name)
+             .mdv-sidebar-files-list > .mdv-sidebar-files-item (.is-active .is-open .is-missing)
+         .mdv-sidebar-outline        headings of the active document
+           .mdv-sidebar-outline-item (.mdv-sidebar-outline-level-1 ... -6, .is-current)
+         .mdv-sidebar-search         search in all listed files
+           .mdv-sidebar-search-form > .mdv-sidebar-search-input / -toggle
+           .mdv-sidebar-search-summary
+           .mdv-sidebar-search-group > -group-title, -file (-file-name -file-count),
+             -list > -match (-match-line -match-text > mark.mdv-sidebar-search-hit)
+       .mdv-sidebar-resizer          drag to resize the side bar
+       .mdv-workbench                pane area
+         .mdv-split (.mdv-split-row | .mdv-split-column) with .mdv-split-gutter between panes
+         .mdv-pane (.is-active)
+           .mdv-pane-header          tab bar
+             .mdv-pane-actions.mdv-pane-actions-start   open file / folder buttons
+             .mdv-pane-tabs > .mdv-pane-tab (.is-active .is-changed .is-missing)
+               .mdv-pane-tab-title / .mdv-pane-tab-close
+             .mdv-pane-actions       split buttons (.mdv-pane-action)
+           .mdv-pane-body
+             .mdv-search             in-document search bar (-input -toggle -button -count)
+             .mdv-doc                scrolling area of one document
+               .mdv-doc-banner       notices: missing file, number of changes
+               .mdv-content          the rendered Markdown
+             .mdv-empty              shown in a pane without tabs
+     .mdv-statusbar                  bottom bar
+       .mdv-statusbar-link           target of the link under the pointer
+       .mdv-statusbar-message
+       .mdv-statusbar-controls       .mdv-statusbar-select (diff mode),
+                                     .mdv-statusbar-button (baseline, width, zoom),
+                                     .mdv-statusbar-zoom (zoom level)
+   .mdv-dialog > .mdv-dialog-box     settings / key bindings dialogs
+   .mdv-menu > .mdv-menu-item        context menus
+   .mdv-resize-edge                  invisible window resize grips
+
+   GENERATED INSIDE .mdv-content
+   - Code block: .mdv-code[data-lang] > .mdv-code-header (.mdv-code-lang .mdv-code-copy)
+     + pre.chroma (syntax tokens: .chroma .k keyword, .s string, .c comment, ...)
+   - Mermaid: .mdv-mermaid > svg (colours: --pele-* variables)
+   - Callout: .mdv-callout.mdv-callout-{note|tip|important|warning|caution|...}[data-callout]
+     > .mdv-callout-title (.mdv-callout-icon .mdv-callout-title-text) + .mdv-callout-body
+     (foldable callouts are <details>)
+   - Front matter: details.mdv-frontmatter > .mdv-frontmatter-title,
+     table.mdv-frontmatter-table (.mdv-frontmatter-key .mdv-frontmatter-value
+     .mdv-frontmatter-item .mdv-frontmatter-raw)
+   - Footnotes: sup > a.footnote-ref, div.footnotes; hover popup .mdv-footnote-popup
+     (-label -body)
+   - Task list: li > input[type="checkbox"] (drawn by this stylesheet)
+   - Search hits: mark.mdv-search-hit (.is-current)
+   - Diff: .mdv-diff-ins (added / changed block), .mdv-diff-del (removed block),
+     .mdv-diff-ins.is-inline with ins.mdv-diff-word-ins / del.mdv-diff-word-del
+   - Top-level blocks carry data-line="N" (source line).
+   ========================================================================== */

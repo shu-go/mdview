@@ -6,6 +6,8 @@ import tokensCSS from './styles/tokens.css?raw';
 import uiCSS from './styles/ui.css?raw';
 import contentCSS from './styles/content.css?raw';
 import highlightCSS from './styles/highlight.css?raw';
+// guide for people / LLMs editing the template; only in the exported file
+import guideCSS from './styles/guide.css?raw';
 
 import { Window as WailsWindow } from '@wailsio/runtime';
 import { api, Ev, on, type FileItem, type OpenPathsEvent, type Settings, type Snapshot, type TabReceiveEvent } from './api';
@@ -23,7 +25,7 @@ import type { DiffDetail } from './inlinediff';
 import { Workbench, type DragTab, type DropTarget, type WorkbenchHost } from './workbench';
 import { basename, errMessage, h, isEditableTarget } from './util';
 
-const builtinCSS = [tokensCSS, uiCSS, contentCSS, highlightCSS].join('\n\n');
+const builtinCSS = [guideCSS, tokensCSS, uiCSS, contentCSS, highlightCSS].join('\n\n');
 
 const diffModes: DiffMode[] = ['baseline', 'initial', 'off'];
 const diffLabel: Record<DiffMode, string> = { baseline: 'Diff: baseline', initial: 'Diff: first load', off: 'Diff: off' };
