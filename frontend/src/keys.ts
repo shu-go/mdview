@@ -37,6 +37,7 @@ export const bindings: Binding[] = [
   { keys: ['q', 'C-w'], cmd: 'close-tab', help: 'Close tab' },
   { keys: ['t', 'C-Tab', 'C-PageDown'], cmd: 'next-tab', help: 'Next tab' },
   { keys: ['T', 'C-S-Tab', 'C-PageUp'], cmd: 'prev-tab', help: 'Previous tab' },
+  { keys: ['C-1', 'C-2', 'C-3', 'C-4', 'C-5', 'C-6', 'C-7', 'C-8', 'C-9'], cmd: 'goto-tab', help: 'Go to tab 1-8 (Ctrl+9: last tab)' },
   { keys: ['C-\\'], cmd: 'split-right', help: 'Split: open the tab to the right' },
   { keys: ['C-S-\\', 'C-|'], cmd: 'split-down', help: 'Split: open the tab below' },
   { keys: ['A-ArrowRight'], cmd: 'focus-next-pane', help: 'Focus next pane' },

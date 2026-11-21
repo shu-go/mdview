@@ -664,7 +664,19 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       return;
     }
     e.preventDefault();
+    if (r.cmd === 'goto-tab') {
+      this.gotoTab(Number(e.key));
+      return;
+    }
     this.run(r.cmd, r.count);
+  }
+
+  /** Ctrl+1..8: the tab at that position in the active pane; Ctrl+9: the last tab. */
+  private gotoTab(n: number): void {
+    const tabs = this.activePane.tabs;
+    if (!tabs.length || !(n >= 1 && n <= 9)) return;
+    const t = n === 9 ? tabs[tabs.length - 1] : tabs[n - 1];
+    if (t) this.activateTab(t.id);
   }
 
   run(cmd: string, count: number | null): void {

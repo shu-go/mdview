@@ -1,96 +1,103 @@
 # mdview
 
-Go + [Wails v3](https://v3.wails.io/) 製の Markdown ビューアー（Windows / macOS / Linux）。
+English | [日本語](README_ja.md)
 
-- タブと入れ子ペイン、複数ウィンドウ（タブをウィンドウ外へドラッグ）
-- ファイル一覧（ディレクトリー毎）と見出しアウトラインのサイドバー
-- ファイル変更の自動再読み込みと差分表示（初回読み込み時 / 基準時点との比較）
-- less / lv ライクなキー操作、通常・正規表現検索
-- GitHub emoji、Mermaid（[pele](https://pele.run)）、Callouts、フロントマター、シンタックスハイライト
-- ライト / ダーク / システム配色、フォント・ズーム・本文幅、ユーザー CSS
+A Markdown viewer for Windows / macOS / Linux, built with Go and [Wails v3](https://v3.wails.io/).
 
-機能ごとの状況は [docs/STATUS.md](docs/STATUS.md)、設計判断は [docs/adr](docs/adr) を参照。
+- Tabs, nested split panes and multiple windows (drag a tab out of the window)
+- Sidebar with the file list (grouped by directory), the heading outline and search across files
+- Automatic reload on file changes, with diff highlighting (against the first load or a baseline you set)
+- less / lv style key bindings, plain and regular expression search
+- GitHub emoji, Mermaid (rendered with [pele](https://pele.run)), callouts, front matter, syntax highlighting
+- Light / dark / system color scheme, fonts, zoom, text width and a custom stylesheet
 
-## 使い方
+See [docs/STATUS.md](docs/STATUS.md) for the feature status and [docs/adr](docs/adr) for design decisions (both in Japanese).
+
+## Usage
 
 ```
 mdview [FILE|FOLDER]...
 ```
 
-すでに起動している場合は、最後にアクティブだったウィンドウで開きます（シングルインスタンス）。
-ファイルやフォルダーはウィンドウへのドラッグ＆ドロップ、`Ctrl+O` / `Ctrl+Shift+O` でも開けます。
+If mdview is already running, the files open in the window that was active last (single instance).
+Files and folders can also be dropped on the window, or opened with `Ctrl+O` / `Ctrl+Shift+O`.
 
-主なキー（`F1` で一覧）:
+Main keys (`F1` shows them all):
 
-| キー | 動作 |
-|------|------|
-| `j` `k` / `Space` `b` / `d` `u` | 行 / ページ / 半ページ スクロール（`5j` のように回数指定可） |
-| `g` `G` / `50p` | 先頭 / 末尾 / 50% 位置 |
-| `{` `}` | 前 / 次の見出し |
-| `/` `?` `n` `N` / `Alt+/` | 検索 / 正規表現検索 |
-| `]` `[` / `D` / `B` | 次 / 前の変更箇所、差分オン/オフ（直近のモード）、基準を更新 |
-| `t` `T` / `q` | 次 / 前のタブ、タブを閉じる |
-| `Ctrl+\` `Ctrl+Shift+\` | 右 / 下に分割 |
-| `Ctrl+B` / `o` | サイドバー表示切替 / ファイル→見出し→検索 |
-| `Ctrl` `+` `-` `0`、`Ctrl`+ホイール / `(` `)` | ズーム / 本文幅 |
-| `Ctrl+Shift+G` | 全ファイル検索（サイドバー SEARCH） |
-| `Ctrl+Q` | 終了 |
-| `v` | 外部エディターで開く（表示中の行） |
+| Key | Action |
+|-----|--------|
+| `j` `k` / `Space` `b` / `d` `u` | Scroll a line / page / half page (with a count, e.g. `5j`) |
+| `g` `G` / `50p` | Top / bottom / 50 % |
+| `{` `}` | Previous / next heading |
+| `/` `?` `n` `N` / `Alt+/` | Search / regular expression search |
+| `]` `[` / `D` / `B` | Next / previous change, diff on/off (last used mode), set the baseline |
+| `t` `T` / `q` | Next / previous tab, close the tab |
+| `Ctrl+1` – `Ctrl+8` / `Ctrl+9` | Tab at that position / last tab |
+| `Ctrl+\` `Ctrl+Shift+\` | Split right / down |
+| `Ctrl+B` / `o` | Show or hide the sidebar / cycle files → outline → search |
+| `Ctrl` `+` `-` `0`, `Ctrl`+wheel / `(` `)` | Zoom / text width |
+| `Ctrl+Shift+G` | Search all files (sidebar SEARCH) |
+| `Ctrl+Q` | Quit |
+| `v` | Open in the external editor (at the viewed line) |
 
-## 設定
+On macOS, `Cmd` is used instead of `Ctrl`.
 
-設定は `mdview.json` に保存されます。実行ファイルと同じ場所にあればそれを、無ければ
-ユーザー設定ディレクトリー（Windows: `%APPDATA%\mdview\mdview.json`）を使います。
+## Settings
 
-外部エディターはコマンドラインで指定し、`{file}` と `{line}` が置換されます。
+Settings are stored in `mdview.json`: next to the executable if such a file exists there,
+otherwise in the user configuration directory (Windows: `%APPDATA%\mdview\mdview.json`).
+
+The external editor is a command line in which `{file}` and `{line}` are replaced:
 
 ```
 code -g "{file}:{line}"
 "C:\Program Files\Vim\vim91\gvim.exe" +{line} "{file}"
 ```
 
-### CSS カスタマイズ
+### Custom CSS
 
-設定 > Custom CSS > **Export template…** で備え付けの CSS を書き出し、編集して Custom CSS に
-指定します（保存すると自動で反映）。クラス名は `mdv-` 接頭辞のハイフン区切り階層です。
+Use Settings > Custom CSS > **Export template…** to save the built-in stylesheet, edit it, and choose it
+as the Custom CSS (changes are applied when you save the file). Class names use the `mdv-` prefix with
+hyphenated hierarchy:
 
 ```
 .mdv-app > .mdv-toolbar, .mdv-main, .mdv-statusbar
 .mdv-sidebar > .mdv-sidebar-files-group > .mdv-sidebar-files-item
 .mdv-pane > .mdv-pane-tabs > .mdv-pane-tab
-.mdv-doc > .mdv-content            （描画された Markdown）
+.mdv-doc > .mdv-content            (the rendered Markdown)
 .mdv-callout-note, .mdv-code, .mdv-mermaid, .mdv-frontmatter, .mdv-diff-ins / .mdv-diff-del
 ```
 
-状態は `.is-active` `.is-hidden` `.is-current` などで表し、配色は `--mdv-color-*` 変数で変えられます。
+States are expressed with `.is-active`, `.is-hidden`, `.is-current` and so on; colors come from the
+`--mdv-color-*` variables.
 
-## 開発
+## Development
 
-必要なもの: Go 1.26+, Node.js, `wails3` CLI。
+Requirements: Go 1.26+, Node.js and the `wails3` CLI.
 
 ```
-wails3 dev              # 開発モード
+wails3 dev              # development mode
 wails3 build            # bin/mdview(.exe)
-go test ./...           # Go のテスト
-cd frontend && npm test # フロントエンドのテスト（vitest）
-go run ./tools/chromacss > frontend/src/styles/highlight.css  # ハイライト CSS の再生成
+go test ./...           # Go tests
+cd frontend && npm test # frontend tests (vitest)
+go run ./tools/chromacss > frontend/src/styles/highlight.css  # regenerate the highlighting CSS
 ```
 
-## リリース
+## Release
 
-`v1.2.3` 形式のタグを push すると GitHub Actions（`.github/workflows/release.yml`）が
-Windows / macOS (amd64, arm64) / Linux 向けにビルドし、前回のタグ以降のコミットタイトル一覧を本文にしたリリースを作成します。
-`-rc1` などハイフン付きのタグはプレリリースになります。
+Pushing a tag such as `v1.2.3` runs GitHub Actions (`.github/workflows/release.yml`): it builds for
+Windows, macOS (amd64, arm64) and Linux and publishes a release whose notes list the commit titles since
+the previous tag. Tags with a hyphen (e.g. `-rc1`) become pre-releases.
 
 ```
 git tag v0.2.0
 git push origin v0.2.0
 ```
 
-アプリアイコンは `build/appicon.png` です（ビルド時に .ico / .icns を生成）。
+The application icon is `build/appicon.png` (the .ico / .icns files are generated at build time).
 
-## UI テスト
+## UI tests
 
-UI テスト用に、開発ビルド（`go build` など `production` タグなし）を環境変数
-`MDVIEW_REMOTE_DEBUG_PORT=9222` 付きで起動すると（Windows）WebView2 のリモートデバッグ（CDP）ポートが開きます。
-製品ビルド（`wails3 build`）では無効です。
+A development build (built without the `production` tag, e.g. with `go build`) started with the
+environment variable `MDVIEW_REMOTE_DEBUG_PORT=9222` opens the WebView2 remote debugging (CDP) port
+(Windows). Production builds (`wails3 build`) never open it.

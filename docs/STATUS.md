@@ -53,5 +53,7 @@ UI は WebView2 の CDP（`MDVIEW_REMOTE_DEBUG_PORT`）と実マウス/キー操
 | A11 | 最後のタブを閉じたらウィンドウを閉じる（設定で切替、既定はオン） | ✅ | 設定 > Behaviour |
 | A12 | icon.png をアプリアイコンに | ✅ | `build/appicon.png` から .ico / .icns 生成、Linux はウィンドウアイコンに埋め込み |
 | A13 | GitHub Actions でリリース（コミットタイトル一覧付き） | ⚠️ | `v*` タグの push で 4 プラットフォームをビルドしリリース。GitHub 上での実行は未確認 |
+| A14 | `Ctrl+1`〜`Ctrl+8` でその位置のタブ、`Ctrl+9` で末尾のタブ | ✅ | アクティブなペイン内のタブが対象 |
+| A15 | README を英語に、日本語版は README_ja.md（相互リンク） | ✅ | |
 
 前提: Go + Wails v3 / Windows・macOS・Linux（UI 実機確認は Windows のみ）

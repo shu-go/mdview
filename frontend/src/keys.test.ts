@@ -15,6 +15,13 @@ describe('keys', () => {
     expect(keyName(ev('o', { ctrlKey: true }))).toBe('C-o');
   });
 
+  it('maps Ctrl+digit to tab switching, not to a count', () => {
+    const s = new KeyState();
+    expect(s.handle(ev('1', { ctrlKey: true }))?.cmd).toBe('goto-tab');
+    expect(s.handle(ev('9', { ctrlKey: true }))?.cmd).toBe('goto-tab');
+    expect(s.handle(ev('0', { ctrlKey: true }))?.cmd).toBe('zoom-reset');
+  });
+
   it('accumulates counts', () => {
     const s = new KeyState();
     expect(s.handle(ev('1'))?.cmd).toBe('count');
