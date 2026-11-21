@@ -20,7 +20,7 @@ export interface SidebarHost {
 }
 
 // Static, trusted icon markup (no user data).
-const icons: Record<SidebarTab, string> = {
+export const icons: Record<SidebarTab, string> = {
   files:
     '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 1.5h5l4 4v9h-9z M8.5 1.5v4h4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>',
   outline:

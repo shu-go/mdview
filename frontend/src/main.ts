@@ -11,7 +11,7 @@ import { Window as WailsWindow } from '@wailsio/runtime';
 import { api, Ev, on, type FileItem, type OpenPathsEvent, type Settings, type Snapshot, type TabReceiveEvent } from './api';
 import { DocView, type DocHost } from './docview';
 import { Layout, newTab, type DiffMode, type PaneNode, type Side, type Tab } from './layout';
-import { Sidebar, type SidebarHost } from './sidebar';
+import { Sidebar, icons, type SidebarHost } from './sidebar';
 import { SearchBar } from './search';
 import { KeyState } from './keys';
 import { isDialogOpen, openHelp, openSettings } from './dialogs';
@@ -107,6 +107,12 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
   }
 
   private buildDOM(): void {
+    // static, trusted icon markup
+    const iconButton = (b: HTMLButtonElement, svg: string) => {
+      b.innerHTML = svg;
+      b.classList.add('mdv-toolbar-button-icon');
+      return b;
+    };
     const tb = (label: string, title: string, cmd: string) => {
       const b = h('button', { class: 'mdv-toolbar-button', type: 'button', title, 'data-cmd': cmd, text: label });
       b.addEventListener('click', () => {
@@ -130,7 +136,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       tb('Baseline', 'Use current content as diff baseline (B)', 'set-baseline'),
       tb('⟳', 'Reload (r)', 'reload'),
       sep(),
-      tb('🔍', 'Search (/ or Ctrl+F)', 'search'),
+      iconButton(tb('', 'Search (/ or Ctrl+F)', 'search'), icons.search),
       tb('A−', 'Zoom out (Ctrl+-)', 'zoom-out'),
       tb('A+', 'Zoom in (Ctrl++)', 'zoom-in'),
       tb('⇤⇥', 'Narrower text column ( ( )', 'narrower'),

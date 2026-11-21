@@ -59,6 +59,11 @@ button {
   background: var(--mdv-color-hover);
 }
 
+.mdv-toolbar-button-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
 .mdv-toolbar-button.is-active {
   background: var(--mdv-color-selected);
   border-color: var(--mdv-color-border);
