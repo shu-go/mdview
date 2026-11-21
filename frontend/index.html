@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <!-- Defence in depth: documents are sanitised, but never allow inline
+         scripts / event handlers or plugins in the page. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http: https:; media-src 'self' http: https:; font-src 'self' data:; connect-src 'self' ws: wss:"/>
     <title>mdview</title>
 </head>
 <body>

@@ -1,4 +1,6 @@
 // DocView: the scrolling view of one tab's document.
+// The document HTML is sanitised in Go (bluemonday) before it gets here.
+import DOMPurify from 'dompurify';
 import { api, type RenderResult, type Heading } from './api';
 import type { Tab } from './layout';
 import { dirname, errMessage, h } from './util';
@@ -155,7 +157,8 @@ export class DocView {
         try {
           mermaidSeq += 1;
           const { svg } = await pele.renderAsync(src, { idPrefix: `mmd${mermaidSeq}-` } as never);
-          div.innerHTML = svg;
+          // The diagram source comes from the document: sanitise the SVG.
+          div.innerHTML = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } });
         } catch (e) {
           div.append(h('div', { class: 'mdv-mermaid-error', text: `Mermaid: ${errMessage(e)}` }));
         }
