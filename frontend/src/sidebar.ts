@@ -15,6 +15,16 @@ export interface SidebarHost {
 
 const COLLAPSED_KEY = 'mdview.collapsedDirs';
 
+/** Label of a directory group: "folder/sub/dir" inside an opened folder, else the full path. */
+export function groupLabel(dir: string, root: string): string {
+  if (!root) return dir;
+  const sep = root.includes('\\') ? '\\' : '/';
+  const base = root.split(/[\\/]/).filter(Boolean).pop() ?? root;
+  if (dir === root) return base;
+  if (dir.startsWith(root + sep)) return base + '/' + dir.slice(root.length + 1).split(/[\\/]/).join('/');
+  return dir;
+}
+
 function loadCollapsed(): Set<string> {
   try {
     return new Set(JSON.parse(localStorage.getItem(COLLAPSED_KEY) ?? '[]') as string[]);
@@ -131,7 +141,7 @@ export class Sidebar {
         'div',
         { class: 'mdv-sidebar-files-group-title', title: dir },
         h('span', { class: 'mdv-sidebar-files-group-toggle' }),
-        h('span', { class: 'mdv-sidebar-files-group-name', text: dir }),
+        h('span', { class: 'mdv-sidebar-files-group-name', text: groupLabel(dir, root) }),
       );
       const list = h('ul', { class: 'mdv-sidebar-files-list' });
       for (const it of items) {
