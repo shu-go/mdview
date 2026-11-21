@@ -28,6 +28,17 @@ const diffModes: DiffMode[] = ['baseline', 'initial', 'off'];
 const diffLabel: Record<DiffMode, string> = { baseline: 'Diff: baseline', initial: 'Diff: first load', off: 'Diff: off' };
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
 
+// Static, trusted icon markup (no user data).
+const svg = (body: string) =>
+  `<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+const statusIcons = {
+  // arrows pointing inwards / outwards between two bars
+  narrower: svg('<path d="M1.5 3v10M14.5 3v10M3.5 8h3M4.8 6.5L6.5 8 4.8 9.5M12.5 8h-3M11.2 6.5L9.5 8l1.7 1.5"/>'),
+  wider: svg('<path d="M1.5 3v10M14.5 3v10M7 8H3.5M5 6.5L3.5 8 5 9.5M9 8h3.5M11 6.5L12.5 8 11 9.5"/>'),
+  zoomOut: svg('<circle cx="6.8" cy="6.8" r="4.3"/><path d="M10 10l4.2 4.2M4.8 6.8h4"/>'),
+  zoomIn: svg('<circle cx="6.8" cy="6.8" r="4.3"/><path d="M10 10l4.2 4.2M4.8 6.8h4M6.8 4.8v4"/>'),
+};
+
 class Controller implements WorkbenchHost, DocHost, SidebarHost {
   winId = 0;
   platform = '';
@@ -137,16 +148,34 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       tb('⟳', 'Reload (r)', 'reload'),
       sep(),
       iconButton(tb('', 'Search (/ or Ctrl+F)', 'search'), icons.search),
-      tb('A−', 'Zoom out (Ctrl+-)', 'zoom-out'),
-      tb('A+', 'Zoom in (Ctrl++)', 'zoom-in'),
-      tb('⇤⇥', 'Narrower text column ( ( )', 'narrower'),
-      tb('⇠⇢', 'Wider text column ( ) )', 'wider'),
       h('span', { class: 'mdv-toolbar-spacer' }),
       tb('Edit', 'Open in external editor (v)', 'editor'),
       tb('⚙', 'Settings (Ctrl+,)', 'settings'),
       tb('?', 'Key bindings (F1)', 'help'),
     );
-    const statusbar = h('footer', { class: 'mdv-statusbar' }, this.sb.link, this.sb.message, this.sb.zoom);
+    // status bar (right): text width and zoom controls, icon buttons
+    const sbButton = (title: string, cmd: string, svg: string) => {
+      const b = h('button', { class: 'mdv-statusbar-button', type: 'button', title, 'data-cmd': cmd });
+      b.innerHTML = svg; // static, trusted icon markup
+      b.addEventListener('click', () => {
+        this.run(cmd, null);
+        this.focusDoc();
+      });
+      return b;
+    };
+    this.sb.zoom.title = 'Zoom (click to reset: Ctrl+0)';
+    this.sb.zoom.addEventListener('click', () => this.run('zoom-reset', null));
+    const controls = h(
+      'span',
+      { class: 'mdv-statusbar-controls' },
+      sbButton('Narrower text column ( ( )', 'narrower', statusIcons.narrower),
+      sbButton('Wider text column ( ) )', 'wider', statusIcons.wider),
+      h('span', { class: 'mdv-statusbar-separator' }),
+      sbButton('Zoom out (Ctrl+-)', 'zoom-out', statusIcons.zoomOut),
+      this.sb.zoom,
+      sbButton('Zoom in (Ctrl++)', 'zoom-in', statusIcons.zoomIn),
+    );
+    const statusbar = h('footer', { class: 'mdv-statusbar' }, this.sb.link, this.sb.message, controls);
     const main = h('div', { class: 'mdv-main' }, this.sidebar.el, this.sidebar.resizer, this.workbench.el);
     const app = h('div', { class: 'mdv-app', 'data-file-drop-target': true }, this.toolbar, main, statusbar);
     document.body.className = 'mdv';

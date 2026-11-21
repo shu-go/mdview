@@ -30,7 +30,8 @@
                .mdv-doc            scrolling document area
                  .mdv-doc-banner   notices (missing file, diff summary)
                  .mdv-content      rendered Markdown (.mdv-footnote-popup on footnote hover)
-       .mdv-statusbar              bottom bar (.mdv-statusbar-link: hovered link target)
+       .mdv-statusbar              bottom bar (.mdv-statusbar-link: hovered link target,
+                                   .mdv-statusbar-controls: width / zoom .mdv-statusbar-button)
      .mdv-dialog                   settings dialog
    Diff: .mdv-diff-ins / .mdv-diff-del (whole blocks), .mdv-diff-ins.is-inline with
          ins.mdv-diff-word-ins / del.mdv-diff-word-del (inline marks)
