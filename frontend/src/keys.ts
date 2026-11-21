@@ -31,7 +31,7 @@ export const bindings: Binding[] = [
   { keys: ['['], cmd: 'prev-change', help: 'Previous change (diff)' },
   { keys: ['D'], cmd: 'toggle-diff', help: 'Diff: toggle between off and the last used mode' },
   { keys: ['B'], cmd: 'set-baseline', help: 'Use the current content as the diff baseline' },
-  { keys: ['r', 'R', 'C-r', 'F5'], cmd: 'reload', help: 'Reload from disk' },
+  { keys: ['r', 'R', 'C-r', 'F5', 'C-F5'], cmd: 'reload', help: 'Reload from disk' },
   { keys: ['v', 'C-S-E', 'C-S-e'], cmd: 'editor', help: 'Open in the external editor' },
   { keys: ['='], cmd: 'info', help: 'Show file information' },
   { keys: ['q', 'C-w'], cmd: 'close-tab', help: 'Close tab' },

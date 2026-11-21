@@ -2,9 +2,11 @@ package markdown
 
 import (
 	"html"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func mustContain(t *testing.T, s string, subs ...string) {
@@ -122,6 +124,21 @@ func TestRawHTMLImages(t *testing.T) {
 	)
 	if strings.Count(r.HTML, html.EscapeString(FileURL(abs))) != 2 {
 		t.Errorf("absolute and file: forms should both resolve:\n%s", r.HTML)
+	}
+}
+
+func TestFileURLChangesWithFile(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "a.png")
+	os.WriteFile(p, []byte("1"), 0o644)
+	u1 := FileURL(p)
+	later := time.Now().Add(2 * time.Second)
+	os.Chtimes(p, later, later)
+	u2 := FileURL(p)
+	if u1 == u2 || !strings.Contains(u1, "&v=") {
+		t.Errorf("URL should change with the file: %s / %s", u1, u2)
+	}
+	if !strings.HasPrefix(FileURL(p+".missing"), FileURLPrefix) {
+		t.Error("missing file still gets a URL")
 	}
 }
 

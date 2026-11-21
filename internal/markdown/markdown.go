@@ -4,6 +4,7 @@ package markdown
 import (
 	"bytes"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -25,9 +26,15 @@ import (
 // FileURLPrefix is the URL path under which local files are served.
 const FileURLPrefix = "/_mdv/file?p="
 
-// FileURL returns the URL serving a local file.
+// FileURL returns the URL serving a local file. The file's modification time
+// is part of the URL, so a re-render after the file changed loads it again
+// instead of reusing the webview's in-memory image cache.
 func FileURL(abs string) string {
-	return FileURLPrefix + url.QueryEscape(abs)
+	u := FileURLPrefix + url.QueryEscape(abs)
+	if st, err := os.Stat(abs); err == nil {
+		u += "&v=" + strconv.FormatInt(st.ModTime().UnixNano(), 36)
+	}
+	return u
 }
 
 // Heading is an entry of the document outline.
