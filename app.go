@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -526,11 +528,58 @@ func (a *App) OpenInEditor(path string, line int) error {
 	return launchEditor(cmd, path, line)
 }
 
-// OpenURL opens a URL in the default browser.
-func (a *App) OpenURL(url string) error { return a.app.Browser.OpenURL(url) }
+// OpenURL opens an http(s)/mailto URL in the default browser.
+func (a *App) OpenURL(u string) error {
+	pu, err := url.Parse(u)
+	if err != nil {
+		return err
+	}
+	switch strings.ToLower(pu.Scheme) {
+	case "http", "https", "mailto":
+		return a.app.Browser.OpenURL(u)
+	}
+	return errors.New("refused to open URL scheme: " + pu.Scheme)
+}
 
-// OpenWithSystem opens a local file with its default application.
-func (a *App) OpenWithSystem(path string) error { return a.app.Browser.OpenFile(path) }
+// OpenWithSystem opens a local (non-Markdown) file with its default
+// application, after the user confirms: a link could point to a program.
+func (a *App) OpenWithSystem(ctx context.Context, path string) error {
+	if isUNC(path) {
+		return errors.New("refused to open network path")
+	}
+	if _, err := os.Stat(path); err != nil {
+		return err
+	}
+	confirmed := make(chan bool, 1)
+	d := a.app.Dialog.Question().
+		SetTitle("Open file").
+		SetMessage("Open this file with its default application?\n\n" + path)
+	yes := d.AddButton("Open")
+	yes.OnClick(func() { confirmed <- true })
+	no := d.AddButton("Cancel")
+	no.OnClick(func() { confirmed <- false })
+	d.SetDefaultButton(no)
+	d.SetCancelButton(no)
+	if w, ok := callerWindow(ctx).(*application.WebviewWindow); ok {
+		d.AttachToWindow(w)
+	}
+	d.Show()
+	if !<-confirmed {
+		return nil
+	}
+	return a.app.Browser.OpenFile(path)
+}
+
+func isUNC(p string) bool {
+	return strings.HasPrefix(p, `\\`) || strings.HasPrefix(p, "//")
+}
+
+// servableExts are the file types served to the page (images and media).
+var servableExts = map[string]bool{
+	".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".webp": true, ".svg": true,
+	".bmp": true, ".ico": true, ".avif": true, ".apng": true,
+	".mp4": true, ".webm": true, ".ogg": true, ".mp3": true, ".wav": true, ".m4a": true,
+}
 
 // RevealPath returns whether path exists and is a directory.
 func (a *App) PathKind(path string) string {
@@ -595,8 +644,8 @@ func fileMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		p := r.URL.Query().Get("p")
-		if p == "" || !filepath.IsAbs(p) {
-			http.Error(w, "bad path", http.StatusBadRequest)
+		if p == "" || !filepath.IsAbs(p) || isUNC(p) || !servableExts[strings.ToLower(filepath.Ext(p))] {
+			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
 		f, err := os.Open(p)

@@ -153,6 +153,8 @@ func TestSanitize(t *testing.T) {
 	r := Render([]byte(src), "")
 	mustNotContain(t, r.HTML, "onerror", "<script", "javascript:")
 	mustContain(t, r.HTML, "<details open=\"\">", "<summary>S</summary>", "<kbd>Ctrl</kbd>")
+	r = Render([]byte(`<a href="#" data-wml-openURL="x" data-foo="1">w</a>`+"\n"), "")
+	mustNotContain(t, r.HTML, "data-wml", "data-foo")
 	// generated markup survives
 	r = Render([]byte("> [!NOTE]\n> x\n\n```go\nx\n```\n"), "")
 	mustContain(t, r.HTML, `data-callout="note"`, `<button class="mdv-code-copy" type="button"`, `class="chroma"`)

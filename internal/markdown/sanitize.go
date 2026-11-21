@@ -19,7 +19,10 @@ func sanitizer() *bluemonday.Policy {
 	policyOnce.Do(func() {
 		p := bluemonday.UGCPolicy()
 		p.AllowAttrs("class", "id", "title", "dir", "lang", "align").Globally()
-		p.AllowDataAttributes()
+		// Only the data attributes mdview itself generates; in particular not
+		// the Wails runtime's data-wml-* action attributes.
+		p.AllowAttrs("data-lang", "data-callout").Globally()
+		p.AllowAttrs("data-mdv-anchor", "data-mdv-path", "data-mdv-external").OnElements("a")
 		p.AllowAttrs("open").OnElements("details")
 		p.AllowElements("details", "summary", "button", "kbd", "mark", "ins", "del", "sub", "sup", "s", "u", "small", "abbr", "picture", "source", "video", "audio", "figure", "figcaption", "center", "font")
 		p.AllowAttrs("type").OnElements("button")
@@ -32,7 +35,7 @@ func sanitizer() *bluemonday.Policy {
 		p.AllowAttrs("start", "reversed", "type").OnElements("ol")
 		p.AllowAttrs("colspan", "rowspan", "align", "valign").OnElements("td", "th")
 		p.AllowAttrs("style").Matching(regexp.MustCompile(`^[\w\s:;%#.,()'"-]*$`)).Globally()
-		p.AllowURLSchemes("http", "https", "mailto", "file", "data")
+		p.AllowURLSchemes("http", "https", "mailto")
 		p.AllowRelativeURLs(true)
 		p.RequireNoFollowOnLinks(false)
 		p.AllowDataURIImages()
