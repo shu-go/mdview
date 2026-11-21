@@ -62,6 +62,17 @@ export class DocView {
       }
     });
     this.content.addEventListener('click', (e) => this.onClick(e));
+    // Middle click on a link: open to the right, never let the webview navigate.
+    this.content.addEventListener('mousedown', (e) => {
+      if (e.button === 1 && (e.target as Element).closest?.('a')) e.preventDefault(); // no autoscroll
+    });
+    this.content.addEventListener('auxclick', (e) => {
+      if (e.button !== 1) return;
+      const a = (e.target as Element).closest?.<HTMLAnchorElement>('a');
+      if (!a || !this.content.contains(a)) return;
+      e.preventDefault();
+      this.followLink(a, true);
+    });
     const linkOf = (e: Event) => (e.target as HTMLElement | null)?.closest?.<HTMLAnchorElement>('a') ?? null;
     const show = (e: Event) => {
       const a = linkOf(e);
@@ -199,15 +210,17 @@ export class DocView {
     const a = target.closest<HTMLAnchorElement>('a');
     if (!a || !this.content.contains(a)) return;
     e.preventDefault();
+    this.followLink(a, e.ctrlKey || e.metaKey);
+  }
+
+  /** Follows a document link. The webview itself never navigates. */
+  private followLink(a: HTMLAnchorElement, split: boolean): void {
     const path = a.dataset.mdvPath;
     const anchor = a.dataset.mdvAnchor ?? '';
     const href = a.getAttribute('href') ?? '';
     if (path) {
-      if (/^(\\\\|\/\/)/.test(path)) {
-        this.host.status('Network paths are not opened from links', true);
-        return;
-      }
-      if (isMarkdownPath(path)) this.host.openLink(path, anchor, e.ctrlKey || e.metaKey);
+      // network paths are refused by the Go side (OpenLink / OpenWithSystem)
+      if (isMarkdownPath(path)) this.host.openLink(path, anchor, split);
       else this.host.openSystem(path);
       return;
     }

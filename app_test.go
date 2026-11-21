@@ -29,6 +29,19 @@ func TestIsUNC(t *testing.T) {
 	}
 }
 
+func TestOpenLinkRefusesNetworkPaths(t *testing.T) {
+	a := &App{} // the checks run before the workspace is used
+	paths := []string{"", "relative.md", "//server/share/a.md"}
+	if runtime.GOOS == "windows" {
+		paths = append(paths, `\\server\share\a.md`, `\/server/share/a.md`, `/\server\share\a.md`, `\\?\UNC\server\share\a.md`)
+	}
+	for _, p := range paths {
+		if _, err := a.OpenLink(p); err == nil {
+			t.Errorf("%q should be refused", p)
+		}
+	}
+}
+
 func TestFileMiddleware(t *testing.T) {
 	dir := t.TempDir()
 	img := filepath.Join(dir, "a.png")

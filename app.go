@@ -322,6 +322,17 @@ func (a *App) OpenPaths(paths []string) OpenResult {
 	return res
 }
 
+// OpenLink opens a Markdown file linked from a document. Documents are not
+// trusted: network paths are refused so that a link cannot make Windows
+// connect to a remote host (NTLM credential leak). Paths the user passes
+// directly (command line, dialogs, drops) go through OpenPaths instead.
+func (a *App) OpenLink(path string) (OpenResult, error) {
+	if path == "" || !filepath.IsAbs(path) || isUNC(path) {
+		return OpenResult{}, errors.New("refused to open link target: " + path)
+	}
+	return a.OpenPaths([]string{path}), nil
+}
+
 var mdFilter = []application.FileFilter{
 	{DisplayName: "Markdown", Pattern: "*.md;*.markdown;*.mdown;*.mkd;*.mkdn;*.mdwn"},
 	{DisplayName: "All files", Pattern: "*.*"},

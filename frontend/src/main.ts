@@ -17,6 +17,7 @@ import { KeyState } from './keys';
 import { isDialogOpen, openHelp, openSettings } from './dialogs';
 import { showMenu, closeMenu, type MenuItem } from './menu';
 import { applySettings, setCustomCSS } from './theme';
+import { installNavigationGuard } from './navguard';
 import { Workbench, type DragTab, type DropTarget, type WorkbenchHost } from './workbench';
 import { basename, errMessage, h, isEditableTarget } from './util';
 
@@ -390,7 +391,13 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
   // DocHost
   openLink(path: string, anchor: string, split: boolean): void {
     void (async () => {
-      const res = await api.OpenPaths([path]);
+      let res;
+      try {
+        res = await api.OpenLink(path); // validated in Go (no network paths)
+      } catch (e) {
+        this.statusMsg(errMessage(e), true);
+        return;
+      }
       if (res.errors?.length) {
         this.statusMsg(res.errors.join('; '), true);
         return;
@@ -801,6 +808,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
   }
 }
 
+installNavigationGuard();
 const controller = new Controller();
 void controller.start().catch((e) => {
   document.body.textContent = `mdview failed to start: ${errMessage(e)}`;

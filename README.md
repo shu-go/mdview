@@ -76,5 +76,6 @@ cd frontend && npm test # フロントエンドのテスト（vitest）
 go run ./tools/chromacss > frontend/src/styles/highlight.css  # ハイライト CSS の再生成
 ```
 
-UI テスト用に、環境変数 `MDVIEW_REMOTE_DEBUG_PORT=9222` を指定して起動すると（Windows）
-WebView2 のリモートデバッグ（CDP）ポートが開きます。
+UI テスト用に、開発ビルド（`go build` など `production` タグなし）を環境変数
+`MDVIEW_REMOTE_DEBUG_PORT=9222` 付きで起動すると（Windows）WebView2 のリモートデバッグ（CDP）ポートが開きます。
+製品ビルド（`wails3 build`）では無効です。

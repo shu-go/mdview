@@ -44,18 +44,3 @@ func main() {
 		log.Fatal(err)
 	}
 }
-
-// debugBrowserArgs enables the WebView2 remote debugging (CDP) port when
-// MDVIEW_REMOTE_DEBUG_PORT is set; used for automated UI tests.
-func debugBrowserArgs() []string {
-	port := os.Getenv("MDVIEW_REMOTE_DEBUG_PORT")
-	if port == "" {
-		return nil
-	}
-	for _, c := range port {
-		if c < '0' || c > '9' {
-			return nil
-		}
-	}
-	return []string{"--remote-debugging-port=" + port}
-}

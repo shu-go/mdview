@@ -130,6 +130,16 @@ export function OpenInEditor(path: string, line: number): $CancellablePromise<vo
 }
 
 /**
+ * OpenLink opens a Markdown file linked from a document. Documents are not
+ * trusted: network paths are refused so that a link cannot make Windows
+ * connect to a remote host (NTLM credential leak). Paths the user passes
+ * directly (command line, dialogs, drops) go through OpenPaths instead.
+ */
+export function OpenLink(path: string): $CancellablePromise<$models.OpenResult> {
+    return $Call.ByID(3484688677, path);
+}
+
+/**
  * OpenNewWindow opens an empty window.
  */
 export function OpenNewWindow(): $CancellablePromise<void> {
