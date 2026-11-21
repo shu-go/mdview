@@ -42,7 +42,7 @@ export const bindings: Binding[] = [
   { keys: ['A-ArrowRight'], cmd: 'focus-next-pane', help: 'Focus next pane' },
   { keys: ['A-ArrowLeft'], cmd: 'focus-prev-pane', help: 'Focus previous pane' },
   { keys: ['C-b'], cmd: 'toggle-sidebar', help: 'Show / hide the sidebar' },
-  { keys: ['o'], cmd: 'toggle-outline', help: 'Sidebar: files ↔ outline' },
+  { keys: ['o'], cmd: 'toggle-outline', help: 'Sidebar: files → outline → search' },
   { keys: ['C-o'], cmd: 'open-file', help: 'Open files' },
   { keys: ['C-S-O', 'C-S-o'], cmd: 'open-folder', help: 'Open folder' },
   { keys: ['C-n'], cmd: 'new-window', help: 'New window' },

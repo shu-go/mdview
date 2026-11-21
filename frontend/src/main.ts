@@ -767,7 +767,8 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       case 'toggle-sidebar': return void this.saveSettings({ sidebarVisible: !this.settings.sidebarVisible });
       case 'toggle-outline':
         if (!this.settings.sidebarVisible) void this.saveSettings({ sidebarVisible: true });
-        this.sidebar.show(this.sidebar.tab === 'files' ? 'outline' : 'files');
+        // files -> outline -> search -> files (focus stays on the document)
+        this.sidebar.show(({ files: 'outline', outline: 'search', search: 'files' } as const)[this.sidebar.tab]);
         return;
       case 'open-file':
         void api.OpenFileDialog().then((r) => this.handleOpenResult(r), (e) => this.statusMsg(errMessage(e), true));
