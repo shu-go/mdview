@@ -7,7 +7,8 @@
 
    Structure (class names are `mdv-` + hyphenated hierarchy):
      .mdv-app                      whole window
-       .mdv-toolbar                top bar  (.mdv-toolbar-button)
+       .mdv-toolbar                top bar  (.mdv-toolbar-button, .mdv-toolbar-brand: icon + title,
+                                   a window drag region)
        .mdv-main
          .mdv-sidebar              left side bar (.is-hidden when collapsed)
            .mdv-sidebar-tabs       Files / Outline / Search (.mdv-sidebar-tab, -icon, -label)

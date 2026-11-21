@@ -18,6 +18,7 @@ import { isDialogOpen, openHelp, openSettings } from './dialogs';
 import { showMenu, closeMenu, type MenuItem } from './menu';
 import { applySettings, setCustomCSS } from './theme';
 import { installNavigationGuard } from './navguard';
+import appIconUrl from './assets/appicon.png';
 import type { DiffDetail } from './inlinediff';
 import { Workbench, type DragTab, type DropTarget, type WorkbenchHost } from './workbench';
 import { basename, errMessage, h, isEditableTarget } from './util';
@@ -37,6 +38,8 @@ const statusIcons = {
   wider: svg('<path d="M1.5 3v10M14.5 3v10M7 8H3.5M5 6.5L3.5 8 5 9.5M9 8h3.5M11 6.5L12.5 8 11 9.5"/>'),
   zoomOut: svg('<circle cx="6.8" cy="6.8" r="4.3"/><path d="M10 10l4.2 4.2M4.8 6.8h4"/>'),
   zoomIn: svg('<circle cx="6.8" cy="6.8" r="4.3"/><path d="M10 10l4.2 4.2M4.8 6.8h4M6.8 4.8v4"/>'),
+  // window split in two, the left part narrower (sidebar)
+  sidebar: svg('<rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M6 2.5v11"/>'),
   // circular arrow (refresh): "take the current content as the new baseline"
   baseline: svg('<path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M12.2 1.8v2.6H9.6"/>'),
   pencil: svg('<path d="M11.2 2.3l2.5 2.5L5.5 13H3v-2.5z"/><path d="M9.7 3.8l2.5 2.5"/>'),
@@ -55,6 +58,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
   search = new SearchBar(() => this.focusDoc(true));
   workbench = new Workbench(this, this.search.el);
   toolbar = h('header', { class: 'mdv-toolbar' });
+  private titleEl = h('span', { class: 'mdv-toolbar-brand-title', text: 'mdview' });
   sb = {
     link: h('span', { class: 'mdv-statusbar-link' }),
     message: h('span', { class: 'mdv-statusbar-message' }),
@@ -134,8 +138,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       });
       return b;
     };
-    const sep = () => h('span', { class: 'mdv-toolbar-separator' });
-    this.sidebarButton = tb('☰', 'Sidebar (Ctrl+B)', 'toggle-sidebar');
+    this.sidebarButton = iconButton(tb('', 'Sidebar (Ctrl+B)', 'toggle-sidebar'), statusIcons.sidebar);
     this.diffSelect = h('select', { class: 'mdv-statusbar-select', title: 'Diff mode (D toggles on/off)' });
     for (const m of diffModes) this.diffSelect.append(h('option', { value: m, text: diffLabel[m] }));
     this.diffSelect.addEventListener('change', () => {
@@ -143,11 +146,24 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       if (t) this.setDiffMode(t, this.diffSelect.value as DiffMode);
       this.focusDoc();
     });
+    // App icon + window title; this part (and the empty space) works like the
+    // native title bar: drag to move the window, double-click to maximise.
+    const brand = h(
+      'div',
+      { class: 'mdv-toolbar-brand', title: '' },
+      h('img', { class: 'mdv-toolbar-brand-icon', src: appIconUrl, alt: '', draggable: 'false' }),
+      this.titleEl,
+    );
+    brand.addEventListener('dblclick', (e: MouseEvent) => {
+      // macOS: the Wails runtime handles double-clicks on drag regions itself
+      if (isMac) return;
+      e.preventDefault();
+      void WailsWindow.ToggleMaximise();
+    });
     this.toolbar.append(
       this.sidebarButton,
-      sep(),
+      brand,
       iconButton(tb('', 'Search (/ or Ctrl+F)', 'search'), icons.search),
-      h('span', { class: 'mdv-toolbar-spacer' }),
       iconButton(tb('', 'Open in external editor (v)', 'editor'), statusIcons.pencil),
       tb('⚙', 'Settings (Ctrl+,)', 'settings'),
       tb('?', 'Key bindings (F1)', 'help'),
@@ -316,6 +332,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     this.updateStatus();
     const title = t ? `${basename(t.path)} - mdview` : 'mdview';
     document.title = title;
+    this.titleEl.textContent = title;
     void api.SetTitle(title);
   }
 

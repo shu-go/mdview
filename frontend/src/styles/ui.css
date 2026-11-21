@@ -38,8 +38,30 @@ button {
   user-select: none;
 }
 
-.mdv-toolbar-spacer {
+/* app icon + window title; also a window drag region (like the title bar) */
+.mdv-toolbar-brand {
   flex: 1;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 6px;
+  --wails-draggable: drag;
+  cursor: default;
+}
+
+.mdv-toolbar-brand-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+
+.mdv-toolbar-brand-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mdv-toolbar-button {
@@ -67,13 +89,6 @@ button {
 .mdv-toolbar-button.is-active {
   background: var(--mdv-color-selected);
   border-color: var(--mdv-color-border);
-}
-
-.mdv-toolbar-separator {
-  width: 1px;
-  height: 18px;
-  margin: 0 4px;
-  background: var(--mdv-color-border);
 }
 
 .mdv-main {
