@@ -2,28 +2,40 @@
 // active document.
 import type { FileItem, Heading, Snapshot } from './api';
 import { MIME_FILE } from './workbench';
-import { h } from './util';
+import { GrepPanel } from './grep';
+import { groupLabel, h } from './util';
+
+export { groupLabel };
+
+export type SidebarTab = 'files' | 'outline' | 'search';
 
 export interface SidebarHost {
   openFile(path: string, how: 'tab' | 'right' | 'below'): void;
   fileMenu(item: FileItem, x: number, y: number): void;
   folderMenu(dir: string, root: string, x: number, y: number): void;
   jumpHeading(index: number): void;
-  tabChanged(tab: 'files' | 'outline'): void;
+  grepOpen(path: string, line: number, split: boolean): void;
+  tabChanged(tab: SidebarTab): void;
   resized(width: number): void;
 }
 
-const COLLAPSED_KEY = 'mdview.collapsedDirs';
+// Static, trusted icon markup (no user data).
+const icons: Record<SidebarTab, string> = {
+  files:
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 1.5h5l4 4v9h-9z M8.5 1.5v4h4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>',
+  outline:
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3.5h12M4.5 8h9.5M7 12.5h7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+  search:
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.8" cy="6.8" r="4.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 10l4.2 4.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+};
 
-/** Label of a directory group: "folder/sub/dir" inside an opened folder, else the full path. */
-export function groupLabel(dir: string, root: string): string {
-  if (!root) return dir;
-  const sep = root.includes('\\') ? '\\' : '/';
-  const base = root.split(/[\\/]/).filter(Boolean).pop() ?? root;
-  if (dir === root) return base;
-  if (dir.startsWith(root + sep)) return base + '/' + dir.slice(root.length + 1).split(/[\\/]/).join('/');
-  return dir;
+function tabButton(tab: SidebarTab, label: string): HTMLButtonElement {
+  const icon = h('span', { class: 'mdv-sidebar-tab-icon' });
+  icon.innerHTML = icons[tab];
+  return h('button', { class: 'mdv-sidebar-tab', type: 'button', 'data-tab': tab }, icon, h('span', { class: 'mdv-sidebar-tab-label', text: label }));
 }
+
+const COLLAPSED_KEY = 'mdview.collapsedDirs';
 
 function loadCollapsed(): Set<string> {
   try {
@@ -38,8 +50,10 @@ export class Sidebar {
   readonly resizer: HTMLElement;
   private filesTab: HTMLButtonElement;
   private outlineTab: HTMLButtonElement;
+  private searchTab: HTMLButtonElement;
   private files: HTMLElement;
   private outline: HTMLElement;
+  private grep: GrepPanel;
   private collapsed = loadCollapsed();
   private snapshot: Snapshot = { folders: [], files: [] };
   private activePath = '';
@@ -47,17 +61,30 @@ export class Sidebar {
   private headings: Heading[] = [];
   private current = -1;
   private maxLevel = 6;
-  tab: 'files' | 'outline' = 'files';
+  tab: SidebarTab = 'files';
 
   constructor(private host: SidebarHost) {
-    this.filesTab = h('button', { class: 'mdv-sidebar-tab', type: 'button', text: 'Files' });
-    this.outlineTab = h('button', { class: 'mdv-sidebar-tab', type: 'button', text: 'Outline' });
+    this.filesTab = tabButton('files', 'Files');
+    this.outlineTab = tabButton('outline', 'Outline');
+    this.searchTab = tabButton('search', 'Search');
     this.files = h('div', { class: 'mdv-sidebar-files' });
     this.outline = h('div', { class: 'mdv-sidebar-outline' });
-    this.el = h('aside', { class: 'mdv-sidebar' }, h('div', { class: 'mdv-sidebar-tabs' }, this.filesTab, this.outlineTab), this.files, this.outline);
+    this.grep = new GrepPanel(host);
+    this.el = h(
+      'aside',
+      { class: 'mdv-sidebar' },
+      h('div', { class: 'mdv-sidebar-tabs' }, this.filesTab, this.outlineTab, this.searchTab),
+      this.files,
+      this.outline,
+      this.grep.el,
+    );
     this.resizer = h('div', { class: 'mdv-sidebar-resizer' });
     this.filesTab.addEventListener('click', () => this.show('files'));
     this.outlineTab.addEventListener('click', () => this.show('outline'));
+    this.searchTab.addEventListener('click', () => {
+      this.show('search');
+      this.focusGrep();
+    });
     this.initResize();
     this.show('files', false);
   }
@@ -70,13 +97,26 @@ export class Sidebar {
     this.el.classList.toggle('is-hidden', !v);
   }
 
-  show(tab: 'files' | 'outline', notify = true): void {
+  show(tab: SidebarTab, notify = true): void {
+    const changed = tab !== this.tab;
     this.tab = tab;
     this.filesTab.classList.toggle('is-active', tab === 'files');
     this.outlineTab.classList.toggle('is-active', tab === 'outline');
+    this.searchTab.classList.toggle('is-active', tab === 'search');
     this.files.classList.toggle('is-hidden', tab !== 'files');
     this.outline.classList.toggle('is-hidden', tab !== 'outline');
-    if (notify) this.host.tabChanged(tab);
+    this.grep.el.classList.toggle('is-hidden', tab !== 'search');
+    if (tab === 'search') this.grep.refreshIfStale();
+    if (notify && changed) this.host.tabChanged(tab);
+  }
+
+  focusGrep(): void {
+    this.grep.focus();
+  }
+
+  /** The searched files changed: re-run the search (now if visible, else later). */
+  grepStale(): void {
+    this.grep.markStale(this.tab === 'search' && this.visible);
   }
 
   setWidth(px: number): void {

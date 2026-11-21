@@ -64,6 +64,17 @@ button {
   border-color: var(--mdv-color-border);
 }
 
+.mdv-toolbar-select {
+  height: 26px;
+  padding: 0 4px;
+  border: 1px solid var(--mdv-color-border);
+  border-radius: var(--mdv-radius);
+  background: var(--mdv-color-bg);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
 .mdv-toolbar-separator {
   width: 1px;
   height: 18px;
@@ -115,15 +126,20 @@ button {
 
 .mdv-sidebar-tab {
   flex: 1;
-  padding: 6px 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px 2px;
   border: none;
   border-bottom: 2px solid transparent;
   background: transparent;
   cursor: pointer;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   color: var(--mdv-color-muted);
 }
 
@@ -132,16 +148,166 @@ button {
   border-bottom-color: var(--mdv-color-accent);
 }
 
+.mdv-sidebar-tab-icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.mdv-sidebar-tab-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.mdv-sidebar-tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .mdv-sidebar-files,
-.mdv-sidebar-outline {
+.mdv-sidebar-outline,
+.mdv-sidebar-search {
   flex: 1;
   overflow: auto;
   padding: 4px 0 12px;
 }
 
 .mdv-sidebar-files.is-hidden,
-.mdv-sidebar-outline.is-hidden {
+.mdv-sidebar-outline.is-hidden,
+.mdv-sidebar-search.is-hidden {
   display: none;
+}
+
+/* sidebar: search in files */
+.mdv-sidebar-search {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.mdv-sidebar-search-form {
+  display: flex;
+  gap: 2px;
+  padding: 8px 8px 4px;
+}
+
+.mdv-sidebar-search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--mdv-color-border);
+  border-radius: 4px;
+  background: var(--mdv-color-bg);
+  color: var(--mdv-color-fg);
+  font: inherit;
+}
+
+.mdv-sidebar-search-input.is-error {
+  border-color: var(--mdv-color-diff-del-bar);
+}
+
+.mdv-sidebar-search-toggle {
+  min-width: 26px;
+  padding: 0 4px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--mdv-font-code);
+  font-size: 12px;
+}
+
+.mdv-sidebar-search-toggle:hover {
+  background: var(--mdv-color-hover);
+}
+
+.mdv-sidebar-search-toggle.is-active {
+  background: var(--mdv-color-selected);
+  border-color: var(--mdv-color-accent);
+}
+
+.mdv-sidebar-search-summary {
+  padding: 2px 10px 6px;
+  font-size: 11px;
+  color: var(--mdv-color-muted);
+}
+
+.mdv-sidebar-search-results {
+  flex: 1;
+  overflow: auto;
+  padding-bottom: 12px;
+}
+
+.mdv-sidebar-search-group-title {
+  padding: 4px 8px 2px;
+  font-size: 11px;
+  color: var(--mdv-color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: left;
+}
+
+.mdv-sidebar-search-file {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 3px 8px 3px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mdv-sidebar-search-file:hover {
+  background: var(--mdv-color-hover);
+}
+
+.mdv-sidebar-search-file-count {
+  font-weight: normal;
+  font-size: 11px;
+  color: var(--mdv-color-muted);
+}
+
+.mdv-sidebar-search-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mdv-sidebar-search-match {
+  display: flex;
+  gap: 6px;
+  padding: 2px 8px 2px 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  outline: none;
+}
+
+.mdv-sidebar-search-match:hover,
+.mdv-sidebar-search-match:focus {
+  background: var(--mdv-color-selected);
+}
+
+.mdv-sidebar-search-match-line {
+  flex: none;
+  min-width: 2.5em;
+  text-align: right;
+  color: var(--mdv-color-muted);
+  font-family: var(--mdv-font-code);
+  font-size: 11px;
+}
+
+.mdv-sidebar-search-match-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mdv-sidebar-search-hit {
+  background: var(--mdv-color-search-hit);
+  color: inherit;
+  border-radius: 2px;
 }
 
 .mdv-sidebar-empty {
@@ -567,16 +733,12 @@ button {
   min-height: 22px;
 }
 
-.mdv-statusbar-path {
+/* target of the link under the pointer / keyboard focus */
+.mdv-statusbar-link {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  direction: rtl;
-  text-align: left;
-}
-
-.mdv-statusbar-diff {
-  cursor: pointer;
 }
 
 .mdv-statusbar-message {

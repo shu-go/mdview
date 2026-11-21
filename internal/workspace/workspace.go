@@ -396,6 +396,9 @@ func (ws *Workspace) handle(ev fsnotify.Event) {
 
 	if isDoc {
 		ws.schedule("doc:"+path, func() { ws.reload(path) })
+	} else if len(roots) > 0 && IsMarkdown(path) && (ev.Has(fsnotify.Write) || ev.Has(fsnotify.Create)) {
+		// not loaded, but listed: content consumers (grep) need to know
+		ws.schedule("doc:"+path, func() { ws.onDoc(path) })
 	}
 	// Folder membership changes on create/remove/rename (files or directories).
 	if len(roots) > 0 && (ev.Has(fsnotify.Create) || ev.Has(fsnotify.Remove) || ev.Has(fsnotify.Rename)) {

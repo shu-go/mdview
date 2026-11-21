@@ -22,8 +22,9 @@ import { basename, errMessage, h, isEditableTarget } from './util';
 
 const builtinCSS = [tokensCSS, uiCSS, contentCSS, highlightCSS].join('\n\n');
 
-const diffCycle: DiffMode[] = ['baseline', 'initial', 'off'];
+const diffModes: DiffMode[] = ['baseline', 'initial', 'off'];
 const diffLabel: Record<DiffMode, string> = { baseline: 'Diff: baseline', initial: 'Diff: first load', off: 'Diff: off' };
+const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
 
 class Controller implements WorkbenchHost, DocHost, SidebarHost {
   winId = 0;
@@ -35,17 +36,17 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
   keys = new KeyState();
 
   sidebar = new Sidebar(this);
-  search = new SearchBar(() => this.focusDoc());
+  search = new SearchBar(() => this.focusDoc(true));
   workbench = new Workbench(this, this.search.el);
   toolbar = h('header', { class: 'mdv-toolbar' });
   sb = {
-    path: h('span', { class: 'mdv-statusbar-path' }),
+    link: h('span', { class: 'mdv-statusbar-link' }),
     message: h('span', { class: 'mdv-statusbar-message' }),
-    diff: h('span', { class: 'mdv-statusbar-diff', title: 'Click or press D to change' }),
     zoom: h('span', { class: 'mdv-statusbar-zoom' }),
   };
   private msgTimer = 0;
-  private diffButton!: HTMLButtonElement;
+  private zoomTimer = 0;
+  private diffSelect!: HTMLSelectElement;
   private sidebarButton!: HTMLButtonElement;
 
   // ---------- startup ----------
@@ -57,14 +58,19 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     this.platform = st.platform;
     document.documentElement.dataset.platform = st.platform;
     this.applySettings(st.settings);
-    this.sidebar.show(st.settings.sidebarTab === 'outline' ? 'outline' : 'files', false);
+    const sideTab = st.settings.sidebarTab;
+    this.sidebar.show(sideTab === 'outline' || sideTab === 'search' ? sideTab : 'files', false);
     this.sidebar.setFiles(st.files as Snapshot);
     setCustomCSS(await api.CustomCSS());
 
-    on<string>(Ev.docChanged, (p) => this.docChanged(p));
+    on<string>(Ev.docChanged, (p) => {
+      this.docChanged(p);
+      this.sidebar.grepStale();
+    });
     on<Snapshot>(Ev.filesChanged, (s) => {
       this.sidebar.setFiles(s);
       this.updateSidebarActive();
+      this.sidebar.grepStale();
     });
     on<Settings>(Ev.settingsChanged, (s) => this.applySettings(s));
     on<string>(Ev.customCSS, (css) => setCustomCSS(css));
@@ -79,6 +85,16 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     });
     window.addEventListener('focus', () => void api.NotifyFocus());
     window.addEventListener('keydown', (e) => this.onKey(e));
+    // Ctrl (Cmd) + mouse wheel: zoom
+    window.addEventListener(
+      'wheel',
+      (e) => {
+        if (!(isMac ? e.metaKey : e.ctrlKey)) return;
+        e.preventDefault();
+        if (e.deltaY !== 0) this.zoomBy(e.deltaY < 0 ? 10 : -10, true);
+      },
+      { passive: false },
+    );
 
     for (const t of st.tabs ?? []) {
       this.addTab(this.activePaneId, newTab(t.path, (t.diffMode as DiffMode) || this.settings.diffMode as DiffMode, t.scroll));
@@ -98,7 +114,13 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     };
     const sep = () => h('span', { class: 'mdv-toolbar-separator' });
     this.sidebarButton = tb('☰', 'Sidebar (Ctrl+B)', 'toggle-sidebar');
-    this.diffButton = tb('Diff', 'Diff mode (D)', 'cycle-diff');
+    this.diffSelect = h('select', { class: 'mdv-toolbar-select', title: 'Diff mode (D toggles on/off)' });
+    for (const m of diffModes) this.diffSelect.append(h('option', { value: m, text: diffLabel[m] }));
+    this.diffSelect.addEventListener('change', () => {
+      const t = this.activeTab;
+      if (t) this.setDiffMode(t, this.diffSelect.value as DiffMode);
+      this.focusDoc();
+    });
     this.toolbar.append(
       this.sidebarButton,
       tb('Open…', 'Open files (Ctrl+O)', 'open-file'),
@@ -107,7 +129,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       tb('◫', 'Split right (Ctrl+\\)', 'split-right'),
       tb('⬓', 'Split down (Ctrl+Shift+\\)', 'split-down'),
       sep(),
-      this.diffButton,
+      this.diffSelect,
       tb('Baseline', 'Use current content as diff baseline (B)', 'set-baseline'),
       tb('⟳', 'Reload (r)', 'reload'),
       sep(),
@@ -121,8 +143,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       tb('⚙', 'Settings (Ctrl+,)', 'settings'),
       tb('?', 'Key bindings (F1)', 'help'),
     );
-    const statusbar = h('footer', { class: 'mdv-statusbar' }, this.sb.path, this.sb.message, this.sb.diff, this.sb.zoom);
-    this.sb.diff.addEventListener('click', () => this.run('cycle-diff', null));
+    const statusbar = h('footer', { class: 'mdv-statusbar' }, this.sb.link, this.sb.message, this.sb.zoom);
     const main = h('div', { class: 'mdv-main' }, this.sidebar.el, this.sidebar.resizer, this.workbench.el);
     const app = h('div', { class: 'mdv-app', 'data-file-drop-target': true }, this.toolbar, main, statusbar);
     document.body.className = 'mdv';
@@ -134,8 +155,37 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     applySettings(s);
     this.sidebar.setVisible(s.sidebarVisible);
     this.sidebarButton?.classList.toggle('is-active', s.sidebarVisible);
-    this.sb.zoom.textContent = `${Math.round(s.zoom * 100)}%`;
+    this.sb.zoom.textContent = `${s.zoom}%`;
     this.updateOutline();
+  }
+
+  /** Changes the zoom (percent). Wheel zooming saves once it settles. */
+  private zoomBy(delta: number, debounce = false): void {
+    const zoom = Math.max(30, Math.min(400, Math.round((this.settings.zoom + delta) / 10) * 10));
+    if (zoom === this.settings.zoom) return;
+    if (!debounce) {
+      void this.saveSettings({ zoom });
+      return;
+    }
+    this.settings = { ...this.settings, zoom };
+    this.applySettings(this.settings);
+    window.clearTimeout(this.zoomTimer);
+    this.zoomTimer = window.setTimeout(() => void this.saveSettings({ zoom: this.settings.zoom }), 400);
+  }
+
+  private setDiffMode(t: Tab, mode: DiffMode): void {
+    if (mode !== 'off') t.lastDiffMode = mode;
+    if (t.diffMode === mode) return;
+    t.diffMode = mode;
+    this.updateStatus();
+    const v = this.views.get(t.id);
+    if (v) void v.render();
+    this.statusMsg(diffLabel[mode]);
+  }
+
+  // DocHost: link under the pointer / keyboard focus
+  linkHover(target: string | null): void {
+    this.sb.link.textContent = target ?? '';
   }
 
   private async saveSettings(patch: Partial<Settings>): Promise<void> {
@@ -235,16 +285,9 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
 
   private updateStatus(): void {
     const t = this.activeTab;
-    const v = this.activeView;
-    this.sb.path.textContent = t?.path ?? '';
-    if (t) {
-      const n = v?.changes ?? 0;
-      this.sb.diff.textContent = `${diffLabel[t.diffMode]}${t.diffMode !== 'off' ? ` (${n})` : ''}`;
-      this.diffButton.textContent = diffLabel[t.diffMode];
-    } else {
-      this.sb.diff.textContent = '';
-      this.diffButton.textContent = 'Diff';
-    }
+    this.diffSelect.value = t ? t.diffMode : this.settings?.diffMode ?? 'baseline';
+    this.diffSelect.disabled = !t;
+    this.linkHover(null);
   }
 
   private updateTabClasses(): void {
@@ -542,7 +585,20 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     }
   }
 
-  tabChanged(tab: 'files' | 'outline'): void {
+  /** Opens a grep result: the file, scrolled to the block of the line. */
+  grepOpen(path: string, line: number, split: boolean): void {
+    const pane = this.activePane;
+    const existing = pane.tabs.find((t) => t.path === path);
+    this.openFile(path, split ? 'right' : 'tab');
+    const tab = split ? this.activeTab : (existing ?? this.activeTab);
+    if (!tab) return;
+    const v = this.view(tab);
+    const jump = () => v.scrollToLine(line);
+    if (v.result && !v.stale) jump();
+    else void v.render().then(jump);
+  }
+
+  tabChanged(tab: 'files' | 'outline' | 'search'): void {
     void this.saveSettings({ sidebarTab: tab });
   }
 
@@ -563,8 +619,8 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     this.msgTimer = window.setTimeout(() => (this.sb.message.textContent = ''), error ? 8000 : 3000);
   }
 
-  focusDoc(): void {
-    if (this.search.isOpen && document.activeElement === this.search.input) return;
+  focusDoc(force = false): void {
+    if (!force && this.search.isOpen && document.activeElement === this.search.input) return;
     this.activeView?.el.focus({ preventScroll: true });
   }
 
@@ -630,15 +686,23 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       case 'search-prev': return this.search.step(-1, true);
       case 'next-change': return v?.nextChange(1);
       case 'prev-change': return v?.nextChange(-1);
-      case 'cycle-diff': {
+      case 'toggle-diff': {
+        // off <-> the most recently used diff mode
         const t = this.activeTab;
-        if (!t || !v) return;
-        t.diffMode = diffCycle[(diffCycle.indexOf(t.diffMode) + 1) % diffCycle.length];
-        this.updateStatus();
-        void v.render();
-        this.statusMsg(diffLabel[t.diffMode]);
+        if (!t) return;
+        if (t.diffMode !== 'off') this.setDiffMode(t, 'off');
+        else {
+          const fallback = this.settings.diffMode !== 'off' ? (this.settings.diffMode as DiffMode) : 'baseline';
+          this.setDiffMode(t, t.lastDiffMode ?? fallback);
+        }
         return;
       }
+      case 'quit': return void api.Quit();
+      case 'toggle-search-panel':
+        if (!this.settings.sidebarVisible) void this.saveSettings({ sidebarVisible: true });
+        this.sidebar.show('search');
+        this.sidebar.focusGrep();
+        return;
       case 'set-baseline': {
         const t = this.activeTab;
         if (t) {
@@ -705,9 +769,9 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
         void api.OpenFolderDialog().then((r) => this.handleOpenResult(r), (e) => this.statusMsg(errMessage(e), true));
         return;
       case 'new-window': return void api.OpenNewWindow();
-      case 'zoom-in': return void this.saveSettings({ zoom: Math.min(4, Math.round((this.settings.zoom + 0.1) * 10) / 10) });
-      case 'zoom-out': return void this.saveSettings({ zoom: Math.max(0.3, Math.round((this.settings.zoom - 0.1) * 10) / 10) });
-      case 'zoom-reset': return void this.saveSettings({ zoom: 1 });
+      case 'zoom-in': return this.zoomBy(10 * n);
+      case 'zoom-out': return this.zoomBy(-10 * n);
+      case 'zoom-reset': return void this.saveSettings({ zoom: 100 });
       case 'wider':
       case 'narrower': {
         const cur = this.settings.contentMaxWidth || (v ? v.el.clientWidth : 1200);

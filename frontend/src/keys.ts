@@ -29,7 +29,7 @@ export const bindings: Binding[] = [
   { keys: ['N', 'S-F3'], cmd: 'search-prev', help: 'Previous match' },
   { keys: [']'], cmd: 'next-change', help: 'Next change (diff)' },
   { keys: ['['], cmd: 'prev-change', help: 'Previous change (diff)' },
-  { keys: ['D'], cmd: 'cycle-diff', help: 'Diff: baseline → first load → off' },
+  { keys: ['D'], cmd: 'toggle-diff', help: 'Diff: toggle between off and the last used mode' },
   { keys: ['B'], cmd: 'set-baseline', help: 'Use the current content as the diff baseline' },
   { keys: ['r', 'R', 'C-r', 'F5'], cmd: 'reload', help: 'Reload from disk' },
   { keys: ['v', 'C-S-E', 'C-S-e'], cmd: 'editor', help: 'Open in the external editor' },
@@ -52,7 +52,9 @@ export const bindings: Binding[] = [
   { keys: ['C-S-ArrowRight', ')'], cmd: 'wider', help: 'Wider text column (less margin)' },
   { keys: ['C-S-ArrowLeft', '('], cmd: 'narrower', help: 'Narrower text column (more margin)' },
   { keys: ['C-,'], cmd: 'settings', help: 'Settings' },
+  { keys: ['C-S-G', 'C-S-g'], cmd: 'toggle-search-panel', help: 'Search in all listed files (sidebar)' },
   { keys: ['F1', 'H'], cmd: 'help', help: 'Key bindings' },
+  { keys: ['C-q'], cmd: 'quit', help: 'Quit mdview' },
   { keys: ['Escape'], cmd: 'escape', help: 'Close search / dialog, clear count' },
 ];
 

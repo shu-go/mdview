@@ -95,7 +95,7 @@ export class SearchBar {
     this.caseBtn = h('button', { class: 'mdv-search-toggle', type: 'button', title: 'Match case (Alt+C)', text: 'Aa' });
     this.count = h('span', { class: 'mdv-search-count' });
     const prev = h('button', { class: 'mdv-search-button', type: 'button', title: 'Previous (Shift+Enter / N)', text: '↑' });
-    const next = h('button', { class: 'mdv-search-button', type: 'button', title: 'Next (Enter / n)', text: '↓' });
+    const next = h('button', { class: 'mdv-search-button', type: 'button', title: 'Next (n)', text: '↓' });
     const close = h('button', { class: 'mdv-search-button', type: 'button', title: 'Close (Esc)', text: '×' });
     this.el = h('div', { class: 'mdv-search is-hidden' }, this.input, this.regexBtn, this.caseBtn, this.count, prev, next, close);
 
@@ -107,11 +107,17 @@ export class SearchBar {
       e.stopPropagation();
       if (e.key === 'Enter') {
         e.preventDefault();
+        if (e.shiftKey) {
+          this.step(-1);
+          return;
+        }
+        // Run the search if still pending, then hand focus to the document
+        // so that n / N and the pager keys work right away.
         if (this.timer) {
           window.clearTimeout(this.timer);
-          this.timer = 0;
           this.run(true);
-        } else this.step(e.shiftKey ? -1 : 1);
+        } else if (!this.hits.length) this.run(true);
+        this.onClose();
       } else if (e.key === 'Escape') {
         e.preventDefault();
         this.close();

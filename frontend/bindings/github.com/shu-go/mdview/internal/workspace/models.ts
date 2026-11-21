@@ -17,6 +17,66 @@ export interface FileItem {
 }
 
 /**
+ * GrepFile is the matches of one file.
+ */
+export interface GrepFile {
+    "path": string;
+    "name": string;
+    "dir": string;
+
+    /**
+     * folder the file was found in, "" for opened files
+     */
+    "root": string;
+    "missing": boolean;
+    "matches": GrepMatch[] | null;
+
+    /**
+     * matches were truncated
+     */
+    "more": boolean;
+}
+
+/**
+ * GrepMatch is one matching line.
+ */
+export interface GrepMatch {
+    /**
+     * 1-based
+     */
+    "line": number;
+
+    /**
+     * the line (trimmed to a window around the match)
+     */
+    "text": string;
+
+    /**
+     * match offset in Text (UTF-16 code units, for JS)
+     */
+    "start": number;
+    "end": number;
+}
+
+/**
+ * GrepQuery is a search over all files of the list.
+ */
+export interface GrepQuery {
+    "pattern": string;
+    "regex": boolean;
+    "caseSensitive": boolean;
+}
+
+/**
+ * GrepResult is the result of a search, files in the order of Snapshot.
+ */
+export interface GrepResult {
+    "files": GrepFile[] | null;
+    "total": number;
+    "truncated": boolean;
+}
+
+/**
  * Snapshot is the shared file list.
  */
 export interface Snapshot {

@@ -45,3 +45,14 @@ export function errMessage(e: unknown): string {
     return String(e);
   }
 }
+
+/** Label of a directory group: "folder/sub/dir" inside an opened folder, else the full path. */
+export function groupLabel(dir: string, root: string): string {
+  if (!root) return dir;
+  const sep = root.includes('\\') ? '\\' : '/';
+  const base = root.split(/[\\/]/).filter(Boolean).pop() ?? root;
+  if (dir === root) return base;
+  if (dir.startsWith(root + sep)) return base + '/' + dir.slice(root.length + 1).split(/[\\/]/).join('/');
+  return dir;
+}
+

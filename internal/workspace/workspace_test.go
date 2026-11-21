@@ -110,6 +110,19 @@ func TestFolderWatch(t *testing.T) {
 	waitFor(t, "d.md added", func() bool { return has("d.md") })
 	os.Remove(filepath.Join(dir, "a.md"))
 	waitFor(t, "a.md removed", func() bool { return !has("a.md") })
+	// writing a listed but not loaded file is reported
+	sub := filepath.Join(dir, "sub", "b.markdown")
+	write(t, sub, "changed")
+	waitFor(t, "change notification", func() bool {
+		r.mu.Lock()
+		defer r.mu.Unlock()
+		for _, d := range r.docs {
+			if d == Canonical(sub) {
+				return true
+			}
+		}
+		return false
+	})
 
 	s := ws.Snapshot()
 	if len(s.Folders) != 1 || s.Files[0].Root != Canonical(dir) {

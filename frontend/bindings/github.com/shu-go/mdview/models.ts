@@ -81,7 +81,7 @@ export interface Settings {
     "fontSize": number;
 
     /**
-     * content zoom factor
+     * content zoom in percent (100 = 1x)
      */
     "zoom": number;
 
@@ -113,7 +113,7 @@ export interface Settings {
     "sidebarWidth": number;
 
     /**
-     * "files" | "outline"
+     * "files" | "outline" | "search"
      */
     "sidebarTab": string;
     "outlineMaxLevel": number;

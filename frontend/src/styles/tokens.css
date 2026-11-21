@@ -10,13 +10,15 @@
        .mdv-toolbar                top bar  (.mdv-toolbar-button)
        .mdv-main
          .mdv-sidebar              left side bar (.is-hidden when collapsed)
-           .mdv-sidebar-tabs       Files / Outline switch (.mdv-sidebar-tab)
+           .mdv-sidebar-tabs       Files / Outline / Search (.mdv-sidebar-tab, -icon, -label)
            .mdv-sidebar-files      file list
              .mdv-sidebar-files-group        one directory
                .mdv-sidebar-files-group-title
                .mdv-sidebar-files-item       (.is-active .is-missing)
            .mdv-sidebar-outline    heading list
              .mdv-sidebar-outline-item       (.mdv-sidebar-outline-level-N .is-current)
+           .mdv-sidebar-search     search in all listed files
+             .mdv-sidebar-search-group / -file / -match (-line, -text) / -hit
          .mdv-workbench            pane area
            .mdv-split              (.mdv-split-row / .mdv-split-column) + .mdv-split-gutter
            .mdv-pane               (.is-active)
@@ -26,7 +28,7 @@
                .mdv-doc            scrolling document area
                  .mdv-doc-banner   notices (missing file, diff summary)
                  .mdv-content      rendered Markdown
-       .mdv-statusbar              bottom bar
+       .mdv-statusbar              bottom bar (.mdv-statusbar-link: hovered link target)
      .mdv-dialog                   settings dialog
    State classes: .is-active .is-hidden .is-current .is-missing .is-changed
    Themes: [data-theme="light"] / [data-theme="dark"] on <html>.

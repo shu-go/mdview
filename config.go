@@ -12,7 +12,7 @@ type Settings struct {
 	FontFamily      string  `json:"fontFamily"`      // body font, "" = default
 	CodeFontFamily  string  `json:"codeFontFamily"`  // code font, "" = default
 	FontSize        int     `json:"fontSize"`        // base font size in px
-	Zoom            float64 `json:"zoom"`            // content zoom factor
+	Zoom            int     `json:"zoom"`            // content zoom in percent (100 = 1x)
 	ContentMaxWidth int     `json:"contentMaxWidth"` // max width of the text column in px, 0 = unlimited
 	ContentPadding  int     `json:"contentPadding"`  // left/right padding of the render area in px
 	EditorCommand   string  `json:"editorCommand"`   // e.g. `code -g "{file}:{line}"`
@@ -20,7 +20,7 @@ type Settings struct {
 	DiffMode        string  `json:"diffMode"`        // default for new tabs: "baseline" | "initial" | "off"
 	SidebarVisible  bool    `json:"sidebarVisible"`
 	SidebarWidth    int     `json:"sidebarWidth"`
-	SidebarTab      string  `json:"sidebarTab"` // "files" | "outline"
+	SidebarTab      string  `json:"sidebarTab"` // "files" | "outline" | "search"
 	OutlineMaxLevel int     `json:"outlineMaxLevel"`
 }
 
@@ -29,7 +29,7 @@ func DefaultSettings() Settings {
 	return Settings{
 		Theme:           "system",
 		FontSize:        16,
-		Zoom:            1,
+		Zoom:            100,
 		ContentMaxWidth: 860,
 		ContentPadding:  32,
 		DiffMode:        "baseline",
@@ -53,14 +53,17 @@ func (s *Settings) normalize() {
 		s.DiffMode = d.DiffMode
 	}
 	switch s.SidebarTab {
-	case "files", "outline":
+	case "files", "outline", "search":
 	default:
 		s.SidebarTab = d.SidebarTab
 	}
 	if s.FontSize < 8 || s.FontSize > 48 {
 		s.FontSize = d.FontSize
 	}
-	if s.Zoom < 0.3 || s.Zoom > 4 {
+	if s.Zoom > 0 && s.Zoom <= 4 {
+		s.Zoom *= 100 // older settings stored a factor
+	}
+	if s.Zoom < 30 || s.Zoom > 400 {
 		s.Zoom = d.Zoom
 	}
 	if s.ContentMaxWidth < 0 {

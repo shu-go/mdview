@@ -12,6 +12,17 @@ export interface DocHost {
   status(msg: string, error?: boolean): void;
   rendered(view: DocView): void;
   scrolled(view: DocView): void;
+  linkHover(target: string | null): void;
+}
+
+/** What a link points to, as shown in the status bar. */
+export function linkTarget(a: HTMLAnchorElement): string {
+  const path = a.dataset.mdvPath;
+  const anchor = a.dataset.mdvAnchor;
+  if (path) return anchor ? `${path}#${anchor}` : path;
+  const href = a.getAttribute('href') ?? '';
+  if (href.startsWith('#')) return anchor ? `#${anchor}` : decodeURIComponent(href);
+  return href;
 }
 
 const mdExt = /\.(md|markdown|mdown|mkd|mkdn|mdwn)$/i;
@@ -51,6 +62,20 @@ export class DocView {
       }
     });
     this.content.addEventListener('click', (e) => this.onClick(e));
+    const linkOf = (e: Event) => (e.target as HTMLElement | null)?.closest?.<HTMLAnchorElement>('a') ?? null;
+    const show = (e: Event) => {
+      const a = linkOf(e);
+      if (a && this.content.contains(a)) this.host.linkHover(linkTarget(a) || null);
+    };
+    const hide = (e: Event) => {
+      const a = linkOf(e);
+      const to = (e as MouseEvent | FocusEvent).relatedTarget as Node | null;
+      if (a && !(to && a.contains(to))) this.host.linkHover(null);
+    };
+    this.content.addEventListener('mouseover', show);
+    this.content.addEventListener('mouseout', hide);
+    this.content.addEventListener('focusin', show);
+    this.content.addEventListener('focusout', hide);
     this.banner.addEventListener('click', (e) => {
       const t = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
       if (t?.dataset.action === 'next-change') this.nextChange(1);
@@ -275,6 +300,20 @@ export class DocView {
     }
     this.scrollToElement(first, true);
     this.host.status(`Change ${this.changeIndex + 1} / ${regions.length}`);
+  }
+
+  /** Scrolls to the top-level block containing a source line, and flashes it. */
+  scrollToLine(line: number): void {
+    let best: HTMLElement | null = null;
+    for (const b of Array.from(this.content.querySelectorAll<HTMLElement>(':scope > [data-line], :scope > .mdv-diff-ins > [data-line]'))) {
+      if (Number(b.dataset.line) <= line) best = b;
+      else break;
+    }
+    if (!best) return;
+    this.scrollToElement(best, true);
+    best.classList.remove('is-flash');
+    void best.offsetWidth; // restart the animation
+    best.classList.add('is-flash');
   }
 
   /** Source line of the first block visible at the top of the viewport. */

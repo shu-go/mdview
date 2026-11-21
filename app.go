@@ -387,6 +387,14 @@ func (a *App) Render(path string, mode string) (RenderResult, error) {
 	return RenderResult{Path: path, HTML: r.HTML, Headings: r.Headings, Changes: r.Changes, Missing: c.Missing, Version: c.Version}, nil
 }
 
+// Grep searches all files of the shared list.
+func (a *App) Grep(q workspace.GrepQuery) (workspace.GrepResult, error) {
+	return a.ws.Grep(q)
+}
+
+// Quit exits the application.
+func (a *App) Quit() { a.app.Quit() }
+
 // SetBaseline makes the current content the diff baseline.
 func (a *App) SetBaseline(path string) { a.ws.SetBaseline(path) }
 

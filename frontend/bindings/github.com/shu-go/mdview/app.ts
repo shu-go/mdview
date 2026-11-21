@@ -73,6 +73,13 @@ export function GetSettings(): $CancellablePromise<$models.Settings> {
 }
 
 /**
+ * Grep searches all files of the shared list.
+ */
+export function Grep(q: workspace$0.GrepQuery): $CancellablePromise<workspace$0.GrepResult> {
+    return $Call.ByID(3349088025, q);
+}
+
+/**
  * HandleSecondInstance opens the paths of a second launch in the last active window.
  */
 export function HandleSecondInstance(data: application$0.SecondInstanceData): $CancellablePromise<void> {
@@ -156,6 +163,13 @@ export function OpenWithSystem(path: string): $CancellablePromise<void> {
  */
 export function PathKind(path: string): $CancellablePromise<string> {
     return $Call.ByID(71635776, path);
+}
+
+/**
+ * Quit exits the application.
+ */
+export function Quit(): $CancellablePromise<void> {
+    return $Call.ByID(3181047470);
 }
 
 /**

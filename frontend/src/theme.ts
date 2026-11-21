@@ -18,7 +18,7 @@ export function applySettings(s: Settings): void {
   set('--mdv-font-body', s.fontFamily.trim() || null);
   set('--mdv-font-code', s.codeFontFamily.trim() || null);
   set('--mdv-font-size', `${s.fontSize}px`);
-  set('--mdv-zoom', String(s.zoom));
+  set('--mdv-zoom', String(s.zoom / 100));
   set('--mdv-content-max-width', s.contentMaxWidth > 0 ? `${s.contentMaxWidth}px` : 'none');
   set('--mdv-content-padding', `${s.contentPadding}px`);
   set('--mdv-sidebar-width', `${s.sidebarWidth}px`);

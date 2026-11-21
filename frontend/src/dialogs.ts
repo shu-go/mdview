@@ -60,7 +60,7 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
         { key: 'fontFamily', label: 'Body font', kind: 'text', hint: fontHint, placeholder: 'system-ui, sans-serif' },
         { key: 'codeFontFamily', label: 'Code font', kind: 'text', placeholder: 'ui-monospace, Consolas, monospace' },
         { key: 'fontSize', label: 'Font size (px)', kind: 'number', step: '1' },
-        { key: 'zoom', label: 'Zoom', kind: 'number', step: '0.1', hint: 'Ctrl + / Ctrl - / Ctrl 0' },
+        { key: 'zoom', label: 'Zoom (%)', kind: 'number', step: '10', hint: '100 = actual size. Ctrl + / Ctrl - / Ctrl 0, Ctrl + mouse wheel' },
         { key: 'contentMaxWidth', label: 'Text width (px)', kind: 'number', step: '20', hint: '0 = use the full width. ( and ) adjust it.' },
         { key: 'contentPadding', label: 'Side margin (px)', kind: 'number', step: '4', hint: 'Left/right padding of the render area.' },
         {

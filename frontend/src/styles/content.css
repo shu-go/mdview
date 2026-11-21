@@ -396,6 +396,20 @@ summary.mdv-callout-title {
   outline-offset: 2px;
 }
 
+/* block jumped to from the sidebar search */
+.mdv-content .is-flash {
+  animation: mdv-flash 1.2s ease-out;
+}
+
+@keyframes mdv-flash {
+  from {
+    background: var(--mdv-color-search-hit);
+  }
+  to {
+    background: transparent;
+  }
+}
+
 /* ---------- search hits ---------- */
 .mdv-search-hit {
   background: var(--mdv-color-search-hit);

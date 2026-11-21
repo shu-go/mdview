@@ -10,6 +10,8 @@ export interface Tab {
   path: string;
   diffMode: DiffMode;
   scroll: number;
+  /** last diff mode other than 'off' (for toggling) */
+  lastDiffMode?: DiffMode;
 }
 
 export interface PaneNode {
