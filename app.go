@@ -17,6 +17,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/events"
 
 	"github.com/shu-go/mdview/internal/markdown"
+	"github.com/shu-go/mdview/internal/safepath"
 	"github.com/shu-go/mdview/internal/workspace"
 )
 
@@ -593,14 +594,7 @@ func (a *App) OpenWithSystem(ctx context.Context, path string) error {
 // isUNC reports whether p may refer to a network location (UNC, device or
 // mixed-separator forms). On Windows only drive-letter volumes are accepted,
 // so that no path can make the system contact a remote host (NTLM leaks).
-func isUNC(p string) bool {
-	if runtime.GOOS != "windows" {
-		return strings.HasPrefix(p, "//")
-	}
-	p = filepath.Clean(filepath.FromSlash(p))
-	vol := filepath.VolumeName(p)
-	return !(len(vol) == 2 && vol[1] == ':')
-}
+func isUNC(p string) bool { return safepath.IsNetwork(p) }
 
 // servableExts are the file types served to the page (images and media).
 var servableExts = map[string]bool{

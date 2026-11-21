@@ -140,6 +140,10 @@ func TestFileURLChangesWithFile(t *testing.T) {
 	if !strings.HasPrefix(FileURL(p+".missing"), FileURLPrefix) {
 		t.Error("missing file still gets a URL")
 	}
+	// network paths are never stat-ed (no version parameter)
+	if u := FileURL(`\\attacker.invalid\share\x.png`); strings.Contains(u, "&v=") {
+		t.Errorf("network path must not be touched: %s", u)
+	}
 }
 
 func TestDiff(t *testing.T) {

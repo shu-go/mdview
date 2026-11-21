@@ -13,6 +13,7 @@ import (
 	emoji "github.com/yuin/goldmark-emoji"
 	emojiast "github.com/yuin/goldmark-emoji/ast"
 
+	"github.com/shu-go/mdview/internal/safepath"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
@@ -31,6 +32,9 @@ const FileURLPrefix = "/_mdv/file?p="
 // instead of reusing the webview's in-memory image cache.
 func FileURL(abs string) string {
 	u := FileURLPrefix + url.QueryEscape(abs)
+	if safepath.IsNetwork(abs) {
+		return u // never touch network paths while rendering (NTLM leak); the server refuses them
+	}
 	if st, err := os.Stat(abs); err == nil {
 		u += "&v=" + strconv.FormatInt(st.ModTime().UnixNano(), 36)
 	}
