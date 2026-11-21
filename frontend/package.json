@@ -16,9 +16,9 @@
     "pele": "^1.13.0"
   },
   "devDependencies": {
-    "happy-dom": "^15.11.7",
+    "happy-dom": "^21.0.4",
     "typescript": "^5.9.3",
     "vite": "^8.2.4",
-    "vitest": "^3.2.7"
+    "vitest": "^5.1.1"
   }
 }
