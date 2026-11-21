@@ -145,7 +145,6 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       sep(),
       this.diffSelect,
       tb('Baseline', 'Use current content as diff baseline (B)', 'set-baseline'),
-      tb('⟳', 'Reload (r)', 'reload'),
       sep(),
       iconButton(tb('', 'Search (/ or Ctrl+F)', 'search'), icons.search),
       h('span', { class: 'mdv-toolbar-spacer' }),
@@ -578,6 +577,8 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       { label: 'Close', run: () => this.closeTab(tab.id) },
       { label: 'Close others', run: () => this.closeOthers(tab.id) },
       '-',
+      { label: 'Reload', run: () => this.reloadTab(tab) },
+      '-',
       { label: 'Split right', run: () => this.splitTab(tab, 'right') },
       { label: 'Split down', run: () => this.splitTab(tab, 'bottom') },
       { label: 'Move to new window', run: () => this.dragOut(this.dragData(tab), window.screenX + 60, window.screenY + 60) },
@@ -586,6 +587,14 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       { label: 'Copy path', run: () => void navigator.clipboard.writeText(tab.path) },
     ];
     showMenu(items, x, y);
+  }
+
+  /** Re-reads the tab's file from disk and renders it again (also refreshes images). */
+  private reloadTab(tab: Tab): void {
+    void api.Reload(tab.path);
+    const v = this.view(tab);
+    if (this.visibleViews().includes(v)) void v.render();
+    else v.stale = true;
   }
 
   private dragData(tab: Tab): DragTab {
@@ -793,10 +802,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       }
       case 'reload': {
         const t = this.activeTab;
-        if (t) {
-          void api.Reload(t.path);
-          void v?.render();
-        }
+        if (t) this.reloadTab(t);
         return;
       }
       case 'editor': return this.openEditor();
