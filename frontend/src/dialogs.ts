@@ -153,9 +153,10 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
 }
 
 export function openHelp(): void {
-  const rows = bindings.map((b) =>
-    h('tr', {}, h('td', { text: b.keys.map(displayKey).join('  ') }), h('td', { text: b.help })),
-  );
+  const rows = bindings.map((b) => {
+    const keys = [...new Map(b.keys.map((k) => [displayKey(k).toLowerCase(), displayKey(k)])).values()];
+    return h('tr', {}, h('td', { text: keys.join('  ') }), h('td', { text: b.help }));
+  });
   const body = h(
     'div',
     { class: 'mdv-dialog-body' },

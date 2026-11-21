@@ -1,59 +1,78 @@
-# Welcome to Your New Wails3 Project!
+# mdview
 
-Congratulations on generating your Wails3 application! This README will guide you through the next steps to get your project up and running.
+Go + [Wails v3](https://v3.wails.io/) 製の Markdown ビューアー（Windows / macOS / Linux）。
 
-## Getting Started
+- タブと入れ子ペイン、複数ウィンドウ（タブをウィンドウ外へドラッグ）
+- ファイル一覧（ディレクトリー毎）と見出しアウトラインのサイドバー
+- ファイル変更の自動再読み込みと差分表示（初回読み込み時 / 基準時点との比較）
+- less / lv ライクなキー操作、通常・正規表現検索
+- GitHub emoji、Mermaid（[pele](https://pele.run)）、Callouts、フロントマター、シンタックスハイライト
+- ライト / ダーク / システム配色、フォント・ズーム・本文幅、ユーザー CSS
 
-1. Navigate to your project directory in the terminal.
+機能ごとの状況は [docs/STATUS.md](docs/STATUS.md)、設計判断は [docs/adr](docs/adr) を参照。
 
-2. To run your application in development mode, use the following command:
+## 使い方
 
-   ```
-   wails3 dev
-   ```
+```
+mdview [FILE|FOLDER]...
+```
 
-   This will start your application and enable hot-reloading for both frontend and backend changes.
+すでに起動している場合は、最後にアクティブだったウィンドウで開きます（シングルインスタンス）。
+ファイルやフォルダーはウィンドウへのドラッグ＆ドロップ、`Ctrl+O` / `Ctrl+Shift+O` でも開けます。
 
-3. To build your application for production, use:
+主なキー（`F1` で一覧）:
 
-   ```
-   wails3 build
-   ```
+| キー | 動作 |
+|------|------|
+| `j` `k` / `Space` `b` / `d` `u` | 行 / ページ / 半ページ スクロール（`5j` のように回数指定可） |
+| `g` `G` / `50p` | 先頭 / 末尾 / 50% 位置 |
+| `{` `}` | 前 / 次の見出し |
+| `/` `?` `n` `N` / `Alt+/` | 検索 / 正規表現検索 |
+| `]` `[` / `D` / `B` | 次 / 前の変更箇所、差分モード切替、基準を更新 |
+| `t` `T` / `q` | 次 / 前のタブ、タブを閉じる |
+| `Ctrl+\` `Ctrl+Shift+\` | 右 / 下に分割 |
+| `Ctrl+B` / `o` | サイドバー表示切替 / ファイル⇔見出し |
+| `Ctrl` `+` `-` `0` / `(` `)` | ズーム / 本文幅 |
+| `v` | 外部エディターで開く（表示中の行） |
 
-   This will create a production-ready executable in the `build` directory.
+## 設定
 
-## Exploring Wails3 Features
+設定は `mdview.json` に保存されます。実行ファイルと同じ場所にあればそれを、無ければ
+ユーザー設定ディレクトリー（Windows: `%APPDATA%\mdview\mdview.json`）を使います。
 
-Now that you have your project set up, it's time to explore the features that Wails3 offers:
+外部エディターはコマンドラインで指定し、`{file}` と `{line}` が置換されます。
 
-1. **Check out the examples**: The best way to learn is by example. Visit the `examples` directory in the `v3/examples` directory to see various sample applications.
+```
+code -g "{file}:{line}"
+"C:\Program Files\Vim\vim91\gvim.exe" +{line} "{file}"
+```
 
-2. **Run an example**: To run any of the examples, navigate to the example's directory and use:
+### CSS カスタマイズ
 
-   ```
-   go run .
-   ```
+設定 > Custom CSS > **Export template…** で備え付けの CSS を書き出し、編集して Custom CSS に
+指定します（保存すると自動で反映）。クラス名は `mdv-` 接頭辞のハイフン区切り階層です。
 
-   Note: Some examples may be under development during the alpha phase.
+```
+.mdv-app > .mdv-toolbar, .mdv-main, .mdv-statusbar
+.mdv-sidebar > .mdv-sidebar-files-group > .mdv-sidebar-files-item
+.mdv-pane > .mdv-pane-tabs > .mdv-pane-tab
+.mdv-doc > .mdv-content            （描画された Markdown）
+.mdv-callout-note, .mdv-code, .mdv-mermaid, .mdv-frontmatter, .mdv-diff-ins / .mdv-diff-del
+```
 
-3. **Explore the documentation**: Visit the [Wails3 documentation](https://v3.wails.io/) for in-depth guides and API references.
+状態は `.is-active` `.is-hidden` `.is-current` などで表し、配色は `--mdv-color-*` 変数で変えられます。
 
-4. **Join the community**: Have questions or want to share your progress? Join the [Wails Discord](https://discord.gg/JDdSxwjhGf) or visit the [Wails discussions on GitHub](https://github.com/wailsapp/wails/discussions).
+## 開発
 
-## Project Structure
+必要なもの: Go 1.26+, Node.js, `wails3` CLI。
 
-Take a moment to familiarize yourself with your project structure:
+```
+wails3 dev              # 開発モード
+wails3 build            # bin/mdview(.exe)
+go test ./...           # Go のテスト
+cd frontend && npm test # フロントエンドのテスト（vitest）
+go run ./tools/chromacss > frontend/src/styles/highlight.css  # ハイライト CSS の再生成
+```
 
-- `frontend/`: Contains your frontend code (HTML, CSS, JavaScript/TypeScript)
-- `main.go`: The entry point of your Go backend
-- `app.go`: Define your application structure and methods here
-- `wails.json`: Configuration file for your Wails project
-
-## Next Steps
-
-1. Modify the frontend in the `frontend/` directory to create your desired UI.
-2. Add backend functionality in `main.go`.
-3. Use `wails3 dev` to see your changes in real-time.
-4. When ready, build your application with `wails3 build`.
-
-Happy coding with Wails3! If you encounter any issues or have questions, don't hesitate to consult the documentation or reach out to the Wails community.
+UI テスト用に、環境変数 `MDVIEW_REMOTE_DEBUG_PORT=9222` を指定して起動すると（Windows）
+WebView2 のリモートデバッグ（CDP）ポートが開きます。
