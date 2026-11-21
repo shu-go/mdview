@@ -18,6 +18,7 @@ import { isDialogOpen, openHelp, openSettings } from './dialogs';
 import { showMenu, closeMenu, type MenuItem } from './menu';
 import { applySettings, setCustomCSS } from './theme';
 import { installNavigationGuard } from './navguard';
+import type { DiffDetail } from './inlinediff';
 import { Workbench, type DragTab, type DropTarget, type WorkbenchHost } from './workbench';
 import { basename, errMessage, h, isEditableTarget } from './util';
 
@@ -151,9 +152,23 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     document.body.replaceChildren(app);
   }
 
+  diffDetail(): DiffDetail {
+    return (this.settings?.diffDetail as DiffDetail) || 'word';
+  }
+
   private applySettings(s: Settings): void {
+    const detailChanged = this.settings !== undefined && this.settings.diffDetail !== s.diffDetail;
     this.settings = s;
     applySettings(s);
+    if (detailChanged) {
+      // re-render documents showing a diff; hidden tabs render when shown
+      const visible = new Set(this.visibleViews());
+      this.views.forEach((v) => {
+        if (v.tab.diffMode === 'off' || !v.changes) return;
+        if (visible.has(v)) void v.render();
+        else v.stale = true;
+      });
+    }
     this.sidebar.setVisible(s.sidebarVisible);
     this.sidebarButton?.classList.toggle('is-active', s.sidebarVisible);
     this.sb.zoom.textContent = `${s.zoom}%`;

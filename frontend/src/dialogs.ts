@@ -77,6 +77,13 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
       'Behaviour',
       [
         { key: 'diffMode', label: 'Default diff', kind: 'select', options: [['baseline', 'Since baseline'], ['initial', 'Since first load'], ['off', 'Off']] },
+        {
+          key: 'diffDetail',
+          label: 'Diff detail',
+          kind: 'select',
+          options: [['word', 'Words (inline)'], ['char', 'Characters (inline)'], ['block', 'Whole blocks']],
+          hint: 'How changes inside a changed paragraph are shown.',
+        },
         { key: 'outlineMaxLevel', label: 'Outline depth', kind: 'number', step: '1' },
         { key: 'closeWindowOnLastTab', label: 'Close window with last tab', kind: 'checkbox', hint: 'Close the window when its last tab is closed.' },
         {

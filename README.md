@@ -6,7 +6,7 @@ A Markdown viewer for Windows / macOS / Linux, built with Go and [Wails v3](http
 
 - Tabs, nested split panes and multiple windows (drag a tab out of the window)
 - Sidebar with the file list (grouped by directory), the heading outline and search across files
-- Automatic reload on file changes, with diff highlighting (against the first load or a baseline you set)
+- Automatic reload on file changes, with diff highlighting down to words or characters (against the first load or a baseline you set)
 - less / lv style key bindings, plain and regular expression search
 - GitHub emoji, Mermaid (rendered with [pele](https://pele.run)), callouts, front matter, syntax highlighting
 - Light / dark / system color scheme, fonts, zoom, text width and a custom stylesheet

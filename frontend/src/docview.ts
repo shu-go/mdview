@@ -5,6 +5,7 @@ import { api, type RenderResult, type Heading } from './api';
 import type { Tab } from './layout';
 import { errMessage, h } from './util';
 import { FootnotePopup } from './footnote';
+import { applyInlineDiffs, type DiffDetail } from './inlinediff';
 
 export interface DocHost {
   openLink(path: string, anchor: string, split: boolean): void;
@@ -14,6 +15,7 @@ export interface DocHost {
   rendered(view: DocView): void;
   scrolled(view: DocView): void;
   linkHover(target: string | null): void;
+  diffDetail(): DiffDetail;
 }
 
 /** What a link points to, as shown in the status bar. */
@@ -144,6 +146,7 @@ export class DocView {
     this.changeIndex = -1;
     this.footnotes.hide();
     this.content.innerHTML = r.html;
+    if (this.tab.diffMode !== 'off' && r.changes > 0) applyInlineDiffs(this.content, this.host.diffDetail());
     this.updateBanner();
     await this.renderMermaid();
     this.el.scrollTop = scroll;

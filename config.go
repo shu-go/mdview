@@ -22,6 +22,9 @@ type Settings struct {
 	SidebarWidth    int    `json:"sidebarWidth"`
 	SidebarTab      string `json:"sidebarTab"` // "files" | "outline" | "search"
 	OutlineMaxLevel int    `json:"outlineMaxLevel"`
+	// DiffDetail is how changes inside a changed block are shown:
+	// "word" | "char" (inline marks) or "block" (old and new block side by side).
+	DiffDetail string `json:"diffDetail"`
 	// CloseWindowOnLastTab closes a window when its last tab is closed.
 	CloseWindowOnLastTab bool `json:"closeWindowOnLastTab"`
 }
@@ -40,6 +43,7 @@ func DefaultSettings() Settings {
 		SidebarTab:      "files",
 		OutlineMaxLevel: 6,
 
+		DiffDetail:           "word",
 		CloseWindowOnLastTab: true,
 	}
 }
@@ -55,6 +59,11 @@ func (s *Settings) normalize() {
 	case "baseline", "initial", "off":
 	default:
 		s.DiffMode = d.DiffMode
+	}
+	switch s.DiffDetail {
+	case "word", "char", "block":
+	default:
+		s.DiffDetail = d.DiffDetail
 	}
 	switch s.SidebarTab {
 	case "files", "outline", "search":

@@ -119,6 +119,12 @@ export interface Settings {
     "outlineMaxLevel": number;
 
     /**
+     * DiffDetail is how changes inside a changed block are shown:
+     * "word" | "char" (inline marks) or "block" (old and new block side by side).
+     */
+    "diffDetail": string;
+
+    /**
      * CloseWindowOnLastTab closes a window when its last tab is closed.
      */
     "closeWindowOnLastTab": boolean;

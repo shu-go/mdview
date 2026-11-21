@@ -15,6 +15,9 @@ func TestSettingsDefaultsAndMigration(t *testing.T) {
 	if !s.CloseWindowOnLastTab {
 		t.Error("closeWindowOnLastTab should default to true")
 	}
+	if s.DiffDetail != "word" {
+		t.Errorf("diffDetail = %q, want word", s.DiffDetail)
+	}
 	if s.Zoom != 100 || s.Theme != "dark" {
 		t.Errorf("zoom/theme = %d/%s", s.Zoom, s.Theme)
 	}

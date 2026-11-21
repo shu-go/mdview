@@ -449,6 +449,25 @@ summary.mdv-callout-title {
   margin-bottom: 0;
 }
 
+/* changed block shown with inline (word / character) marks */
+.mdv-diff-ins.is-inline {
+  background: transparent;
+  border-left-color: var(--mdv-color-diff-mod-bar);
+}
+
+.mdv-diff-word-ins {
+  background: var(--mdv-color-diff-word-ins-bg);
+  text-decoration: none;
+  border-radius: 2px;
+}
+
+.mdv-diff-word-del {
+  background: var(--mdv-color-diff-word-del-bg);
+  color: var(--mdv-color-diff-del-bar);
+  text-decoration: line-through;
+  border-radius: 2px;
+}
+
 .mdv-diff-ins.is-current,
 .mdv-diff-del.is-current {
   outline: 2px solid var(--mdv-color-accent);
