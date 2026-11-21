@@ -30,12 +30,12 @@ func (n *Callout) Dump(source []byte, level int) {
 
 var calloutAliases = map[string]string{
 	"summary": "abstract", "tldr": "abstract",
-	"hint": "tip",
+	"hint":  "tip",
 	"check": "success", "done": "success",
 	"help": "question", "faq": "question",
 	"fail": "failure", "missing": "failure",
-	"error": "danger",
-	"cite": "quote",
+	"error":     "danger",
+	"cite":      "quote",
 	"attention": "warning",
 }
 

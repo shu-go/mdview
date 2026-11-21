@@ -4,6 +4,10 @@ package main
 
 import "os"
 
+// singleInstanceID differs from production builds, so that a development build
+// (UI tests) never hands its files to a running production mdview.
+const singleInstanceID = "com.github.shu-go.mdview.dev"
+
 // debugBrowserArgs enables the WebView2 remote debugging (CDP) port when
 // MDVIEW_REMOTE_DEBUG_PORT is set; used for automated UI tests. Development
 // builds only: anyone reaching the port controls the app.

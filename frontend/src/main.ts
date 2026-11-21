@@ -245,9 +245,29 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     // Resize grips on the window edges (frameless window). They sit above
     // everything - e.g. the document's scrollbar at the right edge, which would
     // otherwise take the mouse - and the Wails runtime resizes from their position.
+    // No text selection while resizing. Windows does not always report the
+    // button release at the end of a native resize, so selection stays blocked
+    // until the page sees the button up again.
+    let resizing = false;
     for (const edge of ['top', 'right', 'bottom', 'left', 'top-left', 'top-right', 'bottom-left', 'bottom-right']) {
-      document.body.append(h('div', { class: `mdv-resize-edge mdv-resize-edge-${edge}`, 'aria-hidden': 'true' }));
+      const grip = h('div', { class: `mdv-resize-edge mdv-resize-edge-${edge}`, 'aria-hidden': 'true' });
+      grip.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        resizing = true;
+      });
+      document.body.append(grip);
     }
+    document.addEventListener('selectstart', (e) => {
+      if (resizing) e.preventDefault();
+    });
+    const released = (e: MouseEvent) => {
+      if (resizing && (e.type === 'mouseup' || (e.buttons & 1) === 0)) {
+        resizing = false;
+        window.getSelection()?.removeAllRanges();
+      }
+    };
+    window.addEventListener('mouseup', released, true);
+    window.addEventListener('mousemove', released, true);
   }
 
   diffDetail(): DiffDetail {

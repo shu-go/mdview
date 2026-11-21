@@ -33,7 +33,7 @@ func main() {
 			Middleware: fileMiddleware,
 		},
 		SingleInstance: &application.SingleInstanceOptions{
-			UniqueID:               "com.github.shu-go.mdview",
+			UniqueID:               singleInstanceID,
 			OnSecondInstanceLaunch: svc.HandleSecondInstance,
 		},
 		Mac: application.MacOptions{
