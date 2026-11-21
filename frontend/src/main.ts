@@ -228,7 +228,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     this.updateStatus();
     const v = this.views.get(t.id);
     if (v) void v.render();
-    this.statusMsg(diffLabel[mode]);
+    // no status message: the status bar select shows the mode
   }
 
   // DocHost: link under the pointer / keyboard focus
