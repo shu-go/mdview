@@ -132,7 +132,7 @@ func renderCallout(w util.BufWriter, source []byte, node ast.Node, entering bool
 			titleTag = "summary"
 		}
 		t := html.EscapeString(c.CalloutType)
-		_, _ = w.WriteString(`<` + tag + ` class="mdv-callout mdv-callout-` + t + `" data-callout="` + t + `"` + open + ">\n")
+		_, _ = w.WriteString(`<` + tag + ` class="mdv-callout mdv-callout-` + t + `" data-callout="` + t + `"` + lineAttribute(c) + open + ">\n")
 		_, _ = w.WriteString(`<` + titleTag + ` class="mdv-callout-title"><span class="mdv-callout-icon"></span><span class="mdv-callout-title-text">` +
 			html.EscapeString(title) + `</span></` + titleTag + ">\n")
 		_, _ = w.WriteString(`<div class="mdv-callout-body">` + "\n")

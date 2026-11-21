@@ -8,8 +8,9 @@ import (
 
 func mustContain(t *testing.T, s string, subs ...string) {
 	t.Helper()
+	stripped := lineAttrRe.ReplaceAllString(s, "")
 	for _, sub := range subs {
-		if !strings.Contains(s, sub) {
+		if !strings.Contains(s, sub) && !strings.Contains(stripped, sub) {
 			t.Errorf("output does not contain %q\n---\n%s", sub, s)
 		}
 	}
@@ -57,7 +58,7 @@ func TestCallout(t *testing.T) {
 		`<details class="mdv-callout mdv-callout-tip" data-callout="tip">`,
 		`<summary class="mdv-callout-title">`,
 		"Custom *title*",
-		"<blockquote>\n<p>plain quote</p>",
+		"<p>plain quote</p>\n</blockquote>",
 	)
 	mustNotContain(t, r.HTML, "[!NOTE]")
 }
@@ -137,6 +138,19 @@ func TestDiffDeleteHeadingAndTail(t *testing.T) {
 	}
 	if strings.Index(r.HTML, ">B<") > strings.Index(r.HTML, "<p>y</p>") {
 		t.Errorf("deleted blocks out of order:\n%s", r.HTML)
+	}
+}
+
+func TestDataLine(t *testing.T) {
+	src := "---\na: 1\n---\n# H\n\npara\n\n```go\nx\n```\n\n- item\n"
+	r := Render([]byte(src), "")
+	mustContain(t, r.HTML, `<h1 id="h" data-line="4">`, `<p data-line="6">`, `<div class="mdv-code" data-lang="go" data-line="8">`, `<ul data-line="12">`)
+}
+
+func TestDiffIgnoresLineShift(t *testing.T) {
+	r := RenderDiff([]byte("a\n\nb\n\nc\n"), []byte("new\n\na\n\nb\n\nc\n"), "")
+	if r.Changes != 1 || strings.Count(r.HTML, "mdv-diff-ins") != 1 {
+		t.Errorf("only the inserted block should be marked: %d\n%s", r.Changes, r.HTML)
 	}
 }
 

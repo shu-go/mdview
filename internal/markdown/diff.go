@@ -1,6 +1,7 @@
 package markdown
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/yuin/goldmark/ast"
@@ -49,6 +50,8 @@ func (diffRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
 	})
 }
 
+var lineAttrRe = regexp.MustCompile(` data-line="\d+"`)
+
 type block struct {
 	node ast.Node
 	html string
@@ -65,7 +68,8 @@ func (p *parsed) topBlocks() []block {
 			continue
 		}
 		h := p.render(n)
-		bs = append(bs, block{node: n, html: h, key: strings.ReplaceAll(h, `id="mdv-del-`, `id="`)})
+		key := lineAttrRe.ReplaceAllString(strings.ReplaceAll(h, `id="mdv-del-`, `id="`), "")
+		bs = append(bs, block{node: n, html: lineAttrRe.ReplaceAllString(h, ""), key: key})
 	}
 	return bs
 }

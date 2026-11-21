@@ -19,6 +19,16 @@ import (
 // placeholders that the frontend turns into SVG with pele.
 type codeBlockRenderer struct{}
 
+// lineAttribute returns ` data-line="N"` for nodes annotated by annotateLines.
+func lineAttribute(node ast.Node) string {
+	if v, ok := node.AttributeString("data-line"); ok {
+		if b, ok := v.([]byte); ok {
+			return ` data-line="` + string(b) + `"`
+		}
+	}
+	return ""
+}
+
 func (codeBlockRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
 	reg.Register(ast.KindFencedCodeBlock, renderCodeBlock)
 	reg.Register(ast.KindCodeBlock, renderCodeBlock)
@@ -50,9 +60,10 @@ func renderCodeBlock(w util.BufWriter, source []byte, node ast.Node, entering bo
 	}
 	code := buf.String()
 	lang := codeLanguage(node, source)
+	lineAttr := lineAttribute(node)
 
 	if lang == "mermaid" {
-		_, _ = w.WriteString(`<div class="mdv-mermaid"><pre class="mdv-mermaid-source">`)
+		_, _ = w.WriteString(`<div class="mdv-mermaid"` + lineAttr + `><pre class="mdv-mermaid-source">`)
 		_, _ = w.WriteString(html.EscapeString(code))
 		_, _ = w.WriteString("</pre></div>\n")
 		return ast.WalkSkipChildren, nil
@@ -62,7 +73,7 @@ func renderCodeBlock(w util.BufWriter, source []byte, node ast.Node, entering bo
 	if label == "" {
 		label = "text"
 	}
-	_, _ = w.WriteString(`<div class="mdv-code" data-lang="` + html.EscapeString(label) + `">`)
+	_, _ = w.WriteString(`<div class="mdv-code" data-lang="` + html.EscapeString(label) + `"` + lineAttr + `>`)
 	_, _ = w.WriteString(`<div class="mdv-code-header"><span class="mdv-code-lang">` + html.EscapeString(label) +
 		`</span><button class="mdv-code-copy" type="button" title="Copy">Copy</button></div>`)
 

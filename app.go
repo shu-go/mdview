@@ -28,6 +28,7 @@ const (
 	EvCustomCSS       = "customcss:changed"
 	EvOpenPaths       = "open:paths"  // OpenPathsEvent, targeted
 	EvTabReceive      = "tab:receive" // TabReceiveEvent, targeted
+	EvTabAdopted      = "tab:adopted" // TabAdoptedEvent, targeted
 )
 
 // TabState describes a tab moved between windows.
@@ -640,6 +641,18 @@ func (a *App) DetachTab(ctx context.Context, tab TabState, x, y int) uint {
 	}
 	nw := a.newWindow(nil, []TabState{tab}, &application.Rect{X: x - 120, Y: y - 16, Width: width, Height: height})
 	return nw.ID()
+}
+
+// TabAdoptedEvent tells the source window that another window took its tab.
+type TabAdoptedEvent struct {
+	Target uint   `json:"target"` // the source window
+	TabID  string `json:"tabId"`
+}
+
+// NotifyTabAdopted is called by a window that accepted a tab dropped from
+// another window, so the source window closes it.
+func (a *App) NotifyTabAdopted(source uint, tabID string) {
+	a.app.Event.Emit(EvTabAdopted, TabAdoptedEvent{Target: source, TabID: tabID})
 }
 
 // ---- local files ----

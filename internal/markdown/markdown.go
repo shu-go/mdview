@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	emoji "github.com/yuin/goldmark-emoji"
@@ -86,12 +87,31 @@ func parse(source []byte, docPath, idPrefix string) *parsed {
 	raw, body, _ := splitFrontMatter(source)
 	pc := parser.NewContext(parser.WithIDs(newHeadingIDs(idPrefix)))
 	doc := md.Parser().Parse(text.NewReader(body), parser.WithContext(pc))
+	annotateLines(doc, source)
 	if raw != "" {
 		fm := &FrontMatter{Raw: raw}
 		fm.SetPos(0)
 		doc.InsertBefore(doc, doc.FirstChild(), fm)
 	}
 	return &parsed{source: source, doc: doc, md: md}
+}
+
+// annotateLines sets data-line (1-based source line) on top-level blocks so
+// the frontend can open the editor at the viewed position.
+func annotateLines(doc ast.Node, source []byte) {
+	line, last := 1, 0
+	for n := doc.FirstChild(); n != nil; n = n.NextSibling() {
+		pos := n.Pos()
+		if pos < 0 && n.Lines().Len() > 0 {
+			pos = n.Lines().At(0).Start
+		}
+		if pos < last || pos > len(source) {
+			continue
+		}
+		line += bytes.Count(source[last:pos], []byte{'\n'})
+		last = pos
+		n.SetAttributeString("data-line", []byte(strconv.Itoa(line)))
+	}
 }
 
 func (p *parsed) render(n ast.Node) string {

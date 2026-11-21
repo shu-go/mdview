@@ -7,13 +7,17 @@
     "dev": "vite",
     "build:dev": "vite build --minify false --mode development",
     "build": "vite build --mode production",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@wailsio/runtime": "3.1.0"
+    "@wailsio/runtime": "3.1.0",
+    "pele": "^1.13.0"
   },
   "devDependencies": {
-    "typescript": "^4.9.3",
-    "vite": "^8.2.4"
+    "happy-dom": "^15.11.7",
+    "typescript": "^5.9.3",
+    "vite": "^8.2.4",
+    "vitest": "^3.2.7"
   }
 }

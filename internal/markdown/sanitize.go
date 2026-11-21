@@ -21,7 +21,7 @@ func sanitizer() *bluemonday.Policy {
 		p.AllowAttrs("class", "id", "title", "dir", "lang", "align").Globally()
 		// Only the data attributes mdview itself generates; in particular not
 		// the Wails runtime's data-wml-* action attributes.
-		p.AllowAttrs("data-lang", "data-callout").Globally()
+		p.AllowAttrs("data-lang", "data-callout", "data-line").Globally()
 		p.AllowAttrs("data-mdv-anchor", "data-mdv-path", "data-mdv-external").OnElements("a")
 		p.AllowAttrs("open").OnElements("details")
 		p.AllowElements("details", "summary", "button", "kbd", "mark", "ins", "del", "sub", "sup", "s", "u", "small", "abbr", "picture", "source", "video", "audio", "figure", "figcaption", "center", "font")

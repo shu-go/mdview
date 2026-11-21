@@ -1,0 +1,135 @@
+/* ==========================================================================
+   mdview stylesheet
+   --------------------------------------------------------------------------
+   Customise by copying this file (Settings > Appearance > Export template),
+   editing it and choosing it as "Custom CSS". The custom stylesheet is loaded
+   after the built-in one, so you only need to keep the rules you change.
+
+   Structure (class names are `mdv-` + hyphenated hierarchy):
+     .mdv-app                      whole window
+       .mdv-toolbar                top bar  (.mdv-toolbar-button)
+       .mdv-main
+         .mdv-sidebar              left side bar (.is-hidden when collapsed)
+           .mdv-sidebar-tabs       Files / Outline switch (.mdv-sidebar-tab)
+           .mdv-sidebar-files      file list
+             .mdv-sidebar-files-group        one directory
+               .mdv-sidebar-files-group-title
+               .mdv-sidebar-files-item       (.is-active .is-missing)
+           .mdv-sidebar-outline    heading list
+             .mdv-sidebar-outline-item       (.mdv-sidebar-outline-level-N .is-current)
+         .mdv-workbench            pane area
+           .mdv-split              (.mdv-split-row / .mdv-split-column) + .mdv-split-gutter
+           .mdv-pane               (.is-active)
+             .mdv-pane-tabs        tab bar (.mdv-pane-tab .is-active, -title, -close)
+             .mdv-pane-body
+               .mdv-search         search bar
+               .mdv-doc            scrolling document area
+                 .mdv-doc-banner   notices (missing file, diff summary)
+                 .mdv-content      rendered Markdown
+       .mdv-statusbar              bottom bar
+     .mdv-dialog                   settings dialog
+   State classes: .is-active .is-hidden .is-current .is-missing .is-changed
+   Themes: [data-theme="light"] / [data-theme="dark"] on <html>.
+   ========================================================================== */
+
+:root {
+  /* fonts (Settings override --mdv-font-body / --mdv-font-code) */
+  --mdv-font-ui: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
+  --mdv-font-body: var(--mdv-font-ui);
+  --mdv-font-code: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, "Noto Sans Mono", monospace;
+  --mdv-font-size: 16px;
+  --mdv-zoom: 1;
+  --mdv-line-height: 1.7;
+
+  /* render area */
+  --mdv-content-max-width: 860px;
+  --mdv-content-padding: 32px;
+
+  /* sizes */
+  --mdv-sidebar-width: 260px;
+  --mdv-radius: 6px;
+}
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --mdv-color-bg: #ffffff;
+  --mdv-color-fg: #1f2328;
+  --mdv-color-muted: #656d76;
+  --mdv-color-border: #d0d7de;
+  --mdv-color-accent: #0969da;
+  --mdv-color-accent-fg: #ffffff;
+  --mdv-color-link: #0969da;
+  --mdv-color-chrome-bg: #f3f4f6;
+  --mdv-color-chrome-fg: #3b4048;
+  --mdv-color-hover: rgba(0, 0, 0, 0.06);
+  --mdv-color-selected: rgba(9, 105, 218, 0.12);
+  --mdv-color-code-bg: #f6f8fa;
+  --mdv-color-inline-code-bg: rgba(175, 184, 193, 0.2);
+  --mdv-color-quote: #656d76;
+  --mdv-color-table-stripe: #f6f8fa;
+  --mdv-color-diff-ins-bg: rgba(46, 160, 67, 0.12);
+  --mdv-color-diff-ins-bar: #2da44e;
+  --mdv-color-diff-del-bg: rgba(248, 81, 73, 0.1);
+  --mdv-color-diff-del-bar: #cf222e;
+  --mdv-color-search-hit: rgba(255, 213, 0, 0.45);
+  --mdv-color-search-current: #ff9632;
+  --mdv-color-drop: rgba(9, 105, 218, 0.18);
+
+  --mdv-callout-note: #0969da;
+  --mdv-callout-tip: #1a7f37;
+  --mdv-callout-important: #8250df;
+  --mdv-callout-warning: #9a6700;
+  --mdv-callout-caution: #cf222e;
+
+  /* Mermaid (pele) */
+  --pele-bg: transparent;
+  --pele-fg: #1f2328;
+  --pele-muted: #656d76;
+  --pele-line: #57606a;
+  --pele-surface: #f6f8fa;
+  --pele-surface-alt: #eaeef2;
+  --pele-border: #8c959f;
+  --pele-accent: #0969da;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --mdv-color-bg: #0d1117;
+  --mdv-color-fg: #e6edf3;
+  --mdv-color-muted: #8d96a0;
+  --mdv-color-border: #30363d;
+  --mdv-color-accent: #2f81f7;
+  --mdv-color-accent-fg: #ffffff;
+  --mdv-color-link: #4493f8;
+  --mdv-color-chrome-bg: #161b22;
+  --mdv-color-chrome-fg: #c9d1d9;
+  --mdv-color-hover: rgba(255, 255, 255, 0.07);
+  --mdv-color-selected: rgba(56, 139, 253, 0.2);
+  --mdv-color-code-bg: #161b22;
+  --mdv-color-inline-code-bg: rgba(110, 118, 129, 0.4);
+  --mdv-color-quote: #8d96a0;
+  --mdv-color-table-stripe: #161b22;
+  --mdv-color-diff-ins-bg: rgba(46, 160, 67, 0.18);
+  --mdv-color-diff-ins-bar: #3fb950;
+  --mdv-color-diff-del-bg: rgba(248, 81, 73, 0.15);
+  --mdv-color-diff-del-bar: #f85149;
+  --mdv-color-search-hit: rgba(187, 128, 9, 0.5);
+  --mdv-color-search-current: #d29922;
+  --mdv-color-drop: rgba(56, 139, 253, 0.25);
+
+  --mdv-callout-note: #4493f8;
+  --mdv-callout-tip: #3fb950;
+  --mdv-callout-important: #ab7df8;
+  --mdv-callout-warning: #d29922;
+  --mdv-callout-caution: #f85149;
+
+  --pele-bg: transparent;
+  --pele-fg: #e6edf3;
+  --pele-muted: #8d96a0;
+  --pele-line: #8d96a0;
+  --pele-surface: #161b22;
+  --pele-surface-alt: #21262d;
+  --pele-border: #6e7681;
+  --pele-accent: #4493f8;
+}
