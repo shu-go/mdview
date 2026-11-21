@@ -11,7 +11,19 @@ Go + [Wails v3](https://v3.wails.io/) 製の Markdown ビューアー（Windows 
 - GitHub emoji、Mermaid（[pele](https://pele.run)）、Callouts、フロントマター、シンタックスハイライト
 - ライト / ダーク / システム配色、フォント・ズーム・本文幅、ユーザー CSS
 
-機能ごとの状況は [docs/STATUS.md](docs/STATUS.md)、設計判断は [docs/adr](docs/adr) を参照。
+## スクリーンショット
+
+サイドバー（見出し一覧）とタブ:
+
+![サイドバーとタブ](screenshots/ss1_sidebar.png)
+
+サイドバーを隠した状態:
+
+![シンプルな表示](screenshots/ss2_simple.png)
+
+ファイル変更後の差分表示:
+
+![差分表示](screenshots/ss3_diff.png)
 
 ## 使い方
 

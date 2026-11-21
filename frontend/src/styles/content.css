@@ -341,6 +341,11 @@ summary.mdv-callout-title {
   background: transparent;
 }
 
+.mdv-content .mdv-frontmatter-table tr:last-child th,
+.mdv-content .mdv-frontmatter-table tr:last-child td {
+  border-bottom: none;
+}
+
 .mdv-frontmatter-key {
   width: 1%;
   white-space: nowrap;

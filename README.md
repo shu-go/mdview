@@ -11,7 +11,19 @@ A Markdown viewer for Windows / macOS / Linux, built with Go and [Wails v3](http
 - GitHub emoji, Mermaid (rendered with [pele](https://pele.run)), callouts, front matter, syntax highlighting
 - Light / dark / system color scheme, fonts, zoom, text width and a custom stylesheet
 
-See [docs/STATUS.md](docs/STATUS.md) for the feature status and [docs/adr](docs/adr) for design decisions (both in Japanese).
+## Screenshots
+
+Sidebar (outline), tabs:
+
+![Sidebar and tabs](screenshots/ss1_sidebar.png)
+
+Without the sidebar:
+
+![Simple view](screenshots/ss2_simple.png)
+
+Diff highlighting after the file changed:
+
+![Diff](screenshots/ss3_diff.png)
 
 ## Usage
 
