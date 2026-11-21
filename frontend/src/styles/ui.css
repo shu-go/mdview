@@ -69,17 +69,6 @@ button {
   border-color: var(--mdv-color-border);
 }
 
-.mdv-toolbar-select {
-  height: 26px;
-  padding: 0 4px;
-  border: 1px solid var(--mdv-color-border);
-  border-radius: var(--mdv-radius);
-  background: var(--mdv-color-bg);
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-
 .mdv-toolbar-separator {
   width: 1px;
   height: 18px;
@@ -819,6 +808,37 @@ button {
 .mdv-statusbar-button svg {
   width: 14px;
   height: 14px;
+}
+
+/* diff mode: a compact select that looks like status bar text */
+.mdv-statusbar-select {
+  height: 18px;
+  padding: 0 2px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--mdv-color-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mdv-statusbar-select:hover:not(:disabled),
+.mdv-statusbar-select:focus-visible {
+  background: var(--mdv-color-hover);
+  border-color: var(--mdv-color-border);
+  color: var(--mdv-color-fg);
+  outline: none;
+}
+
+.mdv-statusbar-select:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.mdv-statusbar-select option {
+  background: var(--mdv-color-bg);
+  color: var(--mdv-color-fg);
 }
 
 .mdv-statusbar-separator {

@@ -37,6 +37,8 @@ const statusIcons = {
   wider: svg('<path d="M1.5 3v10M14.5 3v10M7 8H3.5M5 6.5L3.5 8 5 9.5M9 8h3.5M11 6.5L12.5 8 11 9.5"/>'),
   zoomOut: svg('<circle cx="6.8" cy="6.8" r="4.3"/><path d="M10 10l4.2 4.2M4.8 6.8h4"/>'),
   zoomIn: svg('<circle cx="6.8" cy="6.8" r="4.3"/><path d="M10 10l4.2 4.2M4.8 6.8h4M6.8 4.8v4"/>'),
+  // circular arrow (refresh): "take the current content as the new baseline"
+  baseline: svg('<path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M12.2 1.8v2.6H9.6"/>'),
   pencil: svg('<path d="M11.2 2.3l2.5 2.5L5.5 13H3v-2.5z"/><path d="M9.7 3.8l2.5 2.5"/>'),
 };
 
@@ -134,7 +136,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     };
     const sep = () => h('span', { class: 'mdv-toolbar-separator' });
     this.sidebarButton = tb('☰', 'Sidebar (Ctrl+B)', 'toggle-sidebar');
-    this.diffSelect = h('select', { class: 'mdv-toolbar-select', title: 'Diff mode (D toggles on/off)' });
+    this.diffSelect = h('select', { class: 'mdv-statusbar-select', title: 'Diff mode (D toggles on/off)' });
     for (const m of diffModes) this.diffSelect.append(h('option', { value: m, text: diffLabel[m] }));
     this.diffSelect.addEventListener('change', () => {
       const t = this.activeTab;
@@ -143,9 +145,6 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     });
     this.toolbar.append(
       this.sidebarButton,
-      sep(),
-      this.diffSelect,
-      tb('Baseline', 'Use current content as diff baseline (B)', 'set-baseline'),
       sep(),
       iconButton(tb('', 'Search (/ or Ctrl+F)', 'search'), icons.search),
       h('span', { class: 'mdv-toolbar-spacer' }),
@@ -168,6 +167,9 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     const controls = h(
       'span',
       { class: 'mdv-statusbar-controls' },
+      this.diffSelect,
+      sbButton('Use the current content as the diff baseline (B)', 'set-baseline', statusIcons.baseline),
+      h('span', { class: 'mdv-statusbar-separator' }),
       sbButton('Narrower text column ( ( )', 'narrower', statusIcons.narrower),
       sbButton('Wider text column ( ) )', 'wider', statusIcons.wider),
       h('span', { class: 'mdv-statusbar-separator' }),
