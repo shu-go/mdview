@@ -147,6 +147,12 @@ func (a *App) newWindow(paths []string, tabs []TabState, bounds *application.Rec
 		EnableFileDrop:   true,
 		URL:              "/",
 		BackgroundColour: application.NewRGB(32, 33, 36),
+		// The toolbar acts as the title bar (drag region, window buttons).
+		// macOS keeps its native traffic-light buttons over a hidden title bar.
+		Frameless: runtime.GOOS != "darwin",
+		Mac: application.MacWindow{
+			TitleBar: application.MacTitleBarHiddenInset,
+		},
 	}
 	if bounds != nil {
 		opts.Hidden = true

@@ -29,6 +29,16 @@ const diffModes: DiffMode[] = ['baseline', 'initial', 'off'];
 const diffLabel: Record<DiffMode, string> = { baseline: 'Diff: baseline', initial: 'Diff: first load', off: 'Diff: off' };
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
 
+// Window buttons, drawn thin like the native ones (10x10 in a 10x10 box).
+const winSvg = (body: string) =>
+  `<svg viewBox="0 0 10 10" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1">${body}</svg>`;
+const windowIcons = {
+  minimise: winSvg('<path d="M0 5.5h10"/>'),
+  maximise: winSvg('<rect x="0.5" y="0.5" width="9" height="9"/>'),
+  restore: winSvg('<rect x="0.5" y="2.5" width="7" height="7"/><path d="M2.5 2.5v-2h7v7h-2"/>'),
+  close: winSvg('<path d="M0.5 0.5l9 9M9.5 0.5l-9 9"/>'),
+};
+
 // Static, trusted icon markup (no user data).
 const svg = (body: string) =>
   `<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
@@ -124,6 +134,38 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     this.focusDoc();
   }
 
+  /**
+   * Minimise / maximise (restore) / close buttons for the frameless window.
+   * macOS keeps its native traffic lights, so the buttons are hidden there by CSS.
+   */
+  private windowControls(): HTMLElement {
+    const button = (cls: string, title: string, icon: string, run: () => void) => {
+      const b = h('button', { class: `mdv-window-button mdv-window-button-${cls}`, type: 'button', title });
+      b.innerHTML = icon; // static, trusted icon markup
+      b.addEventListener('click', run);
+      return b;
+    };
+    const max = button('maximise', 'Maximise', windowIcons.maximise, () => void WailsWindow.ToggleMaximise());
+    const updateMax = async () => {
+      const maximised = await WailsWindow.IsMaximised().catch(() => false);
+      max.innerHTML = maximised ? windowIcons.restore : windowIcons.maximise;
+      max.title = maximised ? 'Restore' : 'Maximise';
+    };
+    let timer = 0;
+    window.addEventListener('resize', () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => void updateMax(), 100);
+    });
+    void updateMax();
+    return h(
+      'div',
+      { class: 'mdv-window-controls' },
+      button('minimise', 'Minimise', windowIcons.minimise, () => void WailsWindow.Minimise()),
+      max,
+      button('close', 'Close', windowIcons.close, () => void WailsWindow.Close()),
+    );
+  }
+
   private buildDOM(): void {
     // static, trusted icon markup
     const iconButton = (b: HTMLButtonElement, svg: string) => {
@@ -167,6 +209,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       iconButton(tb('', 'Open in external editor (v)', 'editor'), statusIcons.pencil),
       tb('⚙', 'Settings (Ctrl+,)', 'settings'),
       tb('?', 'Key bindings (F1)', 'help'),
+      this.windowControls(),
     );
     // status bar (right): text width and zoom controls, icon buttons
     const sbButton = (title: string, cmd: string, svg: string) => {

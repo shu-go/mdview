@@ -56,5 +56,6 @@ UI は WebView2 の CDP（`MDVIEW_REMOTE_DEBUG_PORT`）と実マウス/キー操
 | A14 | `Ctrl+1`〜`Ctrl+8` でその位置のタブ、`Ctrl+9` で末尾のタブ | ✅ | アクティブなペイン内のタブが対象 |
 | A15 | README を英語に、日本語版は README_ja.md（相互リンク） | ✅ | |
 | A16 | 差分を段落内の単語・文字単位で表示 | ✅ | 設定 > Diff detail（単語〔既定〕/ 文字 / ブロック）。似ていない段落はブロック単位のまま |
+| A17 | タイトルバーを非表示にし、ツールバーに最小化・最大化・閉じるボタン | ⚠️ | Windows / Linux は枠なしウィンドウ。macOS は標準の信号機ボタンを残してタイトルバーのみ非表示（macOS / Linux は未確認） |
 
 前提: Go + Wails v3 / Windows・macOS・Linux（UI 実機確認は Windows のみ）

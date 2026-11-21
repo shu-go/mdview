@@ -38,6 +38,48 @@ button {
   user-select: none;
 }
 
+/* window buttons at the right end (frameless window); macOS uses its native ones */
+.mdv-window-controls {
+  align-self: stretch;
+  display: flex;
+  margin: -3px -6px -3px 4px; /* flush with the toolbar edges */
+}
+
+[data-platform="darwin"] .mdv-window-controls {
+  display: none;
+}
+
+/* leave room for the macOS traffic-light buttons over the hidden title bar */
+[data-platform="darwin"] .mdv-toolbar {
+  padding-left: 78px;
+}
+
+.mdv-window-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--mdv-color-chrome-fg);
+  cursor: default;
+}
+
+.mdv-window-button svg {
+  width: 10px;
+  height: 10px;
+}
+
+.mdv-window-button:hover {
+  background: var(--mdv-color-hover);
+}
+
+.mdv-window-button-close:hover {
+  background: #c42b1c;
+  color: #ffffff;
+}
+
 /* app icon + window title; also a window drag region (like the title bar) */
 .mdv-toolbar-brand {
   flex: 1;
