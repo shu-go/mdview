@@ -322,6 +322,10 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
   closeTab(tabId: string): void {
     this.layout.removeTab(tabId);
     this.views.delete(tabId);
+    if (this.layout.tabs().length === 0 && this.settings.closeWindowOnLastTab) {
+      void WailsWindow.Close();
+      return;
+    }
     this.renderAll();
     this.focusDoc();
   }

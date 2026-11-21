@@ -117,6 +117,11 @@ export interface Settings {
      */
     "sidebarTab": string;
     "outlineMaxLevel": number;
+
+    /**
+     * CloseWindowOnLastTab closes a window when its last tab is closed.
+     */
+    "closeWindowOnLastTab": boolean;
 }
 
 /**

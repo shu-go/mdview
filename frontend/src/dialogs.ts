@@ -3,7 +3,7 @@ import { api, type Settings } from './api';
 import { bindings, displayKey } from './keys';
 import { errMessage, h } from './util';
 
-type FieldKind = 'text' | 'number' | 'select';
+type FieldKind = 'text' | 'number' | 'select' | 'checkbox';
 
 interface Field {
   key: keyof Settings;
@@ -78,6 +78,7 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
       [
         { key: 'diffMode', label: 'Default diff', kind: 'select', options: [['baseline', 'Since baseline'], ['initial', 'Since first load'], ['off', 'Off']] },
         { key: 'outlineMaxLevel', label: 'Outline depth', kind: 'number', step: '1' },
+        { key: 'closeWindowOnLastTab', label: 'Close window with last tab', kind: 'checkbox', hint: 'Close the window when its last tab is closed.' },
         {
           key: 'editorCommand',
           label: 'External editor',
@@ -102,7 +103,8 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
       } else {
         input = h('input', { type: f.kind, name: f.key, placeholder: f.placeholder, step: f.step, spellcheck: 'false' });
       }
-      input.value = String(s[f.key] ?? '');
+      if (f.kind === 'checkbox') (input as HTMLInputElement).checked = !!s[f.key];
+      else input.value = String(s[f.key] ?? '');
       inputs.set(f.key, input);
       const control = h('div', { class: 'mdv-dialog-field-control' }, input);
       if (f.browse) {
@@ -139,7 +141,7 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
     const out = { ...s } as Record<string, unknown>;
     for (const [k, input] of inputs) {
       const field = sections.flatMap((x) => x[1]).find((f) => f.key === k)!;
-      out[k] = field.kind === 'number' ? Number(input.value) : input.value;
+      out[k] = field.kind === 'number' ? Number(input.value) : field.kind === 'checkbox' ? (input as HTMLInputElement).checked : input.value;
     }
     try {
       await api.SaveSettings(out as unknown as Settings);

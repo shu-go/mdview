@@ -1,0 +1,177 @@
+name: Release
+
+# Push a version tag (e.g. `git tag v0.2.0 && git push origin v0.2.0`) to build
+# every platform and publish a GitHub release. The release notes list the
+# title of each commit since the previous v* tag.
+# workflow_dispatch builds (and uploads artifacts) without publishing.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  WAILS_VERSION: v3.1.0
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact-name: mdview-windows-amd64
+            binary: mdview.exe
+            package: false
+            apt-packages: ''
+          - os: macos-15-intel
+            artifact-name: mdview-darwin-amd64
+            binary: mdview.app
+            package: true
+            apt-packages: ''
+          - os: macos-latest
+            artifact-name: mdview-darwin-arm64
+            binary: mdview.app
+            package: true
+            apt-packages: ''
+          - os: ubuntu-24.04
+            artifact-name: mdview-linux-amd64
+            binary: mdview
+            package: false
+            apt-packages: libgtk-4-dev libwebkitgtk-6.0-dev libsoup-3.0-dev
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Set up Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.apt-packages }}
+
+      - name: Install Wails3
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ env.WAILS_VERSION }}
+
+      # Release builds take their version from the tag (v1.2.3 -> 1.2.3); the
+      # build assets carry the placeholder 0.1.0.
+      - name: Apply tag version to build assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${VERSION%%[-+]*}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag '${GITHUB_REF_NAME}' does not contain an x.y.z version"
+            exit 1
+          fi
+          # perl: same behaviour with GNU (Linux) and BSD (macOS) tools
+          perl -pi -e "s/\b0\.1\.0\b/${VERSION}/g; s/\"0\.0\.1\"/\"${VERSION}\"/g" \
+            build/windows/info.json build/windows/wails.exe.manifest \
+            build/darwin/Info.plist build/darwin/Info.dev.plist \
+            build/linux/nfpm/nfpm.yaml build/config.yml
+          grep -q "\"ProductVersion\": \"${VERSION}\"" build/windows/info.json
+
+      - name: Test
+        shell: bash
+        run: |
+          mkdir -p frontend/dist && touch frontend/dist/.keep
+          go test ./...
+          cd frontend && npm ci && npm test
+
+      - name: Build
+        if: '!matrix.package'
+        run: wails3 build
+
+      - name: Build and package (.app bundle)
+        if: matrix.package
+        run: wails3 package
+
+      - name: Package release zip (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Copy-Item README.md bin/
+          Compress-Archive -Path bin/${{ matrix.binary }}, bin/README.md -DestinationPath bin/${{ matrix.artifact-name }}.zip
+
+      - name: Package release zip (macOS/Linux)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          cp README.md bin/
+          cd bin
+          zip -r ${{ matrix.artifact-name }}.zip ${{ matrix.binary }} README.md
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: bin/${{ matrix.artifact-name }}.zip
+
+  # One release with every platform's zip, once all builds are done.
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history and tags, to find the previous tag
+
+      - name: Generate release notes (commit titles)
+        shell: bash
+        run: |
+          CURRENT="${GITHUB_REF_NAME}"
+          PREVIOUS="$(git describe --tags --abbrev=0 --match 'v*' "${CURRENT}^" 2>/dev/null || true)"
+          {
+            if [ -n "$PREVIOUS" ]; then
+              echo "## Changes since ${PREVIOUS}"
+              echo
+              git log --no-merges --pretty=format:'- %s (%h)' "${PREVIOUS}..${CURRENT}"
+              echo
+              echo
+              echo "**Full Changelog**: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/${PREVIOUS}...${CURRENT}"
+            else
+              echo "## Changes"
+              echo
+              git log --no-merges --pretty=format:'- %s (%h)' "${CURRENT}"
+              echo
+            fi
+          } > release-notes.md
+          cat release-notes.md
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: dist/*.zip

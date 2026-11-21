@@ -8,20 +8,22 @@ import (
 
 // Settings are the user preferences, persisted as mdview.json.
 type Settings struct {
-	Theme           string  `json:"theme"`           // "system" | "light" | "dark"
-	FontFamily      string  `json:"fontFamily"`      // body font, "" = default
-	CodeFontFamily  string  `json:"codeFontFamily"`  // code font, "" = default
-	FontSize        int     `json:"fontSize"`        // base font size in px
-	Zoom            int     `json:"zoom"`            // content zoom in percent (100 = 1x)
-	ContentMaxWidth int     `json:"contentMaxWidth"` // max width of the text column in px, 0 = unlimited
-	ContentPadding  int     `json:"contentPadding"`  // left/right padding of the render area in px
-	EditorCommand   string  `json:"editorCommand"`   // e.g. `code -g "{file}:{line}"`
-	CustomCSSPath   string  `json:"customCssPath"`   // user stylesheet
-	DiffMode        string  `json:"diffMode"`        // default for new tabs: "baseline" | "initial" | "off"
-	SidebarVisible  bool    `json:"sidebarVisible"`
-	SidebarWidth    int     `json:"sidebarWidth"`
-	SidebarTab      string  `json:"sidebarTab"` // "files" | "outline" | "search"
-	OutlineMaxLevel int     `json:"outlineMaxLevel"`
+	Theme           string `json:"theme"`           // "system" | "light" | "dark"
+	FontFamily      string `json:"fontFamily"`      // body font, "" = default
+	CodeFontFamily  string `json:"codeFontFamily"`  // code font, "" = default
+	FontSize        int    `json:"fontSize"`        // base font size in px
+	Zoom            int    `json:"zoom"`            // content zoom in percent (100 = 1x)
+	ContentMaxWidth int    `json:"contentMaxWidth"` // max width of the text column in px, 0 = unlimited
+	ContentPadding  int    `json:"contentPadding"`  // left/right padding of the render area in px
+	EditorCommand   string `json:"editorCommand"`   // e.g. `code -g "{file}:{line}"`
+	CustomCSSPath   string `json:"customCssPath"`   // user stylesheet
+	DiffMode        string `json:"diffMode"`        // default for new tabs: "baseline" | "initial" | "off"
+	SidebarVisible  bool   `json:"sidebarVisible"`
+	SidebarWidth    int    `json:"sidebarWidth"`
+	SidebarTab      string `json:"sidebarTab"` // "files" | "outline" | "search"
+	OutlineMaxLevel int    `json:"outlineMaxLevel"`
+	// CloseWindowOnLastTab closes a window when its last tab is closed.
+	CloseWindowOnLastTab bool `json:"closeWindowOnLastTab"`
 }
 
 // DefaultSettings returns the settings used when no file exists.
@@ -37,6 +39,8 @@ func DefaultSettings() Settings {
 		SidebarWidth:    260,
 		SidebarTab:      "files",
 		OutlineMaxLevel: 6,
+
+		CloseWindowOnLastTab: true,
 	}
 }
 

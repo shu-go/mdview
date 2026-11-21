@@ -76,6 +76,21 @@ cd frontend && npm test # フロントエンドのテスト（vitest）
 go run ./tools/chromacss > frontend/src/styles/highlight.css  # ハイライト CSS の再生成
 ```
 
+## リリース
+
+`v1.2.3` 形式のタグを push すると GitHub Actions（`.github/workflows/release.yml`）が
+Windows / macOS (amd64, arm64) / Linux 向けにビルドし、前回のタグ以降のコミットタイトル一覧を本文にしたリリースを作成します。
+`-rc1` などハイフン付きのタグはプレリリースになります。
+
+```
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+アプリアイコンは `build/appicon.png` です（ビルド時に .ico / .icns を生成）。
+
+## UI テスト
+
 UI テスト用に、開発ビルド（`go build` など `production` タグなし）を環境変数
 `MDVIEW_REMOTE_DEBUG_PORT=9222` 付きで起動すると（Windows）WebView2 のリモートデバッグ（CDP）ポートが開きます。
 製品ビルド（`wails3 build`）では無効です。

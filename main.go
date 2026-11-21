@@ -11,6 +11,12 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+// appIcon is the window / taskbar icon on Linux (Windows and macOS take it
+// from the generated .ico / .icns resources).
+//
+//go:embed build/appicon.png
+var appIcon []byte
+
 func main() {
 	svc := NewApp()
 	wd, _ := os.Getwd()
@@ -18,6 +24,7 @@ func main() {
 	app := application.New(application.Options{
 		Name:        "mdview",
 		Description: "Markdown viewer",
+		Icon:        appIcon,
 		Services: []application.Service{
 			application.NewService(svc),
 		},
