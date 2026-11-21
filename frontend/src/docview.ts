@@ -4,6 +4,7 @@ import DOMPurify from 'dompurify';
 import { api, type RenderResult, type Heading } from './api';
 import type { Tab } from './layout';
 import { errMessage, h } from './util';
+import { FootnotePopup } from './footnote';
 
 export interface DocHost {
   openLink(path: string, anchor: string, split: boolean): void;
@@ -40,6 +41,7 @@ export class DocView {
   result: RenderResult | null = null;
   stale = true;
   private rendering: Promise<void> | null = null;
+  private footnotes: FootnotePopup;
   private again = false;
   private scrollTimer = 0;
   /** index of the diff region focused by next/prev change */
@@ -61,6 +63,8 @@ export class DocView {
         }, 50);
       }
     });
+    this.footnotes = new FootnotePopup(this.content);
+    this.el.addEventListener('scroll', () => this.footnotes.hide(), { passive: true });
     this.content.addEventListener('click', (e) => this.onClick(e));
     // Middle click on a link: open to the right, never let the webview navigate.
     this.content.addEventListener('mousedown', (e) => {
@@ -138,6 +142,7 @@ export class DocView {
     this.result = r;
     this.stale = false;
     this.changeIndex = -1;
+    this.footnotes.hide();
     this.content.innerHTML = r.html;
     this.updateBanner();
     await this.renderMermaid();

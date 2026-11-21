@@ -27,7 +27,7 @@
                .mdv-search         search bar
                .mdv-doc            scrolling document area
                  .mdv-doc-banner   notices (missing file, diff summary)
-                 .mdv-content      rendered Markdown
+                 .mdv-content      rendered Markdown (.mdv-footnote-popup on footnote hover)
        .mdv-statusbar              bottom bar (.mdv-statusbar-link: hovered link target)
      .mdv-dialog                   settings dialog
    State classes: .is-active .is-hidden .is-current .is-missing .is-changed
@@ -77,6 +77,8 @@
   --mdv-color-search-hit: rgba(255, 213, 0, 0.45);
   --mdv-color-search-current: #ff9632;
   --mdv-color-drop: rgba(9, 105, 218, 0.18);
+  --mdv-color-task-done: #1f883d;
+  --mdv-color-task-border: #8c959f;
 
   --mdv-callout-note: #0969da;
   --mdv-callout-tip: #1a7f37;
@@ -119,6 +121,8 @@
   --mdv-color-search-hit: rgba(187, 128, 9, 0.5);
   --mdv-color-search-current: #d29922;
   --mdv-color-drop: rgba(56, 139, 253, 0.25);
+  --mdv-color-task-done: #2ea043;
+  --mdv-color-task-border: #6e7681;
 
   --mdv-callout-note: #4493f8;
   --mdv-callout-tip: #3fb950;
