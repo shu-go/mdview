@@ -125,8 +125,6 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     });
     this.toolbar.append(
       this.sidebarButton,
-      tb('Open…', 'Open files (Ctrl+O)', 'open-file'),
-      tb('Folder…', 'Open folder (Ctrl+Shift+O)', 'open-folder'),
       sep(),
       this.diffSelect,
       tb('Baseline', 'Use current content as diff baseline (B)', 'set-baseline'),
@@ -564,6 +562,11 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     if (!f) return;
     for (const t of [...f.pane.tabs]) if (t.id !== tabId) this.layout.removeTab(t.id);
     this.renderAll();
+  }
+
+  openInPane(paneId: string, what: 'file' | 'folder'): void {
+    this.activatePane(paneId);
+    this.run(what === 'file' ? 'open-file' : 'open-folder', null);
   }
 
   splitPane(paneId: string, side: 'right' | 'bottom'): void {

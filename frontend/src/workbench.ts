@@ -31,7 +31,23 @@ export interface WorkbenchHost {
   emptyView(): HTMLElement;
   /** Opens the pane's active tab in a new pane on that side. */
   splitPane(paneId: string, side: 'right' | 'bottom'): void;
+  /** Shows the open dialog; files open in this pane. */
+  openInPane(paneId: string, what: 'file' | 'folder'): void;
 }
+
+// Static, trusted icon markup (no user data).
+const openButtons: ['file' | 'folder', string, string][] = [
+  [
+    'file',
+    'Open files (Ctrl+O)',
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 1.5h5l4 4v9h-9z M8.5 1.5v4h4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 8v4.5M5.8 10.3H10.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+  ],
+  [
+    'folder',
+    'Open folder (Ctrl+Shift+O)',
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4a1 1 0 0 1 1-1h3.6l1.5 1.6h5.9a1 1 0 0 1 1 1V12.5a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>',
+  ],
+];
 
 // Static, trusted icon markup (no user data).
 const splitButtons: ['right' | 'bottom', string, string][] = [
@@ -160,7 +176,17 @@ export class Workbench {
         actions.append(b);
       }
     }
-    const header = h('div', { class: 'mdv-pane-header' }, tabs, actions);
+    const opens = h('div', { class: 'mdv-pane-actions mdv-pane-actions-start' });
+    for (const [what, title, svg] of openButtons) {
+      const b = h('button', { class: 'mdv-pane-action', type: 'button', title, 'data-open': what });
+      b.innerHTML = svg; // static icon markup
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.host.openInPane(p.id, what);
+      });
+      opens.append(b);
+    }
+    const header = h('div', { class: 'mdv-pane-header' }, opens, tabs, actions);
 
     const el = h('div', { class: `mdv-pane${isActive ? ' is-active' : ''}`, 'data-pane-id': p.id }, header, body);
     el.addEventListener('mousedown', () => this.host.activatePane(p.id), true);

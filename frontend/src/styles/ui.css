@@ -482,6 +482,10 @@ button {
   padding: 0 4px;
 }
 
+.mdv-pane-actions-start {
+  border-right: 1px solid var(--mdv-color-border);
+}
+
 .mdv-pane-action {
   display: inline-flex;
   align-items: center;
