@@ -6,6 +6,8 @@ export interface Binding {
   keys: string[];
   cmd: string;
   help: string;
+  /** short form shown in the help instead of every key */
+  display?: string;
 }
 
 export const bindings: Binding[] = [
@@ -31,13 +33,13 @@ export const bindings: Binding[] = [
   { keys: ['['], cmd: 'prev-change', help: 'Previous change (diff)' },
   { keys: ['D'], cmd: 'toggle-diff', help: 'Diff: toggle between off and the last used mode' },
   { keys: ['B'], cmd: 'set-baseline', help: 'Use the current content as the diff baseline' },
-  { keys: ['r', 'R', 'C-r', 'F5', 'C-F5'], cmd: 'reload', help: 'Reload from disk' },
+  { keys: ['r', 'R', 'C-r', 'F5'], cmd: 'reload', help: 'Reload from disk' },
   { keys: ['v', 'C-S-E', 'C-S-e'], cmd: 'editor', help: 'Open in the external editor' },
   { keys: ['='], cmd: 'info', help: 'Show file information' },
   { keys: ['q', 'C-w'], cmd: 'close-tab', help: 'Close tab' },
   { keys: ['t', 'C-Tab', 'C-PageDown'], cmd: 'next-tab', help: 'Next tab' },
   { keys: ['T', 'C-S-Tab', 'C-PageUp'], cmd: 'prev-tab', help: 'Previous tab' },
-  { keys: ['C-1', 'C-2', 'C-3', 'C-4', 'C-5', 'C-6', 'C-7', 'C-8', 'C-9'], cmd: 'goto-tab', help: 'Go to tab 1-8 (Ctrl+9: last tab)' },
+  { keys: ['C-1', 'C-2', 'C-3', 'C-4', 'C-5', 'C-6', 'C-7', 'C-8', 'C-9'], cmd: 'goto-tab', help: 'Go to tab 1-8 (Ctrl+9: last tab)', display: 'C-1 … C-9' },
   { keys: ['C-\\'], cmd: 'split-right', help: 'Split: open the tab to the right' },
   { keys: ['C-S-\\', 'C-|'], cmd: 'split-down', help: 'Split: open the tab below' },
   { keys: ['A-ArrowRight'], cmd: 'focus-next-pane', help: 'Focus next pane' },

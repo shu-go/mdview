@@ -156,7 +156,9 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
 
 export function openHelp(): void {
   const rows = bindings.map((b) => {
-    const keys = [...new Map(b.keys.map((k) => [displayKey(k).toLowerCase(), displayKey(k)])).values()];
+    const keys = b.display
+      ? b.display.split(' ').map((k) => (k === '…' ? k : displayKey(k)))
+      : [...new Map(b.keys.map((k) => [displayKey(k).toLowerCase(), displayKey(k)])).values()];
     return h('tr', {}, h('td', { text: keys.join('  ') }), h('td', { text: b.help }));
   });
   const body = h(
