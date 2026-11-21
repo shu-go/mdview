@@ -665,7 +665,7 @@ func fileMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		p := r.URL.Query().Get("p")
-		if p == "" || !filepath.IsAbs(p) || isUNC(p) || !servableExts[strings.ToLower(filepath.Ext(p))] {
+		if p == "" || !filepath.IsAbs(p) || isUNC(p) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
@@ -679,6 +679,21 @@ func fileMiddleware(next http.Handler) http.Handler {
 		if err != nil || st.IsDir() {
 			http.NotFound(w, r)
 			return
+		}
+		if !servableExts[strings.ToLower(filepath.Ext(p))] {
+			// Unknown extension: serve only when the content is media.
+			head := make([]byte, 512)
+			n, _ := f.Read(head)
+			ct := http.DetectContentType(head[:n])
+			if !strings.HasPrefix(ct, "image/") && !strings.HasPrefix(ct, "video/") && !strings.HasPrefix(ct, "audio/") {
+				http.Error(w, "forbidden", http.StatusForbidden)
+				return
+			}
+			w.Header().Set("Content-Type", ct)
+			if _, err := f.Seek(0, 0); err != nil {
+				http.NotFound(w, r)
+				return
+			}
 		}
 		w.Header().Set("Cache-Control", "no-cache")
 		http.ServeContent(w, r, st.Name(), st.ModTime(), f)

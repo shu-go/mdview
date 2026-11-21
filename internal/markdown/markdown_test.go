@@ -1,6 +1,7 @@
 package markdown
 
 import (
+	"html"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -105,6 +106,23 @@ func TestLinksAndImages(t *testing.T) {
 		`src="`+FileURL(filepath.Join(dir, "img", "p q.png"))+`"`,
 		`src="https://e.com/a.png"`,
 	)
+}
+
+func TestRawHTMLImages(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "docs")
+	doc := filepath.Join(dir, "a.md")
+	abs := filepath.Join(dir, "img", "x.png")
+	src := `<img src="img/sp ace/a b.png" width="50"> <img src="` + abs + `"> <img src='file:///` + filepath.ToSlash(abs) + `'> <img src="https://e.com/a.png"> <video src="v.mp4"></video>` + "\n"
+	r := Render([]byte(src), doc)
+	mustContain(t, r.HTML,
+		`src="`+html.EscapeString(FileURL(filepath.Join(dir, "img", "sp ace", "a b.png")))+`"`,
+		`src="`+html.EscapeString(FileURL(abs))+`"`,
+		`src="https://e.com/a.png"`,
+		`src="`+html.EscapeString(FileURL(filepath.Join(dir, "v.mp4")))+`"`,
+	)
+	if strings.Count(r.HTML, html.EscapeString(FileURL(abs))) != 2 {
+		t.Errorf("absolute and file: forms should both resolve:\n%s", r.HTML)
+	}
 }
 
 func TestDiff(t *testing.T) {

@@ -123,7 +123,7 @@ func (p *parsed) render(n ast.Node) string {
 // Render renders source. docPath is used to resolve relative links and images.
 func Render(source []byte, docPath string) Result {
 	p := parse(source, docPath, "")
-	return Result{HTML: Sanitize(p.render(p.doc)), Headings: collectHeadings(p.doc, p.source)}
+	return Result{HTML: finalize(p.render(p.doc), docPath), Headings: collectHeadings(p.doc, p.source)}
 }
 
 // RenderDiff renders source, marking top-level blocks that differ from base:
@@ -136,7 +136,16 @@ func RenderDiff(base, source []byte, docPath string) Result {
 	oldP := parse(base, docPath, "mdv-del-")
 	newP := parse(source, docPath, "")
 	changes := applyDiff(oldP, newP)
-	return Result{HTML: Sanitize(newP.render(newP.doc)), Headings: collectHeadings(newP.doc, newP.source), Changes: changes}
+	return Result{HTML: finalize(newP.render(newP.doc), docPath), Headings: collectHeadings(newP.doc, newP.source), Changes: changes}
+}
+
+// finalize resolves raw HTML media paths and sanitises the document HTML.
+func finalize(s, docPath string) string {
+	docDir := ""
+	if docPath != "" {
+		docDir = filepath.Dir(docPath)
+	}
+	return Sanitize(rewriteRawMedia(s, docDir))
 }
 
 func collectHeadings(doc ast.Node, source []byte) []Heading {

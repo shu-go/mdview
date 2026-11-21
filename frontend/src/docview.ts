@@ -3,7 +3,7 @@
 import DOMPurify from 'dompurify';
 import { api, type RenderResult, type Heading } from './api';
 import type { Tab } from './layout';
-import { dirname, errMessage, h } from './util';
+import { errMessage, h } from './util';
 
 export interface DocHost {
   openLink(path: string, anchor: string, split: boolean): void;
@@ -103,7 +103,6 @@ export class DocView {
     this.stale = false;
     this.changeIndex = -1;
     this.content.innerHTML = r.html;
-    this.fixRawImages();
     this.updateBanner();
     await this.renderMermaid();
     this.el.scrollTop = scroll;
@@ -125,20 +124,6 @@ export class DocView {
       }
     }
     this.banner.replaceChildren(...parts);
-  }
-
-  /** Raw HTML <img src="relative"> is resolved against the document directory. */
-  private fixRawImages(): void {
-    const dir = dirname(this.tab.path);
-    const sep = this.tab.path.includes('\\') ? '\\' : '/';
-    this.content.querySelectorAll<HTMLImageElement>('img[src]').forEach((img) => {
-      const src = img.getAttribute('src') ?? '';
-      if (/^([a-z][a-z0-9+.-]*:|\/\/|\/_mdv\/)/i.test(src) && !/^[a-z]:[\\/]/i.test(src)) return;
-      let p = decodeURIComponent(src.split(/[?#]/)[0]);
-      const isAbs = /^[a-z]:[\\/]/i.test(p) || p.startsWith('/');
-      if (!isAbs) p = dir + sep + p.replace(/[\\/]/g, sep);
-      img.src = '/_mdv/file?p=' + encodeURIComponent(p);
-    });
   }
 
   private async renderMermaid(): Promise<void> {

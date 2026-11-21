@@ -47,6 +47,11 @@ func TestFileMiddleware(t *testing.T) {
 	if c := get(txt); c != http.StatusForbidden {
 		t.Errorf("text file: %d", c)
 	}
+	noext := filepath.Join(dir, "imagefile")
+	os.WriteFile(noext, []byte("\x89PNG\r\n\x1a\n0000"), 0o644)
+	if c := get(noext); c != 200 {
+		t.Errorf("png without extension: %d", c)
+	}
 	if c := get("rel/a.png"); c != http.StatusForbidden {
 		t.Errorf("relative: %d", c)
 	}
