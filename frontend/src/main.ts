@@ -37,6 +37,7 @@ const statusIcons = {
   wider: svg('<path d="M1.5 3v10M14.5 3v10M7 8H3.5M5 6.5L3.5 8 5 9.5M9 8h3.5M11 6.5L12.5 8 11 9.5"/>'),
   zoomOut: svg('<circle cx="6.8" cy="6.8" r="4.3"/><path d="M10 10l4.2 4.2M4.8 6.8h4"/>'),
   zoomIn: svg('<circle cx="6.8" cy="6.8" r="4.3"/><path d="M10 10l4.2 4.2M4.8 6.8h4M6.8 4.8v4"/>'),
+  pencil: svg('<path d="M11.2 2.3l2.5 2.5L5.5 13H3v-2.5z"/><path d="M9.7 3.8l2.5 2.5"/>'),
 };
 
 class Controller implements WorkbenchHost, DocHost, SidebarHost {
@@ -148,7 +149,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       sep(),
       iconButton(tb('', 'Search (/ or Ctrl+F)', 'search'), icons.search),
       h('span', { class: 'mdv-toolbar-spacer' }),
-      tb('Edit', 'Open in external editor (v)', 'editor'),
+      iconButton(tb('', 'Open in external editor (v)', 'editor'), statusIcons.pencil),
       tb('⚙', 'Settings (Ctrl+,)', 'settings'),
       tb('?', 'Key bindings (F1)', 'help'),
     );
