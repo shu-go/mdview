@@ -3,6 +3,7 @@
 import { api } from './api';
 import type { GrepFile, GrepResult } from '../bindings/github.com/shu-go/mdview/internal/workspace/models';
 import { errMessage, groupLabel, h } from './util';
+import { escapeRegExp } from './search';
 
 export interface GrepHost {
   grepOpen(path: string, line: number, split: boolean): void;
@@ -76,6 +77,13 @@ export class GrepPanel {
   focus(): void {
     this.input.focus();
     this.input.select();
+  }
+
+  /** Searches all files for the literal text. */
+  searchFor(text: string): void {
+    this.input.value = this.regex ? escapeRegExp(text) : text;
+    this.focus();
+    void this.run();
   }
 
   markStale(visible: boolean): void {

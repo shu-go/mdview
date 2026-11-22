@@ -1,8 +1,19 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { buildPattern, highlight, unhighlight } from './search';
+import { buildPattern, escapeRegExp, highlight, selectionQuery, unhighlight } from './search';
 
 describe('search', () => {
+  it('turns a selection into a one-line query', () => {
+    expect(selectionQuery('  foo bar  ')).toBe('foo bar');
+    expect(selectionQuery('\n\n  first \r\nsecond')).toBe('first');
+    expect(selectionQuery(' \n ')).toBe('');
+  });
+
+  it('escapes regex metacharacters', () => {
+    const s = 'a.b*(c)[d]{e}^$|+?\\';
+    expect(new RegExp(escapeRegExp(s)).test(s)).toBe(true);
+  });
+
   it('escapes plain queries and honours case', () => {
     expect(buildPattern('a.b', { regex: false, caseSensitive: false }).test('A.B')).toBe(true);
     expect(buildPattern('a.b', { regex: false, caseSensitive: false }).test('axb')).toBe(false);

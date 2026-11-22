@@ -8,8 +8,21 @@ export interface SearchOptions {
 
 /** Builds the RegExp for a query; throws on an invalid regex. */
 export function buildPattern(query: string, opts: SearchOptions): RegExp {
-  const src = opts.regex ? query : query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const src = opts.regex ? query : escapeRegExp(query);
   return new RegExp(src, opts.caseSensitive ? 'g' : 'gi');
+}
+
+/** Escapes regex metacharacters (the set is the same for JS and Go RE2). */
+export function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Turns selected text into a search query: the first non-blank line, trimmed
+ * (both searches match within a line).
+ */
+export function selectionQuery(text: string): string {
+  return text.split(/\r?\n/).map((l) => l.trim()).find((l) => l) ?? '';
 }
 
 /** Wraps all matches inside root in <mark class="mdv-search-hit">. */
@@ -160,6 +173,15 @@ export class SearchBar {
     this.el.classList.remove('is-hidden');
     this.input.focus();
     this.input.select();
+  }
+
+  /** Searches for the literal text, then hands focus back to the document (n / N work). */
+  searchFor(text: string): void {
+    this.open(false);
+    this.input.value = this.opts.regex ? escapeRegExp(text) : text;
+    window.clearTimeout(this.timer);
+    this.run(true);
+    this.onClose();
   }
 
   close(): void {

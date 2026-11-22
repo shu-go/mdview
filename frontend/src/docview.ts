@@ -16,6 +16,7 @@ export interface DocHost {
   scrolled(view: DocView): void;
   linkHover(target: string | null): void;
   diffDetail(): DiffDetail;
+  selectionMenu(view: DocView, text: string, x: number, y: number): void;
 }
 
 /** What a link points to, as shown in the status bar. */
@@ -93,11 +94,27 @@ export class DocView {
     this.content.addEventListener('mouseout', hide);
     this.content.addEventListener('focusin', show);
     this.content.addEventListener('focusout', hide);
+    // Right click on selected text: our own menu (copy / search). Without a
+    // selection the webview's default menu is left as is.
+    this.content.addEventListener('contextmenu', (e) => {
+      const text = this.selectedText();
+      if (!text) return;
+      e.preventDefault();
+      this.host.selectionMenu(this, text, e.clientX, e.clientY);
+    });
     this.banner.addEventListener('click', (e) => {
       const t = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
       if (t?.dataset.action === 'next-change') this.nextChange(1);
       if (t?.dataset.action === 'set-baseline') void api.SetBaseline(this.tab.path);
     });
+  }
+
+  /** The selected text when the selection lies inside this document, else ''. */
+  selectedText(): string {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return '';
+    if (!this.content.contains(sel.getRangeAt(0).commonAncestorContainer)) return '';
+    return sel.toString();
   }
 
   get headings(): Heading[] {

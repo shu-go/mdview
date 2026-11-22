@@ -114,6 +114,11 @@ export class Sidebar {
     this.grep.focus();
   }
 
+  grepFor(text: string): void {
+    this.show('search');
+    this.grep.searchFor(text);
+  }
+
   /** The searched files changed: re-run the search (now if visible, else later). */
   grepStale(): void {
     this.grep.markStale(this.tab === 'search' && this.visible);

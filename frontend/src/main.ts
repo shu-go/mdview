@@ -14,7 +14,7 @@ import { api, Ev, on, type FileItem, type OpenPathsEvent, type Settings, type Sn
 import { DocView, type DocHost } from './docview';
 import { Layout, newTab, type DiffMode, type PaneNode, type Side, type Tab } from './layout';
 import { Sidebar, icons, type SidebarHost } from './sidebar';
-import { SearchBar } from './search';
+import { SearchBar, selectionQuery } from './search';
 import { KeyState } from './keys';
 import { isDialogOpen, openHelp, openSettings } from './dialogs';
 import { showMenu, closeMenu, type MenuItem } from './menu';
@@ -678,6 +678,34 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       { label: 'Open in editor', run: () => this.openEditor(tab) },
       { label: 'Copy path', run: () => void navigator.clipboard.writeText(tab.path) },
     ];
+    showMenu(items, x, y);
+  }
+
+  selectionMenu(view: DocView, text: string, x: number, y: number): void {
+    const query = selectionQuery(text);
+    const items: MenuItem[] = [
+      { label: 'Copy', run: () => void navigator.clipboard.writeText(text).catch((e) => this.statusMsg(errMessage(e), true)) },
+    ];
+    if (query) {
+      items.push(
+        '-',
+        {
+          label: 'Find in document',
+          run: () => {
+            const f = this.layout.findTab(view.tab.id);
+            if (f) this.activatePane(f.pane.id);
+            this.search.searchFor(query);
+          },
+        },
+        {
+          label: 'Search in all files',
+          run: () => {
+            if (!this.settings.sidebarVisible) void this.saveSettings({ sidebarVisible: true });
+            this.sidebar.grepFor(query);
+          },
+        },
+      );
+    }
     showMenu(items, x, y);
   }
 
