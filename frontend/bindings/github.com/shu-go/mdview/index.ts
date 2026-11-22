@@ -9,6 +9,7 @@ export {
 export type {
     InitState,
     OpenResult,
+    RecentList,
     RenderResult,
     Settings,
     TabState

@@ -154,6 +154,14 @@ export function OpenPaths(paths: string[] | null): $CancellablePromise<$models.O
 }
 
 /**
+ * OpenRecent opens an entry of the recent lists. An entry that no longer
+ * exists is removed from the lists.
+ */
+export function OpenRecent(path: string): $CancellablePromise<$models.OpenResult> {
+    return $Call.ByID(446169098, path);
+}
+
+/**
  * OpenURL opens an http(s)/mailto URL in the default browser.
  */
 export function OpenURL(u: string): $CancellablePromise<void> {
@@ -180,6 +188,13 @@ export function PathKind(path: string): $CancellablePromise<string> {
  */
 export function Quit(): $CancellablePromise<void> {
     return $Call.ByID(3181047470);
+}
+
+/**
+ * Recent returns the recently opened files and folders, newest first.
+ */
+export function Recent(): $CancellablePromise<$models.RecentList> {
+    return $Call.ByID(1709464214);
 }
 
 /**

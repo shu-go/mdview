@@ -10,7 +10,7 @@ import highlightCSS from './styles/highlight.css?raw';
 import guideCSS from './styles/guide.css?raw';
 
 import { Window as WailsWindow } from '@wailsio/runtime';
-import { api, Ev, on, type FileItem, type OpenPathsEvent, type OpenResult, type Settings, type Snapshot, type TabReceiveEvent } from './api';
+import { api, Ev, on, type FileItem, type OpenPathsEvent, type OpenResult, type RecentList, type Settings, type Snapshot, type TabReceiveEvent } from './api';
 import { DocView, type DocHost } from './docview';
 import { Layout, newTab, type DiffMode, type PaneNode, type Side, type Tab } from './layout';
 import { Sidebar, icons, type SidebarHost } from './sidebar';
@@ -23,7 +23,7 @@ import { installNavigationGuard } from './navguard';
 import appIconUrl from './assets/appicon.png';
 import type { DiffDetail } from './inlinediff';
 import { Workbench, type DragTab, type DropTarget, type WorkbenchHost } from './workbench';
-import { basename, errMessage, h, isEditableTarget } from './util';
+import { basename, dirname, errMessage, h, isEditableTarget } from './util';
 
 const builtinCSS = [guideCSS, tokensCSS, uiCSS, contentCSS, highlightCSS].join('\n\n');
 
@@ -61,6 +61,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
   winId = 0;
   platform = '';
   settings!: Settings;
+  recent: RecentList = { files: [], folders: [] };
   layout = new Layout();
   activePaneId = this.layout.root.id;
   views = new Map<string, DocView>();
@@ -95,6 +96,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     this.sidebar.show(sideTab === 'outline' || sideTab === 'search' ? sideTab : 'files', false);
     this.sidebar.setFiles(st.files as Snapshot);
     setCustomCSS(customCSS);
+    this.setRecent(st.recent);
 
     on<string>(Ev.docChanged, (p) => {
       this.docChanged(p);
@@ -107,6 +109,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     });
     on<Settings>(Ev.settingsChanged, (s) => this.applySettings(s));
     on<string>(Ev.customCSS, (css) => setCustomCSS(css));
+    on<RecentList>(Ev.recentChanged, (r) => this.setRecent(r));
     on<OpenPathsEvent>(Ev.openPaths, (e) => {
       if (e.target === this.winId) void this.openPaths(e.paths);
     });
@@ -135,6 +138,10 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     this.renderAll();
     this.showOpened(st.opened);
     this.focusDoc();
+  }
+
+  private setRecent(r: RecentList | null | undefined): void {
+    this.recent = { files: r?.files ?? [], folders: r?.folders ?? [] };
   }
 
   /**
@@ -738,6 +745,26 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
   openInPane(paneId: string, what: 'file' | 'folder'): void {
     this.activatePane(paneId);
     this.run(what === 'file' ? 'open-file' : 'open-folder', null);
+  }
+
+  recentMenu(paneId: string, what: 'file' | 'folder', x: number, y: number, button: HTMLElement): void {
+    const list = (what === 'file' ? this.recent.files : this.recent.folders) ?? [];
+    const items: MenuItem[] = list.length
+      ? list.map((p) => ({
+          label: basename(p),
+          detail: what === 'file' ? dirname(p) : p,
+          title: p,
+          run: () => {
+            this.activatePane(paneId);
+            void api.OpenRecent(p).then(
+              (r) => this.handleOpenResult(r),
+              (e) => this.statusMsg(errMessage(e), true),
+            );
+          },
+        }))
+      : [{ label: what === 'file' ? 'No recent files' : 'No recent folders', disabled: true, run: () => {} }];
+    button.classList.add('is-active');
+    showMenu(items, x, y, () => button.classList.remove('is-active'));
   }
 
   splitPane(paneId: string, side: 'right' | 'bottom'): void {

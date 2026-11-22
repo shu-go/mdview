@@ -584,6 +584,38 @@ button {
   height: 15px;
 }
 
+/* open button + down triangle (recent files / folders menu) */
+.mdv-pane-open {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 4px;
+}
+
+.mdv-pane-open:hover {
+  background: var(--mdv-color-hover);
+}
+
+.mdv-pane-open .mdv-pane-action:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.mdv-pane-action-recent {
+  width: 12px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.mdv-pane-action-recent svg {
+  width: 8px;
+  height: 16px;
+}
+
+.mdv-pane-action-recent.is-active {
+  background: var(--mdv-color-selected);
+  color: var(--mdv-color-fg);
+}
+
 .mdv-pane-tab {
   display: flex;
   align-items: center;
@@ -964,6 +996,26 @@ button {
 
 .mdv-menu-item:hover {
   background: var(--mdv-color-selected);
+}
+
+.mdv-menu-item.is-disabled {
+  color: var(--mdv-color-muted);
+  cursor: default;
+}
+
+.mdv-menu-item.is-disabled:hover {
+  background: transparent;
+}
+
+.mdv-menu-item-detail {
+  max-width: 420px;
+  margin-left: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--mdv-color-muted);
+  font-size: 0.9em;
+  vertical-align: bottom;
+  display: inline-block;
 }
 
 .mdv-menu-separator {

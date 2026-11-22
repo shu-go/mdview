@@ -61,6 +61,7 @@ type InitState struct {
 	Files    workspace.Snapshot `json:"files"`
 	Opened   OpenResult         `json:"opened"` // command line paths, already opened
 	Tabs     []TabState         `json:"tabs"`   // tabs to adopt (detached)
+	Recent   RecentList         `json:"recent"`
 }
 
 // RenderResult is a rendered document.
@@ -92,17 +93,20 @@ type App struct {
 	pendingPaths map[uint][]string
 	pendingTabs  map[uint][]TabState
 	cssStamp     time.Time
+	recent       RecentList
 }
 
 // NewApp creates the service.
 func NewApp() *App {
 	s, p := loadSettings()
-	return &App{
+	a := &App{
 		settings:     s,
 		settingsPath: p,
 		pendingPaths: map[uint][]string{},
 		pendingTabs:  map[uint][]TabState{},
 	}
+	a.recent = loadRecent(a.recentPath())
+	return a
 }
 
 // ServiceStartup implements application.ServiceStartup.
@@ -292,6 +296,7 @@ func (a *App) Init(ctx context.Context) InitState {
 	// frontend: one round trip less before the first document shows.
 	st.Opened = a.OpenPaths(paths)
 	st.Files = a.ws.Snapshot()
+	st.Recent = a.Recent()
 	return st
 }
 
@@ -329,6 +334,7 @@ func (a *App) OpenPaths(paths []string) OpenResult {
 		}
 		res.Files = append(res.Files, f)
 	}
+	a.recordRecent(res)
 	return res
 }
 

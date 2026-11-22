@@ -26,6 +26,7 @@ export interface InitState {
      * tabs to adopt (detached)
      */
     "tabs": TabState[] | null;
+    "recent": RecentList;
 }
 
 /**
@@ -42,6 +43,14 @@ export interface OpenResult {
      */
     "folders": string[] | null;
     "errors": string[] | null;
+}
+
+/**
+ * RecentList holds the recently opened files and folders, newest first.
+ */
+export interface RecentList {
+    "files": string[] | null;
+    "folders": string[] | null;
 }
 
 /**

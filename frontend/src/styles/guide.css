@@ -63,6 +63,7 @@
          .mdv-pane (.is-active)
            .mdv-pane-header          tab bar
              .mdv-pane-actions.mdv-pane-actions-start   open file / folder buttons
+               .mdv-pane-open        button + .mdv-pane-action-recent (triangle: recent list, .is-active while open)
              .mdv-pane-tabs > .mdv-pane-tab (.is-active .is-changed .is-missing)
                .mdv-pane-tab-title / .mdv-pane-tab-close
              .mdv-pane-actions       split buttons (.mdv-pane-action)
@@ -79,7 +80,8 @@
                                      .mdv-statusbar-button (baseline, width, zoom),
                                      .mdv-statusbar-zoom (zoom level)
    .mdv-dialog > .mdv-dialog-box     settings / key bindings dialogs
-   .mdv-menu > .mdv-menu-item        context menus
+   .mdv-menu > .mdv-menu-item        context menus and the recent files / folders menu
+                                     (.is-disabled; .mdv-menu-item-label / -detail for name + folder)
    .mdv-resize-edge                  invisible window resize grips
 
    GENERATED INSIDE .mdv-content

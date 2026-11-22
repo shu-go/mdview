@@ -2,6 +2,7 @@
 // drag & drop of tabs and sidebar files.
 import type { DocView } from './docview';
 import type { Layout, LayoutNode, PaneNode, Side, SplitNode, Tab } from './layout';
+import { closeMenu } from './menu';
 import { basename, h } from './util';
 
 export const MIME_TAB = 'application/x-mdview-tab';
@@ -33,7 +34,12 @@ export interface WorkbenchHost {
   splitPane(paneId: string, side: 'right' | 'bottom'): void;
   /** Shows the open dialog; files open in this pane. */
   openInPane(paneId: string, what: 'file' | 'folder'): void;
+  /** Shows the recent files / folders menu at client coordinates; `button` is marked active while it is open. */
+  recentMenu(paneId: string, what: 'file' | 'folder', x: number, y: number, button: HTMLElement): void;
 }
+
+// Static, trusted icon markup (no user data): small down-pointing triangle.
+const caretSvg = '<svg viewBox="0 0 8 16" aria-hidden="true"><path d="M1.5 6.5h5L4 9.5z" fill="currentColor"/></svg>';
 
 // Static, trusted icon markup (no user data).
 const openButtons: ['file' | 'folder', string, string][] = [
@@ -184,7 +190,28 @@ export class Workbench {
         e.stopPropagation();
         this.host.openInPane(p.id, what);
       });
-      opens.append(b);
+      const more = h('button', {
+        class: 'mdv-pane-action mdv-pane-action-recent',
+        type: 'button',
+        title: what === 'file' ? 'Recent files' : 'Recent folders',
+        'data-recent': what,
+      });
+      more.innerHTML = caretSvg; // static icon markup
+      // open on mousedown so that the menu's outside-click handler does not
+      // close it again right away; a second press on the caret closes it
+      more.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (more.classList.contains('is-active')) {
+          closeMenu();
+          return;
+        }
+        const r = group.getBoundingClientRect();
+        this.host.recentMenu(p.id, what, r.left, r.bottom + 2, more);
+      });
+      more.addEventListener('click', (e) => e.stopPropagation());
+      const group = h('div', { class: 'mdv-pane-open', 'data-open': what }, b, more);
+      opens.append(group);
     }
     const header = h('div', { class: 'mdv-pane-header' }, opens, tabs, actions);
 
