@@ -125,6 +125,15 @@ export class DocView {
     return this.result?.changes ?? 0;
   }
 
+  /**
+   * Resolves once the view shows the document: waits for a render in progress,
+   * renders when stale, and never forces an extra render (unlike render()).
+   */
+  ready(): Promise<void> {
+    if (this.rendering) return this.rendering;
+    return this.stale ? this.render() : Promise.resolve();
+  }
+
   /** Renders (again). Concurrent calls coalesce into one extra render. */
   render(): Promise<void> {
     if (this.rendering) {

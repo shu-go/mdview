@@ -18,9 +18,9 @@ export interface InitState {
     "files": workspace$0.Snapshot;
 
     /**
-     * paths to open (command line)
+     * command line paths, already opened
      */
-    "paths": string[] | null;
+    "opened": OpenResult;
 
     /**
      * tabs to adopt (detached)

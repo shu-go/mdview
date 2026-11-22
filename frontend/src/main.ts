@@ -10,7 +10,7 @@ import highlightCSS from './styles/highlight.css?raw';
 import guideCSS from './styles/guide.css?raw';
 
 import { Window as WailsWindow } from '@wailsio/runtime';
-import { api, Ev, on, type FileItem, type OpenPathsEvent, type Settings, type Snapshot, type TabReceiveEvent } from './api';
+import { api, Ev, on, type FileItem, type OpenPathsEvent, type OpenResult, type Settings, type Snapshot, type TabReceiveEvent } from './api';
 import { DocView, type DocHost } from './docview';
 import { Layout, newTab, type DiffMode, type PaneNode, type Side, type Tab } from './layout';
 import { Sidebar, icons, type SidebarHost } from './sidebar';
@@ -85,7 +85,8 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
 
   async start(): Promise<void> {
     this.buildDOM();
-    const st = await api.Init();
+    // independent calls: one round trip instead of two
+    const [st, customCSS] = await Promise.all([api.Init(), api.CustomCSS()]);
     this.winId = st.windowId;
     this.platform = st.platform;
     document.documentElement.dataset.platform = st.platform;
@@ -93,7 +94,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     const sideTab = st.settings.sidebarTab;
     this.sidebar.show(sideTab === 'outline' || sideTab === 'search' ? sideTab : 'files', false);
     this.sidebar.setFiles(st.files as Snapshot);
-    setCustomCSS(await api.CustomCSS());
+    setCustomCSS(customCSS);
 
     on<string>(Ev.docChanged, (p) => {
       this.docChanged(p);
@@ -132,7 +133,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       this.addTab(this.activePaneId, newTab(t.path, (t.diffMode as DiffMode) || this.settings.diffMode as DiffMode, t.scroll));
     }
     this.renderAll();
-    if (st.paths?.length) await this.openPaths(st.paths);
+    this.showOpened(st.opened);
     this.focusDoc();
   }
 
@@ -487,6 +488,11 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       this.statusMsg(errMessage(e), true);
       return;
     }
+    this.showOpened(res);
+  }
+
+  /** Shows what OpenPaths opened: files as tabs, folders in the sidebar, errors. */
+  private showOpened(res: OpenResult): void {
     for (const f of res.files ?? []) this.openFile(f, 'tab');
     if (res.folders?.length) {
       this.sidebar.show('files');
@@ -521,8 +527,9 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
   }
 
   private afterOpen(tab: Tab, anchor: string): void {
+    // renderAll() has already started the render of the new view
     const v = this.view(tab);
-    void v.render().then(() => {
+    void v.ready().then(() => {
       if (anchor) v.scrollToAnchor(anchor);
     });
     this.focusDoc();
@@ -790,9 +797,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     const tab = split ? this.activeTab : (existing ?? this.activeTab);
     if (!tab) return;
     const v = this.view(tab);
-    const jump = () => v.scrollToLine(line);
-    if (v.result && !v.stale) jump();
-    else void v.render().then(jump);
+    void v.ready().then(() => v.scrollToLine(line));
   }
 
   tabChanged(tab: 'files' | 'outline' | 'search'): void {

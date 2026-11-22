@@ -59,8 +59,8 @@ type InitState struct {
 	Platform string             `json:"platform"`
 	Settings Settings           `json:"settings"`
 	Files    workspace.Snapshot `json:"files"`
-	Paths    []string           `json:"paths"` // paths to open (command line)
-	Tabs     []TabState         `json:"tabs"`  // tabs to adopt (detached)
+	Opened   OpenResult         `json:"opened"` // command line paths, already opened
+	Tabs     []TabState         `json:"tabs"`   // tabs to adopt (detached)
 }
 
 // RenderResult is a rendered document.
@@ -274,21 +274,24 @@ func argPaths(args []string, wd string) []string {
 
 // Init returns the initial state of the calling window.
 func (a *App) Init(ctx context.Context) InitState {
-	st := InitState{Platform: runtime.GOOS, Files: a.ws.Snapshot(), Paths: []string{}, Tabs: []TabState{}}
+	st := InitState{Platform: runtime.GOOS, Tabs: []TabState{}}
+	var paths []string
 	a.mu.Lock()
 	st.Settings = a.settings
 	if w := callerWindow(ctx); w != nil {
 		st.WindowID = w.ID()
-		if p, ok := a.pendingPaths[w.ID()]; ok {
-			st.Paths = p
-			delete(a.pendingPaths, w.ID())
-		}
+		paths = a.pendingPaths[w.ID()]
+		delete(a.pendingPaths, w.ID())
 		if t, ok := a.pendingTabs[w.ID()]; ok {
 			st.Tabs = t
 			delete(a.pendingTabs, w.ID())
 		}
 	}
 	a.mu.Unlock()
+	// Open the command line paths here rather than in a separate call from the
+	// frontend: one round trip less before the first document shows.
+	st.Opened = a.OpenPaths(paths)
+	st.Files = a.ws.Snapshot()
 	return st
 }
 
