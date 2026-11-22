@@ -1,0 +1,299 @@
+/* ==========================================================================
+   focus.css — 集中力を積極的に奪うテーマ (attention-hijacking theme)
+   --------------------------------------------------------------------------
+   虹のグラデーション背景、脈打つタブ、点滅するカーソル風アクセント、
+   回転するアクセントバー…… 読む気が消え去るまで動きます。
+   ※ light / dark のどちらでも適用されます(両テーマの変数を上書き)。
+   ========================================================================== */
+
+/* ---------- keyframes: everything moves ---------- */
+@keyframes mdv-focus-rain {
+  to { background-position: 200% center; }
+}
+@keyframes mdv-focus-pulse {
+  0%, 100% { box-shadow: inset 0 3px 0 #ff2d78, 0 0 6px rgba(255, 45, 120, 0.9); }
+  50%      { box-shadow: inset 0 3px 0 #2de1ff, 0 0 18px rgba(45, 225, 255, 0.9); }
+}
+@keyframes mdv-focus-blink {
+  0%, 49%  { opacity: 1; }
+  50%, 100%{ opacity: 0.25; }
+}
+@keyframes mdv-focus-spin { to { transform: rotate(360deg); } }
+@keyframes mdv-focus-shake {
+  0%, 92%, 100% { transform: translateX(0); }
+  94% { transform: translateX(-2px) rotate(-0.5deg); }
+  96% { transform: translateX(2px) rotate(0.5deg); }
+  98% { transform: translateX(-1px); }
+}
+@keyframes mdv-focus-scan {
+  from { background-position-y: 0; }
+  to   { background-position-y: 4px; }
+}
+
+/* ---------- palette: maximum saturation, both themes ---------- */
+[data-theme="light"],
+[data-theme="dark"] {
+  color-scheme: dark; /* neon is better on dark, so force it */
+
+  --mdv-color-bg: #120826;
+  --mdv-color-fg: #f5f3ff;
+  --mdv-color-muted: #c4b5fd;
+  --mdv-color-border: #7c3aed;
+
+  --mdv-color-accent: #ff2d78;
+  --mdv-color-accent-fg: #ffffff;
+  --mdv-color-link: #2de1ff;
+
+  --mdv-color-chrome-bg: #1b0f3a;
+  --mdv-color-chrome-fg: #e9d5ff;
+  --mdv-color-hover: rgba(255, 45, 120, 0.25);
+  --mdv-color-selected: rgba(45, 225, 255, 0.3);
+
+  --mdv-color-code-bg: #1e1040;
+  --mdv-color-inline-code-bg: rgba(255, 45, 120, 0.3);
+
+  --mdv-color-quote: #c4b5fd;
+  --mdv-color-table-stripe: #241247;
+
+  --mdv-color-diff-ins-bg: rgba(62, 255, 148, 0.25);
+  --mdv-color-diff-ins-bar: #3eff94;
+  --mdv-color-diff-del-bg: rgba(255, 45, 120, 0.3);
+  --mdv-color-diff-del-bar: #ff2d78;
+  --mdv-color-diff-mod-bar: #ffd60a;
+  --mdv-color-diff-word-ins-bg: rgba(62, 255, 148, 0.4);
+  --mdv-color-diff-word-del-bg: rgba(255, 45, 120, 0.45);
+
+  --mdv-color-search-hit: rgba(255, 214, 10, 0.65);
+  --mdv-color-search-current: #ff2d78;
+  --mdv-color-drop: rgba(45, 225, 255, 0.35);
+
+  --mdv-color-task-done: #3eff94;
+  --mdv-color-task-border: #c4b5fd;
+
+  --mdv-callout-note: #2de1ff;
+  --mdv-callout-tip: #3eff94;
+  --mdv-callout-important: #c084fc;
+  --mdv-callout-warning: #ffd60a;
+  --mdv-callout-caution: #ff5714;
+
+  --pele-fg: #f5f3ff;
+  --pele-muted: #c4b5fd;
+  --pele-line: #c084fc;
+  --pele-surface: #1e1040;
+  --pele-surface-alt: #2a1657;
+  --pele-border: #c084fc;
+  --pele-accent: #ff2d78;
+
+  --mdv-radius: 10px;
+}
+
+/* ---------- the whole window breathes in rainbow light ---------- */
+.mdv-app {
+  background: linear-gradient(120deg, #120826, #3b0f6e, #0e4c5c, #7a1049, #120826);
+  background-size: 300% 300%;
+  animation: mdv-focus-rain 8s linear infinite;
+}
+
+/* toolbar: a neon strip that never sits still */
+.mdv-toolbar {
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, #ff2d78, #ffd60a, #3eff94, #2de1ff, #c084fc) 1;
+}
+
+/* ---------- tabs: pulsing neon chips ---------- */
+.mdv-pane-tab {
+  border-right-color: rgba(255, 45, 120, 0.6);
+}
+.mdv-pane-tab.is-active {
+  animation: mdv-focus-pulse 1.2s ease-in-out infinite;
+  color: #ffffff !important;
+}
+
+/* the active pane's title bar shakes every so often — a gentle nudge */
+.mdv-pane-header .mdv-pane-actions {
+  animation: mdv-focus-shake 6s ease-in-out infinite;
+}
+
+/* ---------- links scream in cyan and blink on hover ---------- */
+.mdv-content a {
+  color: var(--mdv-color-link);
+  text-shadow: 0 0 8px rgba(45, 225, 255, 0.9);
+}
+.mdv-content a:hover {
+  animation: mdv-focus-blink 0.7s steps(1) infinite;
+}
+
+/* ---------- headings glow ---------- */
+.mdv-content h1, .mdv-content h2, .mdv-content h3 {
+  color: transparent;
+  background-image: linear-gradient(90deg, #ff2d78, #ffd60a, #2de1ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* ---------- code blocks: CRT scanlines ---------- */
+.mdv-content pre {
+  position: relative;
+  border: 1px solid rgba(255, 45, 120, 0.6);
+  box-shadow: 0 0 12px rgba(255, 45, 120, 0.35), inset 0 0 18px rgba(45, 225, 255, 0.08);
+}
+.mdv-content pre::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(180deg, transparent 0 2px, rgba(0, 0, 0, 0.25) 2px 4px);
+  animation: mdv-focus-scan 0.6s linear infinite;
+}
+
+/* ---------- callouts radiate their color ---------- */
+.mdv-content blockquote {
+  box-shadow: -3px 0 0 currentColor, 0 0 14px rgba(255, 255, 255, 0.12);
+}
+
+/* ---------- status bar marquee-ish shimmer ---------- */
+.mdv-statusbar {
+  background-image: linear-gradient(90deg, #ff2d78, #ffd60a, #3eff94, #2de1ff, #c084fc);
+  background-size: 200% auto;
+  animation: mdv-focus-rain 3s linear infinite;
+}
+
+/* ---------- selection is a strobe ---------- */
+::selection {
+  background: #ffd60a;
+  color: #120826;
+}
+
+/* ==========================================================================
+   hover animations — whatever the pointer rests on, it comes alive
+   ========================================================================== */
+
+@keyframes mdv-focus-shine {
+  from { background-position: 200% center; }
+  to   { background-position: -100% center; }
+}
+@keyframes mdv-focus-pop {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-2px) scale(1.06); }
+}
+@keyframes mdv-focus-ring {
+  from { box-shadow: 0 0 4px rgba(45, 225, 255, 0.8), inset 0 0 4px rgba(255, 45, 120, 0.6); }
+  to   { box-shadow: 0 0 16px rgba(45, 225, 255, 1),   inset 0 0 10px rgba(255, 45, 120, 0.9); }
+}
+
+/* shared recipe: a neon sheen sweeping across the element */
+.mdv-pane-tab:hover,
+.mdv-toolbar-button:hover,
+.mdv-window-button:hover,
+.mdv-sidebar-files-item:hover,
+.mdv-sidebar-outline-item:hover,
+.mdv-sidebar-search-file:hover,
+.mdv-menu-item:hover,
+.mdv-statusbar-button:hover,
+.mdv-button:hover,
+.mdv-code-copy:hover {
+  background-image: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.45) 50%, transparent 70%) !important;
+  background-size: 250% auto;
+  background-repeat: no-repeat;
+  animation: mdv-focus-shine 1s linear infinite;
+}
+
+/* buttons and tabs: pop up and down while glowing */
+.mdv-pane-tab:hover,
+.mdv-toolbar-button:hover,
+.mdv-window-button:hover,
+.mdv-statusbar-button:hover,
+.mdv-pane-action:hover,
+.mdv-button:hover {
+  animation: mdv-focus-shine 1s linear infinite, mdv-focus-pop 0.8s ease-in-out infinite;
+}
+
+/* sidebar items and menu entries: a breathing neon ring */
+.mdv-sidebar-files-item:hover,
+.mdv-sidebar-outline-item:hover,
+.mdv-menu-item:hover {
+  animation: mdv-focus-shine 1s linear infinite, mdv-focus-ring 0.7s ease-in-out infinite alternate;
+}
+
+/* the active tab is already pulsing — give it an extra kick on hover */
+.mdv-pane-tab.is-active:hover {
+  animation: mdv-focus-pulse 0.5s ease-in-out infinite, mdv-focus-pop 0.8s ease-in-out infinite;
+}
+
+/* search matches in the sidebar glow-sweep like a scanner beam */
+.mdv-sidebar-search-hit:hover,
+.mdv-search-toggle:hover,
+.mdv-search-button:hover {
+  animation: mdv-focus-shine 0.7s linear infinite, mdv-focus-ring 0.6s ease-in-out infinite alternate;
+}
+
+/* headings react too: shimmer + slight lift */
+.mdv-content h1:hover, .mdv-content h2:hover, .mdv-content h3:hover {
+  animation: mdv-focus-shine 1.2s linear infinite, mdv-focus-pop 0.9s ease-in-out infinite;
+}
+
+/* ---------- scrollbars: rainbow neon rails ---------- */
+@keyframes mdv-focus-rail {
+  to { background-position-y: 200%; }
+}
+
+* {
+  scrollbar-width: auto; /* Firefox: show the full (colored) bar, not thin */
+  scrollbar-color: #ff2d78 #1b0f3a;
+}
+
+::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1b0f3a;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.6);
+}
+
+/* thumb: a slow rainbow flowing along its length */
+::-webkit-scrollbar-thumb {
+  border-radius: 7px;
+  background-image: linear-gradient(180deg, #ff2d78, #ffd60a, #3eff94, #2de1ff, #c084fc, #ff2d78);
+  background-size: 100% 200%;
+  border: 3px solid #1b0f3a; /* keep a dark gap so the track shows through */
+  box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.4);
+  animation: mdv-focus-rail 4s linear infinite;
+}
+
+/* hover it and it ignites */
+::-webkit-scrollbar-thumb:hover {
+  box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.6), 0 0 12px #ff2d78;
+}
+
+/* drag it and it goes full strobe */
+::-webkit-scrollbar-thumb:active {
+  background-size: 100% 400%;
+  animation-duration: 0.8s;
+  box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.8), 0 0 18px #2de1ff;
+}
+
+/* the little corner where two scrollbars meet */
+::-webkit-scrollbar-corner {
+  background: linear-gradient(135deg, #1b0f3a 50%, #c084fc 50%);
+}
+
+/* respect users who opt out of motion */
+@media (prefers-reduced-motion: reduce) {
+  ::-webkit-scrollbar-thumb,
+  .mdv-app *,
+  .mdv-pane-tab:hover,
+  .mdv-toolbar-button:hover,
+  .mdv-window-button:hover,
+  .mdv-sidebar-files-item:hover,
+  .mdv-sidebar-outline-item:hover,
+  .mdv-menu-item:hover,
+  .mdv-statusbar-button:hover,
+  .mdv-pane-action:hover,
+  .mdv-content h1:hover,
+  .mdv-content h2:hover,
+  .mdv-content h3:hover {
+    animation: none !important;
+  }
+}

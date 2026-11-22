@@ -1,0 +1,54 @@
+/* ==========================================================================
+   Test customisation: light green theme (delete this block to revert)
+   ========================================================================== */
+
+:root,
+[data-theme="light"] {
+  --mdv-color-bg: #f6fbf5;
+  --mdv-color-fg: #263a2b;
+  --mdv-color-muted: #6a8a70;
+  --mdv-color-border: #cfe6d1;
+  --mdv-color-accent: #4f9a62;
+  --mdv-color-link: #3d8751;
+  --mdv-color-chrome-bg: #e6f3e6;
+  --mdv-color-chrome-fg: #355a3e;
+  --mdv-color-hover: rgba(79, 154, 98, 0.10);
+  --mdv-color-selected: rgba(79, 154, 98, 0.18);
+  --mdv-color-code-bg: #eef7ee;
+  --mdv-color-inline-code-bg: rgba(79, 154, 98, 0.12);
+  --mdv-color-quote: #6c9274;
+  --mdv-color-table-stripe: #eef7ee;
+  --mdv-color-task-done: #4f9a62;
+  --mdv-callout-note: #4a8f5c;
+
+  --pele-fg: #263a2b;
+  --pele-line: #5f9068;
+  --pele-surface: #e6f3e6;
+  --pele-surface-alt: #d6ebd7;
+  --pele-border: #a3cfab;
+  --pele-accent: #4f9a62;
+}
+
+[data-theme="dark"] {
+  --mdv-color-bg: #1b241d;
+  --mdv-color-fg: #e3f1e5;
+  --mdv-color-muted: #9bbca2;
+  --mdv-color-border: #3a5341;
+  --mdv-color-accent: #85c995;
+  --mdv-color-link: #95d8a5;
+  --mdv-color-chrome-bg: #222e25;
+  --mdv-color-chrome-fg: #d1e8d5;
+  --mdv-color-code-bg: #222e25;
+  --mdv-color-table-stripe: #202b23;
+  --mdv-color-task-done: #85c995;
+}
+
+.mdv-content h1,
+.mdv-content h2 {
+  color: var(--mdv-color-accent);
+  border-bottom-color: var(--mdv-color-border);
+}
+
+* {
+  scrollbar-color: var(--mdv-color-accent) var(--mdv-color-bg);
+}
