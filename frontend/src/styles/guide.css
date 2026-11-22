@@ -20,6 +20,9 @@
      Settings, or override with !important.
    - Content Security Policy: no scripts, no remote @import / @font-face.
      Use locally installed fonts by name; images may use data: or http(s) URLs.
+   - Relative url(...) paths (e.g. url("img/bg.png")) are resolved against the
+     folder of this CSS file. Local absolute paths go through
+     url("/_mdv/file?p=C:/path/to/bg.png").
 
    SELECTORS
    - Every UI class starts with "mdv-"; hyphens express the hierarchy

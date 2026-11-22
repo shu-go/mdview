@@ -462,7 +462,7 @@ func (a *App) CustomCSS() string {
 	if err != nil {
 		return ""
 	}
-	return string(b)
+	return rewriteCSSURLs(string(b), filepath.Dir(p))
 }
 
 func (a *App) emitCustomCSS() { a.app.Event.Emit(EvCustomCSS, a.CustomCSS()) }
