@@ -74,6 +74,7 @@ func newMarkdown(docDir string) goldmark.Markdown {
 			parser.WithAutoHeadingID(),
 			parser.WithASTTransformers(
 				util.Prioritized(calloutTransformer{}, 100),
+				util.Prioritized(linkifyTransformer{}, 150),
 				util.Prioritized(linkTransformer{docDir: docDir}, 200),
 			),
 		),
@@ -198,6 +199,8 @@ func plainText(n ast.Node, source []byte) string {
 			}
 		case *ast.String:
 			b.Write(t.Value)
+		case *ast.AutoLink:
+			b.Write(t.Label(source))
 		case *ast.CodeSpan:
 			for cc := t.FirstChild(); cc != nil; cc = cc.NextSibling() {
 				if tt, ok := cc.(*ast.Text); ok {
