@@ -243,6 +243,18 @@ func (ws *Workspace) Get(path string) (Contents, error) {
 	return Contents{Initial: d.initial, Baseline: d.baseline, Current: d.current, Missing: d.missing, Version: d.version}, nil
 }
 
+// Peek returns the current content of a loaded document without loading or
+// watching anything.
+func (ws *Workspace) Peek(path string) ([]byte, bool) {
+	path = Canonical(path)
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
+	if d, ok := ws.docs[path]; ok {
+		return d.current, true
+	}
+	return nil, false
+}
+
 // SetBaseline makes the current content the diff baseline of a document.
 func (ws *Workspace) SetBaseline(path string) {
 	path = Canonical(path)

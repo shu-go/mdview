@@ -39,6 +39,13 @@ func TestOpenLinkRefusesNetworkPaths(t *testing.T) {
 		if _, err := a.OpenLink(p); err == nil {
 			t.Errorf("%q should be refused", p)
 		}
+		if _, err := a.Preview(p); err == nil {
+			t.Errorf("preview of %q should be refused", p)
+		}
+	}
+	// not Markdown: refused before touching the file
+	if _, err := a.Preview(filepath.Join(t.TempDir(), "secret.txt")); err == nil {
+		t.Error("preview of a non-Markdown file should be refused")
 	}
 }
 

@@ -131,6 +131,48 @@
   margin-bottom: 0;
 }
 
+/* ---------- link preview popup (Ctrl + hover) ---------- */
+.mdv-link-popup {
+  position: fixed;
+  z-index: 30;
+  width: max-content;
+  max-width: min(640px, calc(100vw - 12px));
+  max-height: 50vh;
+  overflow: auto;
+  padding: 0.5em 0.9em 0.7em;
+  font-size: 0.875em;
+  line-height: 1.6;
+  color: var(--mdv-color-fg);
+  background: var(--mdv-color-bg);
+  border: 1px solid var(--mdv-color-border);
+  border-radius: var(--mdv-radius);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.mdv-link-popup-title {
+  margin-bottom: 0.4em;
+  font-size: 0.9em;
+  font-weight: 600;
+  color: var(--mdv-color-muted);
+  overflow-wrap: anywhere;
+}
+
+.mdv-link-popup-title:empty {
+  display: none;
+}
+
+.mdv-link-popup-body > :first-child {
+  margin-top: 0;
+}
+
+.mdv-link-popup-body > :last-child {
+  margin-bottom: 0;
+}
+
+.mdv-link-popup-error {
+  color: var(--mdv-color-muted);
+}
+
 .mdv-content blockquote {
   padding: 0 1em;
   color: var(--mdv-color-quote);

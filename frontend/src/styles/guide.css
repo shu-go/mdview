@@ -96,6 +96,8 @@
      .mdv-frontmatter-item .mdv-frontmatter-raw)
    - Footnotes: sup > a.footnote-ref, div.footnotes; hover popup .mdv-footnote-popup
      (-label -body)
+   - Link preview (Ctrl + hover on a heading / Markdown file link): .mdv-link-popup
+     > .mdv-link-popup-title + .mdv-link-popup-body (.mdv-link-popup-error .mdv-link-popup-more)
    - Task list: li > input[type="checkbox"] (drawn by this stylesheet)
    - Search hits: mark.mdv-search-hit (.is-current)
    - Diff: .mdv-diff-ins (added / changed block), .mdv-diff-del (removed block),

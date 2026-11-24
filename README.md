@@ -8,6 +8,7 @@ A Markdown viewer for Windows / macOS / Linux, built with Go and [Wails v3](http
 - Sidebar with the file list (grouped by directory), the heading outline and search across files
 - Automatic reload on file changes, with diff highlighting down to words or characters (against the first load or a baseline you set)
 - less / lv style key bindings, plain and regular expression search
+- Link preview: `Ctrl` + hover on a link to a heading or another Markdown file shows it in a popup
 - GitHub emoji, Mermaid (rendered with [pele](https://pele.run)), callouts, front matter, syntax highlighting
 - Light / dark / system color scheme, fonts, zoom, text width and a custom stylesheet
 
@@ -24,6 +25,10 @@ Without the sidebar:
 Diff highlighting after the file changed:
 
 ![Diff](screenshots/ss3_diff.png)
+
+Link preview (`Ctrl` + hover on a link):
+
+![Link preview](screenshots/ss4_previewpopup.png)
 
 ## Usage
 
@@ -51,6 +56,7 @@ Main keys (`F1` shows them all):
 | `Ctrl+Shift+G` | Search all files (sidebar SEARCH) |
 | `Ctrl+Q` | Quit |
 | `v` | Open in the external editor (at the viewed line) |
+| `Ctrl`+hover on a link | Preview the linked heading / Markdown file in a popup |
 
 On macOS, `Cmd` is used instead of `Ctrl`.
 

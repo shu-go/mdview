@@ -8,6 +8,7 @@ Go + [Wails v3](https://v3.wails.io/) 製の Markdown ビューアー（Windows 
 - ファイル一覧（ディレクトリー毎）と見出しアウトラインのサイドバー
 - ファイル変更の自動再読み込みと差分表示（単語・文字単位、初回読み込み時 / 基準時点との比較）
 - less / lv ライクなキー操作、通常・正規表現検索
+- リンク先のプレビュー: 見出しや別の Markdown ファイルへのリンクを `Ctrl`＋ホバーでポップアップ表示
 - GitHub emoji、Mermaid（[pele](https://pele.run)）、Callouts、フロントマター、シンタックスハイライト
 - ライト / ダーク / システム配色、フォント・ズーム・本文幅、ユーザー CSS
 
@@ -24,6 +25,10 @@ Go + [Wails v3](https://v3.wails.io/) 製の Markdown ビューアー（Windows 
 ファイル変更後の差分表示:
 
 ![差分表示](screenshots/ss3_diff.png)
+
+リンク先のプレビュー（リンクを `Ctrl`＋ホバー）:
+
+![リンク先のプレビュー](screenshots/ss4_previewpopup.png)
 
 ## 使い方
 
@@ -51,6 +56,7 @@ mdview [FILE|FOLDER]...
 | `Ctrl+Shift+G` | 全ファイル検索（サイドバー SEARCH） |
 | `Ctrl+Q` | 終了 |
 | `v` | 外部エディターで開く（表示中の行） |
+| リンクを `Ctrl`＋ホバー | リンク先の見出し / Markdown ファイルをポップアップで表示 |
 
 ## 設定
 

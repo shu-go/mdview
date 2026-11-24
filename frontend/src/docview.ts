@@ -5,6 +5,7 @@ import { api, type RenderResult, type Heading } from './api';
 import type { Tab } from './layout';
 import { errMessage, h } from './util';
 import { FootnotePopup } from './footnote';
+import { LinkPreview } from './linkpreview';
 import { applyInlineDiffs, type DiffDetail } from './inlinediff';
 
 export interface DocHost {
@@ -45,6 +46,7 @@ export class DocView {
   stale = true;
   private rendering: Promise<void> | null = null;
   private footnotes: FootnotePopup;
+  private preview: LinkPreview;
   private again = false;
   private scrollTimer = 0;
   /** index of the diff region focused by next/prev change */
@@ -67,7 +69,15 @@ export class DocView {
       }
     });
     this.footnotes = new FootnotePopup(this.content);
-    this.el.addEventListener('scroll', () => this.footnotes.hide(), { passive: true });
+    this.preview = new LinkPreview(this.content);
+    this.el.addEventListener(
+      'scroll',
+      () => {
+        this.footnotes.hide();
+        this.preview.hide();
+      },
+      { passive: true },
+    );
     this.content.addEventListener('click', (e) => this.onClick(e));
     // Middle click on a link: open to the right, never let the webview navigate.
     this.content.addEventListener('mousedown', (e) => {
@@ -171,6 +181,7 @@ export class DocView {
     this.stale = false;
     this.changeIndex = -1;
     this.footnotes.hide();
+    this.preview.hide();
     this.content.innerHTML = r.html;
     if (this.tab.diffMode !== 'off' && r.changes > 0) applyInlineDiffs(this.content, this.host.diffDetail());
     this.updateBanner();

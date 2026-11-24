@@ -414,6 +414,35 @@ func (a *App) Render(path string, mode string) (RenderResult, error) {
 	return RenderResult{Path: path, HTML: r.HTML, Headings: r.Headings, Changes: r.Changes, Missing: c.Missing, Version: c.Version}, nil
 }
 
+// maxPreviewSize limits files read for a link preview.
+const maxPreviewSize = 4 << 20
+
+// Preview renders a linked Markdown file for a hover popup. Unlike Render it
+// neither adds the file to the list nor watches it. Documents are not
+// trusted: network paths are refused (the path comes from a document link).
+func (a *App) Preview(path string) (string, error) {
+	if path == "" || !filepath.IsAbs(path) || isUNC(path) || !workspace.IsMarkdown(path) {
+		return "", errors.New("refused to preview: " + path)
+	}
+	path = workspace.Canonical(path)
+	src, ok := a.ws.Peek(path)
+	if !ok {
+		st, err := os.Stat(path)
+		if errors.Is(err, os.ErrNotExist) {
+			return "", errors.New("file not found")
+		} else if err != nil {
+			return "", err
+		}
+		if !st.Mode().IsRegular() || st.Size() > maxPreviewSize {
+			return "", errors.New("not previewable: " + path)
+		}
+		if src, err = os.ReadFile(path); err != nil {
+			return "", err
+		}
+	}
+	return markdown.Render(src, path).HTML, nil
+}
+
 // Grep searches all files of the shared list.
 func (a *App) Grep(q workspace.GrepQuery) (workspace.GrepResult, error) {
 	return a.ws.Grep(q)
