@@ -7,6 +7,7 @@ import { errMessage, h } from './util';
 import { FootnotePopup } from './footnote';
 import { LinkPreview } from './linkpreview';
 import { applyInlineDiffs, type DiffDetail } from './inlinediff';
+import { ScrollMarks } from './scrollmarks';
 
 export interface DocHost {
   openLink(path: string, anchor: string, split: boolean): void;
@@ -39,7 +40,11 @@ export function isMarkdownPath(p: string): boolean {
 let mermaidSeq = 0;
 
 export class DocView {
+  /** what the pane shows: the scroller plus the scroll marks overlay */
+  readonly frame: HTMLDivElement;
+  /** the scrolling element */
   readonly el: HTMLDivElement;
+  private marks: ScrollMarks;
   readonly banner: HTMLDivElement;
   readonly content: HTMLElement;
   result: RenderResult | null = null;
@@ -59,6 +64,8 @@ export class DocView {
     this.banner = h('div', { class: 'mdv-doc-banner' });
     this.content = h('article', { class: 'mdv-content' });
     this.el = h('div', { class: 'mdv-doc', tabindex: '-1' }, this.banner, this.content);
+    this.marks = new ScrollMarks(this.el, this.content);
+    this.frame = h('div', { class: 'mdv-doc-frame' }, this.el, this.marks.el);
     this.el.addEventListener('scroll', () => {
       this.tab.scroll = this.el.scrollTop;
       if (!this.scrollTimer) {
@@ -172,6 +179,7 @@ export class DocView {
       this.stale = false;
       this.banner.replaceChildren(h('span', { class: 'mdv-doc-banner-missing', text: `Cannot open: ${errMessage(e)}` }));
       this.content.replaceChildren();
+      this.marksChanged();
       this.host.rendered(this);
       return;
     }
@@ -187,7 +195,13 @@ export class DocView {
     this.updateBanner();
     await this.renderMermaid();
     this.el.scrollTop = scroll;
+    this.marksChanged();
     this.host.rendered(this);
+  }
+
+  /** Redraws the scrollbar marks (search hits, changes). */
+  marksChanged(): void {
+    this.marks.update();
   }
 
   private updateBanner(): void {

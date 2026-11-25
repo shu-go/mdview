@@ -69,9 +69,15 @@
              .mdv-pane-actions       split buttons (.mdv-pane-action)
            .mdv-pane-body
              .mdv-search             in-document search bar (-input -toggle -button -count)
-             .mdv-doc                scrolling area of one document
-               .mdv-doc-banner       notices: missing file, number of changes
-               .mdv-content          the rendered Markdown
+             .mdv-doc-frame          one document: the scrolling area + scrollbar marks
+               .mdv-doc              scrolling area of one document
+                 .mdv-doc-banner     notices: missing file, number of changes
+                 .mdv-content        the rendered Markdown
+               .mdv-scrollmarks      marks over the vertical scrollbar (.is-hidden; no pointer events)
+                 .mdv-scrollmarks-track > .mdv-scrollmarks-mark
+                   (-ins -mod -del: changes, left lane; -hit -current: search hits)
+                 the track leaves --mdv-scrollmarks-inset at both ends (arrow buttons;
+                 auto = the scrollbar width on Windows, 0 elsewhere)
              .mdv-empty              shown in a pane without tabs
      .mdv-statusbar                  bottom bar
        .mdv-statusbar-link           target of the link under the pointer

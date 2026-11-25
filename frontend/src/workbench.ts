@@ -159,7 +159,7 @@ export class Workbench {
     const active = p.tabs.find((t) => t.id === p.active);
     if (active) {
       const v = this.host.view(active);
-      body.append(v.el);
+      body.append(v.frame);
     } else {
       body.append(this.host.emptyView());
     }

@@ -87,6 +87,8 @@ export interface SearchTarget {
   content: HTMLElement;
   scrollToElement(el: HTMLElement, center?: boolean): void;
   el: HTMLElement;
+  /** called when the highlighted hits (or the current one) changed */
+  marksChanged?(): void;
 }
 
 export class SearchBar {
@@ -186,7 +188,10 @@ export class SearchBar {
 
   close(): void {
     this.el.classList.add('is-hidden');
-    if (this.target) unhighlight(this.target.content);
+    if (this.target) {
+      unhighlight(this.target.content);
+      this.target.marksChanged?.();
+    }
     this.hits = [];
     this.index = -1;
     this.count.textContent = '';
@@ -195,7 +200,10 @@ export class SearchBar {
 
   /** Changes the searched document (e.g. tab switch or re-render). */
   setTarget(t: SearchTarget | null, rerun: boolean): void {
-    if (this.target && this.target !== t) unhighlight(this.target.content);
+    if (this.target && this.target !== t) {
+      unhighlight(this.target.content);
+      this.target.marksChanged?.();
+    }
     this.target = t;
     this.hits = [];
     this.index = -1;
@@ -211,6 +219,11 @@ export class SearchBar {
     this.timer = 0;
     const t = this.target;
     if (!t) return;
+    this.search(t, jump);
+    t.marksChanged?.();
+  }
+
+  private search(t: SearchTarget, jump: boolean): void {
     unhighlight(t.content);
     this.hits = [];
     this.index = -1;
@@ -249,6 +262,7 @@ export class SearchBar {
     }
     const d = followDirection && this.backward ? -dir : dir;
     this.select((this.index + d + this.hits.length) % this.hits.length, true);
+    this.target?.marksChanged?.();
   }
 
   private select(i: number, jump: boolean): void {

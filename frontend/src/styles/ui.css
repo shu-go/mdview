@@ -766,6 +766,74 @@ button {
 }
 
 /* ---------- document area ---------- */
+.mdv-doc-frame {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* marks over the vertical scrollbar: changes on the left lane, search hits on the right */
+.mdv-scrollmarks {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.mdv-scrollmarks.is-hidden {
+  display: none;
+}
+
+.mdv-scrollmarks-track {
+  position: absolute; /* top / bottom: set from --mdv-scrollmarks-inset */
+  left: 0;
+  right: 0;
+}
+
+.mdv-scrollmarks-mark {
+  position: absolute;
+  border-radius: 1px;
+}
+
+.mdv-scrollmarks-ins,
+.mdv-scrollmarks-mod,
+.mdv-scrollmarks-del {
+  left: 1px;
+  width: 40%;
+}
+
+.mdv-scrollmarks-ins {
+  background: var(--mdv-color-diff-ins-bar);
+}
+
+.mdv-scrollmarks-mod {
+  background: var(--mdv-color-diff-mod-bar);
+}
+
+.mdv-scrollmarks-del {
+  background: var(--mdv-color-diff-del-bar);
+}
+
+.mdv-scrollmarks-hit,
+.mdv-scrollmarks-current {
+  right: 1px;
+  width: 50%;
+}
+
+.mdv-scrollmarks-hit {
+  background: var(--mdv-color-scrollmark-hit);
+}
+
+.mdv-scrollmarks-current {
+  background: var(--mdv-color-search-current);
+  left: 1px;
+  width: auto;
+}
+
 .mdv-doc {
   flex: 1;
   overflow: auto;

@@ -18,6 +18,9 @@
   /* sizes */
   --mdv-sidebar-width: 260px;
   --mdv-radius: 6px;
+  /* scrollbar marks: space left at both ends for the scrollbar arrow buttons
+     (a length, or auto: the scrollbar width on Windows, 0 elsewhere) */
+  --mdv-scrollmarks-inset: auto;
 }
 
 :root,
@@ -47,6 +50,7 @@
   --mdv-color-diff-word-del-bg: rgba(248, 81, 73, 0.18);
   --mdv-color-search-hit: rgba(255, 213, 0, 0.45);
   --mdv-color-search-current: #ff9632;
+  --mdv-color-scrollmark-hit: #d4a800;
   --mdv-color-drop: rgba(9, 105, 218, 0.18);
   --mdv-color-task-done: #1f883d;
   --mdv-color-task-border: #8c959f;
@@ -94,6 +98,7 @@
   --mdv-color-diff-word-del-bg: rgba(248, 81, 73, 0.25);
   --mdv-color-search-hit: rgba(187, 128, 9, 0.5);
   --mdv-color-search-current: #d29922;
+  --mdv-color-scrollmark-hit: #e3b341;
   --mdv-color-drop: rgba(56, 139, 253, 0.25);
   --mdv-color-task-done: #2ea043;
   --mdv-color-task-border: #6e7681;
