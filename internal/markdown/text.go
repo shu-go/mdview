@@ -53,21 +53,34 @@ func renderTextBlock(w util.BufWriter, source []byte, node ast.Node, entering bo
 		class += " mdv-text-block-cont"
 	}
 	_, _ = w.WriteString(`<p class="` + class + `"` + lineAttribute(node) + `>`)
-	for c := node.FirstChild(); c != nil; c = c.NextSibling() {
-		switch t := c.(type) {
-		case *ast.Text:
-			_, _ = w.WriteString(html.EscapeString(string(t.Segment.Value(source))))
-			if t.SoftLineBreak() {
-				_ = w.WriteByte('\n')
+	// Each line carries its number in data-line; the stylesheet shows it
+	// (::before), so it is neither text (search, copy, inline diff) nor part
+	// of the block diff key (data-line is stripped there).
+	for ln := node.FirstChild(); ln != nil; ln = ln.NextSibling() {
+		_, _ = w.WriteString(`<span class="mdv-text-line"` + lineAttribute(ln) + `>`)
+		for c := ln.FirstChild(); c != nil; c = c.NextSibling() {
+			switch t := c.(type) {
+			case *ast.Text:
+				_, _ = w.WriteString(html.EscapeString(string(t.Segment.Value(source))))
+			case *ast.AutoLink:
+				u := html.EscapeString(string(t.URL(source)))
+				_, _ = w.WriteString(`<a href="` + u + `">` + html.EscapeString(string(t.Label(source))) + `</a>`)
 			}
-		case *ast.AutoLink:
-			u := html.EscapeString(string(t.URL(source)))
-			_, _ = w.WriteString(`<a href="` + u + `">` + html.EscapeString(string(t.Label(source))) + `</a>`)
 		}
+		_, _ = w.WriteString("\n</span>")
 	}
 	_, _ = w.WriteString("</p>\n")
 	return ast.WalkSkipChildren, nil
 }
+
+// KindTextLine is one line of a text block; its children are the line's
+// text and links.
+var KindTextLine = ast.NewNodeKind("TextLine")
+
+type textLineNode struct{ ast.BaseInline }
+
+func (n *textLineNode) Kind() ast.NodeKind            { return KindTextLine }
+func (n *textLineNode) Dump(source []byte, level int) { ast.DumpHelper(n, source, level, nil, nil) }
 
 func newTextRenderer() goldmark.Markdown {
 	return goldmark.New(goldmark.WithRendererOptions(renderer.WithNodeRenderers(
@@ -76,14 +89,14 @@ func newTextRenderer() goldmark.Markdown {
 	)))
 }
 
-type textLine struct {
+type srcLine struct {
 	seg   text.Segment // without the line break
 	line  int          // 1-based
 	blank bool
 }
 
-func splitLines(source []byte) []textLine {
-	var lines []textLine
+func splitLines(source []byte) []srcLine {
+	var lines []srcLine
 	for start, n := 0, 1; start < len(source); n++ {
 		end := bytes.IndexByte(source[start:], '\n')
 		next := len(source)
@@ -97,7 +110,7 @@ func splitLines(source []byte) []textLine {
 		if stop > start && source[stop-1] == '\r' {
 			stop--
 		}
-		lines = append(lines, textLine{
+		lines = append(lines, srcLine{
 			seg:   text.NewSegment(start, stop),
 			line:  n,
 			blank: len(bytes.TrimSpace(source[start:stop])) == 0,
@@ -118,17 +131,12 @@ func parseText(source []byte) *parsed {
 	doc := ast.NewDocument()
 	var cur *textBlock
 	var count int
-	var last *ast.Text
 	cut := false // the previous block ended at a chunk cut, not a blank line
 	flush := func() {
 		if cur != nil {
-			if last != nil {
-				last.SetSoftLineBreak(false)
-			}
-			linkifyChildren(cur, source)
 			doc.AppendChild(doc, cur)
 		}
-		cur, count, last = nil, 0, nil
+		cur, count = nil, 0
 	}
 	for _, l := range splitLines(source) {
 		if l.blank {
@@ -141,10 +149,11 @@ func parseText(source []byte) *parsed {
 			cut = false
 			cur.SetAttributeString("data-line", []byte(strconv.Itoa(l.line)))
 		}
-		t := ast.NewTextSegment(l.seg)
-		t.SetSoftLineBreak(true)
-		cur.AppendChild(cur, t)
-		last = t
+		ln := &textLineNode{}
+		ln.SetAttributeString("data-line", []byte(strconv.Itoa(l.line)))
+		ln.AppendChild(ln, ast.NewTextSegment(l.seg))
+		linkifyChildren(ln, source)
+		cur.AppendChild(cur, ln)
 		count++
 		if count >= textChunkMax || (count >= textChunkMin && cutAfter(l.seg.Value(source))) {
 			flush()

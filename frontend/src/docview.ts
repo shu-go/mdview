@@ -186,6 +186,14 @@ export class DocView {
     this.preview.hide();
     this.content.innerHTML = r.html;
     this.content.classList.toggle('is-text', r.kind === 'text');
+    if (r.kind === 'text') {
+      // line number column: as wide as the largest number
+      const lines = this.content.querySelectorAll<HTMLElement>('.mdv-text-line[data-line]');
+      const last = lines.length ? lines[lines.length - 1].dataset.line ?? '' : '';
+      this.content.style.setProperty('--mdv-text-gutter', `${Math.max(2, last.length)}ch`);
+    } else {
+      this.content.style.removeProperty('--mdv-text-gutter');
+    }
     if (this.tab.diffMode !== 'off' && r.changes > 0) applyInlineDiffs(this.content, this.host.diffDetail());
     this.updateBanner();
     await this.renderMermaid();
@@ -369,18 +377,32 @@ export class DocView {
     this.host.status(`Change ${this.changeIndex + 1} / ${regions.length}`);
   }
 
-  /** Scrolls to the top-level block containing a source line, and flashes it. */
-  scrollToLine(line: number): void {
+  /**
+   * Scrolls to a source line and flashes it: in a text file the line itself
+   * (or the last one before it, for a blank line), in Markdown the top-level
+   * block containing it. Returns the line shown (0 when none).
+   */
+  scrollToLine(line: number): number {
     let best: HTMLElement | null = null;
     for (const b of Array.from(this.content.querySelectorAll<HTMLElement>(':scope > [data-line], :scope > .mdv-diff-ins > [data-line]'))) {
       if (Number(b.dataset.line) <= line) best = b;
       else break;
     }
-    if (!best) return;
-    this.scrollToElement(best, true);
-    best.classList.remove('is-flash');
-    void best.offsetWidth; // restart the animation
-    best.classList.add('is-flash');
+    if (!best) {
+      // before the first block (e.g. leading blank lines): the first one
+      best = this.content.querySelector<HTMLElement>(':scope > [data-line], :scope > .mdv-diff-ins > [data-line]');
+      if (!best) return 0;
+    }
+    let target = best;
+    for (const l of Array.from(best.querySelectorAll<HTMLElement>('.mdv-text-line[data-line]'))) {
+      if (Number(l.dataset.line) <= line) target = l;
+      else break;
+    }
+    this.scrollToElement(target, true);
+    target.classList.remove('is-flash');
+    void target.offsetWidth; // restart the animation
+    target.classList.add('is-flash');
+    return Number(target.dataset.line) || 0;
   }
 
   /** Source line of the first block visible at the top of the viewport. */
@@ -391,7 +413,8 @@ export class DocView {
     for (const b of Array.from(blocks)) {
       const r = b.getBoundingClientRect();
       line = Number(b.dataset.line) || line;
-      if (r.bottom - top > 0) break;
+      // a text block contains its lines (also [data-line]): look into it
+      if (r.bottom - top > 0 && !b.classList.contains('mdv-text-block')) break;
     }
     return line;
   }

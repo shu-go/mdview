@@ -111,7 +111,10 @@
    - Top-level blocks carry data-line="N" (source line).
    - Plain text file (any file other than .md / .markdown):
      .mdv-content.is-text > p.mdv-text-block (one paragraph; long ones are cut
-     into chunks, the following chunks also have .mdv-text-block-cont), lines kept
-     with white-space: pre-wrap, http(s) URLs as <a>. Font: --mdv-font-text
+     into chunks, the following chunks also have .mdv-text-block-cont)
+     > span.mdv-text-line[data-line="N"] (one line, white-space: pre-wrap;
+     http(s) URLs as <a>). The line number is .mdv-text-line::before
+     (content: attr(data-line)) in a column --mdv-text-gutter wide (set to the
+     widest number), colour --mdv-color-line-number. Font: --mdv-font-text
      (default: the code font), size --mdv-text-font-scale.
    ========================================================================== */

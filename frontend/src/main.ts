@@ -915,8 +915,17 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       case 'page-up': return void by(-page() * n);
       case 'half-down': return void by((page() / 2) * n);
       case 'half-up': return void by((-page() / 2) * n);
-      case 'top': if (v) v.el.scrollTop = 0; return;
-      case 'bottom': if (v) v.el.scrollTop = v.el.scrollHeight; return;
+      case 'top':
+      case 'bottom':
+        if (!v) return;
+        if (count !== null) {
+          // less: Ng / NG go to line N (text: the line; Markdown: its block)
+          const shown = v.scrollToLine(count);
+          this.statusMsg(shown === count ? `Line ${count}` : `Line ${count} (showing ${shown})`);
+          return;
+        }
+        v.el.scrollTop = cmd === 'top' ? 0 : v.el.scrollHeight;
+        return;
       case 'percent':
         if (v) v.el.scrollTop = ((v.el.scrollHeight - v.el.clientHeight) * Math.min(100, count ?? 0)) / 100;
         return;

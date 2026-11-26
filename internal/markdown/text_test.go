@@ -9,8 +9,11 @@ import (
 func TestRenderTextBlocks(t *testing.T) {
 	src := "first line\r\n  indented <b>&amp;\r\n\r\n\r\nsecond # not a heading\n*not em*\n"
 	r := RenderText([]byte(src))
-	want := `<p class="mdv-text-block" data-line="1">first line` + "\n" + `  indented &lt;b&gt;&amp;amp;</p>` + "\n" +
-		`<p class="mdv-text-block" data-line="5">second # not a heading` + "\n" + `*not em*</p>` + "\n"
+	line := func(n int, s string) string {
+		return fmt.Sprintf(`<span class="mdv-text-line" data-line="%d">%s`+"\n</span>", n, s)
+	}
+	want := `<p class="mdv-text-block" data-line="1">` + line(1, "first line") + line(2, "  indented &lt;b&gt;&amp;amp;") + "</p>\n" +
+		`<p class="mdv-text-block" data-line="5">` + line(5, "second # not a heading") + line(6, "*not em*") + "</p>\n"
 	if r.HTML != want {
 		t.Errorf("got\n%s\nwant\n%s", r.HTML, want)
 	}
@@ -58,7 +61,16 @@ func TestRenderTextDiff(t *testing.T) {
 		t.Errorf("one changed chunk expected: changes=%d\n%s", r.Changes, r.HTML)
 	}
 	r = RenderTextDiff([]byte("a\n\nb\n"), []byte("a\n\nb\n\nc\n"))
-	if r.Changes != 1 || !strings.Contains(r.HTML, `<div class="mdv-diff-ins">`+"\n"+`<p class="mdv-text-block" data-line="5">c</p>`) {
+	if r.Changes != 1 || !strings.Contains(r.HTML, `<div class="mdv-diff-ins">`+"\n"+`<p class="mdv-text-block" data-line="5"><span class="mdv-text-line" data-line="5">c`) {
 		t.Errorf("appended block:\n%s", r.HTML)
+	}
+	// line numbers shift after an inserted line, but only the paragraph with
+	// the new line is changed
+	r = RenderTextDiff([]byte("a\nb\n\nc\n\nd\n"), []byte("a\nnew\nb\n\nc\n\nd\n"))
+	if r.Changes != 1 || strings.Count(r.HTML, "mdv-diff-ins") != 1 {
+		t.Errorf("line numbers must not count as changes: %d\n%s", r.Changes, r.HTML)
+	}
+	if !strings.Contains(r.HTML, `<span class="mdv-text-line" data-line="7">d`) {
+		t.Errorf("shifted line number:\n%s", r.HTML)
 	}
 }

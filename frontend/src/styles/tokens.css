@@ -13,6 +13,7 @@
   /* plain text files */
   --mdv-font-text: var(--mdv-font-code);
   --mdv-text-font-scale: 0.9em;
+  --mdv-text-gutter: 2ch; /* line number column, set to the widest number */
 
   /* render area */
   --mdv-content-max-width: 860px;
@@ -54,6 +55,7 @@
   --mdv-color-search-hit: rgba(255, 213, 0, 0.45);
   --mdv-color-search-current: #ff9632;
   --mdv-color-scrollmark-hit: #d4a800;
+  --mdv-color-line-number: #8c959f;
   --mdv-color-drop: rgba(9, 105, 218, 0.18);
   --mdv-color-task-done: #1f883d;
   --mdv-color-task-border: #8c959f;
@@ -102,6 +104,7 @@
   --mdv-color-search-hit: rgba(187, 128, 9, 0.5);
   --mdv-color-search-current: #d29922;
   --mdv-color-scrollmark-hit: #e3b341;
+  --mdv-color-line-number: #6e7681;
   --mdv-color-drop: rgba(56, 139, 253, 0.25);
   --mdv-color-task-done: #2ea043;
   --mdv-color-task-border: #6e7681;

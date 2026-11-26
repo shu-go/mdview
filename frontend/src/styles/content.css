@@ -236,6 +236,24 @@
   margin-top: 0;
 }
 
+/* one line; its number (data-line) is drawn in a column on the left, so it
+   is not selected, copied or searched */
+.mdv-text-line {
+  display: block;
+  position: relative;
+  padding-left: calc(var(--mdv-text-gutter) + 1.5ch);
+}
+
+.mdv-text-line::before {
+  content: attr(data-line);
+  position: absolute;
+  left: 0;
+  width: var(--mdv-text-gutter);
+  text-align: right;
+  color: var(--mdv-color-line-number);
+  user-select: none;
+}
+
 .mdv-content :not(pre) > code {
   padding: 0.2em 0.4em;
   font-size: 85%;
