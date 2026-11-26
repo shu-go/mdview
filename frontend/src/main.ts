@@ -48,6 +48,8 @@ const statusIcons = {
   // arrows pointing inwards / outwards between two bars
   narrower: svg('<path d="M1.5 3v10M14.5 3v10M3.5 8h3M4.8 6.5L6.5 8 4.8 9.5M12.5 8h-3M11.2 6.5L9.5 8l1.7 1.5"/>'),
   wider: svg('<path d="M1.5 3v10M14.5 3v10M7 8H3.5M5 6.5L3.5 8 5 9.5M9 8h3.5M11 6.5L12.5 8 11 9.5"/>'),
+  // a line wrapping back to the start of the next line
+  wrap: svg('<path d="M1.5 3.5h13M1.5 8h11a2.5 2.5 0 010 5H8.5M10 11.3L8.3 13l1.7 1.7M1.5 12.5h4"/>'),
   zoomOut: svg('<circle cx="6.8" cy="6.8" r="4.3"/><path d="M10 10l4.2 4.2M4.8 6.8h4"/>'),
   zoomIn: svg('<circle cx="6.8" cy="6.8" r="4.3"/><path d="M10 10l4.2 4.2M4.8 6.8h4M6.8 4.8v4"/>'),
   // window split in two, the left part narrower (sidebar)
@@ -81,6 +83,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
   private zoomTimer = 0;
   private diffSelect!: HTMLSelectElement;
   private sidebarButton!: HTMLButtonElement;
+  private wrapButton!: HTMLButtonElement;
 
   // ---------- startup ----------
 
@@ -232,6 +235,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       });
       return b;
     };
+    this.wrapButton = sbButton('Text file: wrap long lines (Alt+Z)', 'toggle-wrap', statusIcons.wrap);
     this.sb.zoom.title = 'Zoom (click to reset: Ctrl+0)';
     this.sb.zoom.addEventListener('click', () => this.run('zoom-reset', null));
     const controls = h(
@@ -240,6 +244,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       this.diffSelect,
       sbButton('Use the current content as the diff baseline (B)', 'set-baseline', statusIcons.baseline),
       h('span', { class: 'mdv-statusbar-separator' }),
+      this.wrapButton,
       sbButton('Narrower text column ( ( )', 'narrower', statusIcons.narrower),
       sbButton('Wider text column ( ) )', 'wider', statusIcons.wider),
       h('span', { class: 'mdv-statusbar-separator' }),
@@ -300,6 +305,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     this.sidebar.setVisible(s.sidebarVisible);
     this.sidebarButton?.classList.toggle('is-active', s.sidebarVisible);
     this.sb.zoom.textContent = `${s.zoom}%`;
+    this.wrapButton?.classList.toggle('is-active', s.wrapText);
     this.updateOutline();
   }
 
@@ -432,6 +438,9 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     const t = this.activeTab;
     this.diffSelect.value = t ? t.diffMode : this.settings?.diffMode ?? 'baseline';
     this.diffSelect.disabled = !t;
+    // the wrap toggle only applies to text files
+    this.wrapButton.classList.toggle('is-hidden', this.activeView?.result?.kind !== 'text');
+    this.wrapButton.classList.toggle('is-active', !!this.settings?.wrapText);
     this.linkHover(null);
   }
 
@@ -929,8 +938,24 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       case 'percent':
         if (v) v.el.scrollTop = ((v.el.scrollHeight - v.el.clientHeight) * Math.min(100, count ?? 0)) / 100;
         return;
-      case 'left': return void v?.el.querySelectorAll('pre, table').forEach((x) => (x as HTMLElement).scrollBy({ left: -40 * n }));
-      case 'right': return void v?.el.querySelectorAll('pre, table').forEach((x) => (x as HTMLElement).scrollBy({ left: 40 * n }));
+      case 'left':
+      case 'right': {
+        if (!v) return;
+        const dx = (cmd === 'left' ? -40 : 40) * n;
+        v.el.querySelectorAll('pre, table').forEach((x) => (x as HTMLElement).scrollBy({ left: dx }));
+        v.el.scrollBy({ left: dx }); // the whole document (text file without wrapping)
+        return;
+      }
+      case 'toggle-wrap': {
+        const wrap = !this.settings.wrapText;
+        // applied synchronously (saveSettings applies before saving)
+        const apply = () => void this.saveSettings({ wrapText: wrap });
+        if (v) v.keepPosition(apply);
+        else apply();
+        if (wrap) this.visibleViews().forEach((x) => (x.el.scrollLeft = 0));
+        this.statusMsg(wrap ? 'Text files: wrap long lines' : 'Text files: no wrapping (scroll horizontally)');
+        return;
+      }
       case 'next-heading': for (let i = 0; i < n; i++) v?.jumpHeading(1); return;
       case 'prev-heading': for (let i = 0; i < n; i++) v?.jumpHeading(-1); return;
       case 'search': return this.search.open(false, false);

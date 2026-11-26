@@ -308,8 +308,36 @@ export class DocView {
   }
 
   scrollToElement(el: HTMLElement, center = false): void {
-    const top = el.getBoundingClientRect().top - this.el.getBoundingClientRect().top + this.el.scrollTop;
+    const box = this.el.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    const top = r.top - box.top + this.el.scrollTop;
     this.el.scrollTop = center ? top - this.el.clientHeight / 3 : top - 8;
+    // horizontally too, when the document is wider than the view (text file
+    // without wrapping): bring an element outside the view into it
+    if (this.el.scrollWidth > this.el.clientWidth) {
+      // the line numbers stay on the left edge and cover what scrolls under them
+      const line = el.closest('.mdv-text-line');
+      const gutter = line ? (parseFloat(getComputedStyle(line, '::before').width) || 0) + 16 : 0;
+      if (r.left < box.left + gutter || r.right > box.left + this.el.clientWidth) {
+        this.el.scrollLeft += r.left - box.left - this.el.clientWidth / 3;
+      }
+    }
+  }
+
+  /** Runs a layout change, keeping the first visible line (or block) where it is. */
+  keepPosition(change: () => void): void {
+    const top = this.el.getBoundingClientRect().top;
+    const sel = this.content.classList.contains('is-text') ? '.mdv-text-line' : ':scope > *';
+    let anchor: HTMLElement | null = null;
+    for (const b of Array.from(this.content.querySelectorAll<HTMLElement>(sel))) {
+      if (b.getBoundingClientRect().bottom > top) {
+        anchor = b;
+        break;
+      }
+    }
+    const offset = anchor ? anchor.getBoundingClientRect().top - top : 0;
+    change();
+    if (anchor) this.el.scrollTop += anchor.getBoundingClientRect().top - top - offset;
   }
 
   /** Index of the heading at the top of the viewport (-1 when above all). */

@@ -148,6 +148,12 @@ export interface Settings {
      * CloseWindowOnLastTab closes a window when its last tab is closed.
      */
     "closeWindowOnLastTab": boolean;
+
+    /**
+     * WrapText wraps long lines of text files at the right edge; false keeps
+     * lines as they are with horizontal scrolling.
+     */
+    "wrapText": boolean;
 }
 
 /**

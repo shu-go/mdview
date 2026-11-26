@@ -13,6 +13,7 @@ export function applySettings(s: Settings): void {
   current = s;
   const root = document.documentElement;
   root.dataset.theme = resolvedTheme(s);
+  root.classList.toggle('is-text-nowrap', !s.wrapText);
   const st = root.style;
   const set = (k: string, v: string | null) => (v ? st.setProperty(k, v) : st.removeProperty(k));
   set('--mdv-font-body', s.fontFamily.trim() || null);

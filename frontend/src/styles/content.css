@@ -254,6 +254,33 @@
   user-select: none;
 }
 
+/* text files without wrapping (html.is-text-nowrap, Alt+Z): lines are kept
+   whole and the document scrolls horizontally; the line numbers stay at the
+   left edge */
+.is-text-nowrap .mdv-content.is-text {
+  max-width: none;
+  width: max-content;
+  min-width: 100%;
+}
+
+.is-text-nowrap .mdv-content p.mdv-text-block {
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+.is-text-nowrap .mdv-text-line {
+  padding-left: 0;
+}
+
+.is-text-nowrap .mdv-text-line::before {
+  position: sticky;
+  z-index: 1;
+  display: inline-block;
+  box-sizing: content-box;
+  padding-right: 1.5ch;
+  background: var(--mdv-color-bg);
+}
+
 .mdv-content :not(pre) > code {
   padding: 0.2em 0.4em;
   font-size: 85%;

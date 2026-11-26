@@ -27,6 +27,9 @@ type Settings struct {
 	DiffDetail string `json:"diffDetail"`
 	// CloseWindowOnLastTab closes a window when its last tab is closed.
 	CloseWindowOnLastTab bool `json:"closeWindowOnLastTab"`
+	// WrapText wraps long lines of text files at the right edge; false keeps
+	// lines as they are with horizontal scrolling.
+	WrapText bool `json:"wrapText"`
 }
 
 // DefaultSettings returns the settings used when no file exists.
@@ -45,6 +48,7 @@ func DefaultSettings() Settings {
 
 		DiffDetail:           "word",
 		CloseWindowOnLastTab: true,
+		WrapText:             true,
 	}
 }
 

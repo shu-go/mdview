@@ -30,7 +30,8 @@
    - States are separate classes: .is-active .is-current .is-hidden
      .is-missing .is-changed .is-collapsed .is-inline .is-flash
    - <html> attributes: data-theme="light|dark", data-platform="windows|darwin|linux";
-     class is-maximised while the window is maximised.
+     class is-maximised while the window is maximised, is-text-nowrap while
+     text files are not wrapped.
    - The rendered Markdown is plain HTML (h1-h6, p, a, ul, ol, li, table, pre,
      code, blockquote, img, hr, ...) inside .mdv-content; style it with
      descendant selectors such as ".mdv-content h2".
@@ -83,7 +84,8 @@
        .mdv-statusbar-link           target of the link under the pointer
        .mdv-statusbar-message
        .mdv-statusbar-controls       .mdv-statusbar-select (diff mode),
-                                     .mdv-statusbar-button (baseline, width, zoom),
+                                     .mdv-statusbar-button (baseline, wrap [text files only,
+                                     .is-active when wrapping], width, zoom),
                                      .mdv-statusbar-zoom (zoom level)
    .mdv-dialog > .mdv-dialog-box     settings / key bindings dialogs
    .mdv-menu > .mdv-menu-item        context menus and the recent files / folders menu
@@ -115,6 +117,9 @@
      > span.mdv-text-line[data-line="N"] (one line, white-space: pre-wrap;
      http(s) URLs as <a>). The line number is .mdv-text-line::before
      (content: attr(data-line)) in a column --mdv-text-gutter wide (set to the
-     widest number), colour --mdv-color-line-number. Font: --mdv-font-text
+     widest number), colour --mdv-color-line-number. <html> has class
+     is-text-nowrap when Settings > Wrap text files is off (Alt+Z): lines are
+     not wrapped (white-space: pre), the document scrolls horizontally and the
+     line numbers stick to the left edge. Font: --mdv-font-text
      (default: the code font), size --mdv-text-font-scale.
    ========================================================================== */

@@ -843,6 +843,8 @@ button {
 }
 
 .mdv-doc-banner {
+  position: sticky; /* stays in view when the document scrolls horizontally */
+  left: 0;
   margin: 0;
   padding: 6px var(--mdv-content-padding);
   font-size: 12px;
@@ -988,6 +990,16 @@ button {
 .mdv-statusbar-button svg {
   width: 14px;
   height: 14px;
+}
+
+.mdv-statusbar-button.is-hidden {
+  display: none;
+}
+
+/* a toggle that is on (wrap) */
+.mdv-statusbar-button.is-active {
+  background: var(--mdv-color-selected);
+  color: var(--mdv-color-fg);
 }
 
 /* diff mode: a compact select that looks like status bar text */

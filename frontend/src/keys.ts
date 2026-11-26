@@ -54,6 +54,8 @@ export const bindings: Binding[] = [
   { keys: ['C-0'], cmd: 'zoom-reset', help: 'Reset zoom' },
   { keys: ['C-S-ArrowRight', ')'], cmd: 'wider', help: 'Wider text column (less margin)' },
   { keys: ['C-S-ArrowLeft', '('], cmd: 'narrower', help: 'Narrower text column (more margin)' },
+  // macOS reports Option+Z as "Ω"
+  { keys: ['A-z', 'A-Z', 'A-Ω'], cmd: 'toggle-wrap', help: 'Text files: wrap long lines / scroll horizontally', display: 'A-z' },
   { keys: ['C-,'], cmd: 'settings', help: 'Settings' },
   { keys: ['C-S-G', 'C-S-g'], cmd: 'toggle-search-panel', help: 'Search in all listed files (sidebar)' },
   { keys: ['F1', 'H'], cmd: 'help', help: 'Key bindings' },

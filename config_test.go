@@ -15,6 +15,9 @@ func TestSettingsDefaultsAndMigration(t *testing.T) {
 	if !s.CloseWindowOnLastTab {
 		t.Error("closeWindowOnLastTab should default to true")
 	}
+	if !s.WrapText {
+		t.Error("wrapText should default to true")
+	}
 	if s.DiffDetail != "word" {
 		t.Errorf("diffDetail = %q, want word", s.DiffDetail)
 	}

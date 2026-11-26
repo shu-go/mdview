@@ -113,6 +113,8 @@ export class ScrollMarks {
       return;
     }
     this.el.style.width = `${barWidth}px`;
+    // stop above the horizontal scrollbar, if any
+    this.el.style.bottom = `${sc.offsetHeight - sc.clientHeight}px`;
     const inset = `${arrowInset(this.el, barWidth)}px`;
     this.track.style.top = inset;
     this.track.style.bottom = inset;
