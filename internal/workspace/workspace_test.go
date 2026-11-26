@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -159,19 +160,32 @@ func TestKindsAndText(t *testing.T) {
 	write(t, filepath.Join(dir, "c.mdown"), "")
 	write(t, filepath.Join(dir, "d.TXT"), "\x93\xfa\x96\x7b\x8c\xea") // 日本語 in Shift_JIS
 	write(t, filepath.Join(dir, "e.log"), "")
-	write(t, filepath.Join(dir, "f.txt"), "bin\x00ary")
+	write(t, filepath.Join(dir, "f.png"), "\x89PNG\r\n\x1a\n\x00\x00")
+	write(t, filepath.Join(dir, "README"), "no extension")
 	ws, _ := New(nil, nil)
 	defer ws.Close()
 
-	if _, err := ws.OpenFile(filepath.Join(dir, "d.TXT")); !errors.Is(err, ErrUnsupported) {
-		t.Errorf("text files are unsupported until enabled: %v", err)
+	if _, err := ws.OpenFile(filepath.Join(dir, "f.png")); !errors.Is(err, ErrBinary) {
+		t.Errorf("binary file should be refused: %v", err)
 	}
-	ws.SetTextExtensions([]string{".txt"})
-	if _, err := ws.OpenFile(filepath.Join(dir, "c.mdown")); !errors.Is(err, ErrUnsupported) {
-		t.Errorf(".mdown should be unsupported: %v", err)
+	if len(ws.Snapshot().Files) != 0 {
+		t.Error("a refused file must not be listed")
 	}
-	if _, err := ws.OpenFile(filepath.Join(dir, "f.txt")); err == nil {
-		t.Error("binary file should be refused")
+	// a large binary is reported as binary (links fall back to the system app)
+	big := filepath.Join(dir, "big.mp4")
+	write(t, big, "\x00\x00\x00\x18ftypmp42"+strings.Repeat("x", MaxFileSize))
+	if _, err := ReadDoc(big); !errors.Is(err, ErrBinary) {
+		t.Errorf("large binary: %v", err)
+	}
+	large := filepath.Join(dir, "large.log")
+	write(t, large, strings.Repeat("x", MaxFileSize+1))
+	if _, err := ReadDoc(large); err == nil || errors.Is(err, ErrBinary) {
+		t.Errorf("large text should be too large: %v", err)
+	}
+	for _, name := range []string{"c.mdown", "e.log", "README"} {
+		if _, err := ws.OpenFile(filepath.Join(dir, name)); err != nil {
+			t.Errorf("%s should open as text: %v", name, err)
+		}
 	}
 	p, err := ws.OpenFile(filepath.Join(dir, "d.TXT"))
 	if err != nil {
@@ -180,10 +194,11 @@ func TestKindsAndText(t *testing.T) {
 	if c, _ := ws.Get(p); string(c.Current) != "日本語" {
 		t.Errorf("Shift_JIS not decoded: %q", c.Current)
 	}
-	if ws.Kind(p) != KindText || ws.Kind("x.Markdown") != KindMarkdown || ws.Kind("x.log") != "" {
-		t.Error("Kind")
+	if KindOf(p) != KindText || KindOf("x.Markdown") != KindMarkdown || KindOf("x.mdown") != KindText || KindOf("README") != KindText {
+		t.Error("KindOf")
 	}
 
+	// folders list Markdown files only
 	_, files, err := ws.OpenFolder(dir)
 	if err != nil {
 		t.Fatal(err)
@@ -192,18 +207,8 @@ func TestKindsAndText(t *testing.T) {
 	for _, f := range files {
 		names = append(names, filepath.Base(f))
 	}
-	if want := "a.md b.markdown d.TXT f.txt"; join(names) != want {
+	if want := "a.md b.markdown"; join(names) != want {
 		t.Errorf("folder files = %v", names)
-	}
-	ws.SetTextExtensions([]string{".log"})
-	names = nil
-	for _, f := range ws.Snapshot().Files {
-		if f.Root != "" {
-			names = append(names, f.Name)
-		}
-	}
-	if want := "a.md b.markdown e.log"; join(names) != want {
-		t.Errorf("after changing the text extensions = %v", names)
 	}
 }
 

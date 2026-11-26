@@ -4,10 +4,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"slices"
-	"strings"
-
-	"github.com/shu-go/mdview/internal/workspace"
 )
 
 // Settings are the user preferences, persisted as mdview.json.
@@ -31,25 +27,6 @@ type Settings struct {
 	DiffDetail string `json:"diffDetail"`
 	// CloseWindowOnLastTab closes a window when its last tab is closed.
 	CloseWindowOnLastTab bool `json:"closeWindowOnLastTab"`
-	// TextExtensions are the extensions of files shown as plain text,
-	// separated by spaces or commas, e.g. "txt log". Markdown is .md / .markdown.
-	TextExtensions string `json:"textExtensions"`
-}
-
-// textExtList parses TextExtensions into lower-case extensions with the dot
-// (".txt"), without duplicates and Markdown extensions.
-func textExtList(s string) []string {
-	var out []string
-	seen := map[string]bool{}
-	for _, f := range strings.FieldsFunc(s, func(r rune) bool { return r == ' ' || r == ',' || r == ';' || r == '\t' }) {
-		e := "." + strings.ToLower(strings.TrimLeft(strings.TrimPrefix(f, "*"), "."))
-		if e == "." || seen[e] || slices.Contains(workspace.MarkdownExts, e) {
-			continue
-		}
-		seen[e] = true
-		out = append(out, e)
-	}
-	return out
 }
 
 // DefaultSettings returns the settings used when no file exists.
@@ -68,7 +45,6 @@ func DefaultSettings() Settings {
 
 		DiffDetail:           "word",
 		CloseWindowOnLastTab: true,
-		TextExtensions:       "txt",
 	}
 }
 
@@ -115,11 +91,6 @@ func (s *Settings) normalize() {
 	if s.OutlineMaxLevel < 1 || s.OutlineMaxLevel > 6 {
 		s.OutlineMaxLevel = d.OutlineMaxLevel
 	}
-	exts := textExtList(s.TextExtensions)
-	for i, e := range exts {
-		exts[i] = e[1:]
-	}
-	s.TextExtensions = strings.Join(exts, " ")
 }
 
 const settingsFileName = "mdview.json"

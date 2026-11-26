@@ -3,13 +3,11 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -82,6 +80,9 @@ type OpenResult struct {
 	Files   []string `json:"files"`   // files to open as tabs
 	Folders []string `json:"folders"` // folders added to the list
 	Errors  []string `json:"errors"`
+	// Binary are files not opened because they are not text (a link to one
+	// is handed to the system application instead).
+	Binary []string `json:"binary"`
 }
 
 // App is the service bound to the frontend.
@@ -123,10 +124,6 @@ func (a *App) ServiceStartup(ctx context.Context, _ application.ServiceOptions) 
 		return err
 	}
 	a.ws = ws
-	a.mu.Lock()
-	exts := textExtList(a.settings.TextExtensions)
-	a.mu.Unlock()
-	ws.SetTextExtensions(exts)
 	go a.watchCustomCSS(ctx)
 	return nil
 }
@@ -337,6 +334,9 @@ func (a *App) OpenPaths(paths []string) OpenResult {
 		f, err := a.ws.OpenFile(p)
 		if err != nil {
 			res.Errors = append(res.Errors, err.Error())
+			if errors.Is(err, workspace.ErrBinary) {
+				res.Binary = append(res.Binary, p)
+			}
 			continue
 		}
 		res.Files = append(res.Files, f)
@@ -345,7 +345,7 @@ func (a *App) OpenPaths(paths []string) OpenResult {
 	return res
 }
 
-// OpenLink opens a Markdown file linked from a document. Documents are not
+// OpenLink opens a file linked from a document. Documents are not
 // trusted: network paths are refused so that a link cannot make Windows
 // connect to a remote host (NTLM credential leak). Paths the user passes
 // directly (command line, dialogs, drops) go through OpenPaths instead.
@@ -356,34 +356,20 @@ func (a *App) OpenLink(path string) (OpenResult, error) {
 	return a.OpenPaths([]string{path}), nil
 }
 
-// fileFilters lists the supported files for the open dialog.
-func fileFilters(textExts []string) []application.FileFilter {
-	pattern := func(exts []string) string {
-		ps := make([]string, len(exts))
-		for i, e := range exts {
-			ps[i] = "*" + e
-		}
-		return strings.Join(ps, ";")
-	}
-	all := append(slices.Clone(workspace.MarkdownExts), textExts...)
-	fs := []application.FileFilter{{DisplayName: "Supported files", Pattern: pattern(all)}}
-	fs = append(fs, application.FileFilter{DisplayName: "Markdown", Pattern: pattern(workspace.MarkdownExts)})
-	if len(textExts) > 0 {
-		fs = append(fs, application.FileFilter{DisplayName: "Text", Pattern: pattern(textExts)})
-	}
-	return append(fs, application.FileFilter{DisplayName: "All files", Pattern: "*.*"})
+// fileFilters lists the files for the open dialog: Markdown, or anything
+// (shown as text).
+var fileFilters = []application.FileFilter{
+	{DisplayName: "Markdown", Pattern: "*.md;*.markdown"},
+	{DisplayName: "All files (others as text)", Pattern: "*.*"},
 }
 
 // OpenFileDialog lets the user choose files and opens them.
 func (a *App) OpenFileDialog(ctx context.Context) (OpenResult, error) {
-	a.mu.Lock()
-	exts := textExtList(a.settings.TextExtensions)
-	a.mu.Unlock()
 	d := a.app.Dialog.OpenFileWithOptions(&application.OpenFileDialogOptions{
 		Title:                   "Open files",
 		CanChooseFiles:          true,
 		AllowsMultipleSelection: true,
-		Filters:                 fileFilters(exts),
+		Filters:                 fileFilters,
 	})
 	if w, ok := callerWindow(ctx).(*application.WebviewWindow); ok {
 		d.AttachToWindow(w)
@@ -420,10 +406,7 @@ func (a *App) RemoveFromList(path string) { a.ws.Remove(path) }
 
 // Render renders a document. mode is "off", "initial" or "baseline".
 func (a *App) Render(path string, mode string) (RenderResult, error) {
-	kind := a.ws.Kind(path)
-	if kind == "" {
-		return RenderResult{}, fmt.Errorf("%w: %s", workspace.ErrUnsupported, filepath.Base(path))
-	}
+	kind := workspace.KindOf(path)
 	c, err := a.ws.Get(path)
 	if err != nil {
 		return RenderResult{}, err
@@ -456,10 +439,7 @@ func (a *App) Preview(path string) (string, error) {
 	if path == "" || !filepath.IsAbs(path) || isUNC(path) {
 		return "", errors.New("refused to preview: " + path)
 	}
-	kind := a.ws.Kind(path)
-	if kind == "" {
-		return "", fmt.Errorf("%w: %s", workspace.ErrUnsupported, filepath.Base(path))
-	}
+	kind := workspace.KindOf(path)
 	path = workspace.Canonical(path)
 	src, ok := a.ws.Peek(path)
 	if !ok {
@@ -507,15 +487,11 @@ func (a *App) GetSettings() Settings {
 func (a *App) SaveSettings(s Settings) (Settings, error) {
 	s.normalize()
 	a.mu.Lock()
-	extsChanged := a.settings.TextExtensions != s.TextExtensions
 	a.settings = s
 	path := a.settingsPath
 	a.cssStamp = time.Time{}
 	a.mu.Unlock()
 	err := saveSettings(path, s)
-	if extsChanged {
-		a.ws.SetTextExtensions(textExtList(s.TextExtensions))
-	}
 	a.app.Event.Emit(EvSettingsChanged, s)
 	a.emitCustomCSS()
 	return s, err

@@ -67,15 +67,19 @@ func Decode(b []byte) []byte {
 	return out
 }
 
+// BinaryCheckSize is how much of a file IsBinary looks at.
+const BinaryCheckSize = 8192
+
 // IsBinary reports whether b looks like a binary file: a NUL byte within the
-// first 8 KiB (UTF-16 text, which has NULs, is recognised by its BOM).
+// first BinaryCheckSize bytes (UTF-16 text, which has NULs, is recognised by
+// its BOM).
 func IsBinary(b []byte) bool {
 	if bytes.HasPrefix(b, bomUTF16LE) || bytes.HasPrefix(b, bomUTF16BE) {
 		return false
 	}
 	head := b
-	if len(head) > 8192 {
-		head = head[:8192]
+	if len(head) > BinaryCheckSize {
+		head = head[:BinaryCheckSize]
 	}
 	return bytes.IndexByte(head, 0) >= 0
 }

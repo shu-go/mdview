@@ -46,16 +46,29 @@ func TestOpenLinkRefusesNetworkPaths(t *testing.T) {
 			t.Errorf("preview of %q should be refused", p)
 		}
 	}
-	// unsupported file type: refused before touching the file
+}
+
+func TestOpenPathsBinary(t *testing.T) {
 	ws, err := workspace.New(nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer ws.Close()
-	ws.SetTextExtensions([]string{".txt"})
-	a.ws = ws
-	if _, err := a.Preview(filepath.Join(t.TempDir(), "secret.dat")); !errors.Is(err, workspace.ErrUnsupported) {
-		t.Errorf("preview of an unsupported file should be refused: %v", err)
+	a := &App{ws: ws}
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "a.pdf")
+	txt := filepath.Join(dir, "notes.cfg")
+	os.WriteFile(bin, []byte("%PDF-1.7\n\x00\x01"), 0o644)
+	os.WriteFile(txt, []byte("key = value"), 0o644)
+	res := a.OpenPaths([]string{bin, txt})
+	if len(res.Binary) != 1 || res.Binary[0] != bin || len(res.Errors) != 1 {
+		t.Errorf("binary file should be refused and reported: %+v", res)
+	}
+	if len(res.Files) != 1 || filepath.Base(res.Files[0]) != "notes.cfg" {
+		t.Errorf("any other file opens as text: %+v", res)
+	}
+	if _, err := a.Preview(bin); !errors.Is(err, workspace.ErrBinary) {
+		t.Errorf("preview of a binary file: %v", err)
 	}
 }
 

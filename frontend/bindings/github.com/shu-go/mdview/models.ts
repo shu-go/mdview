@@ -43,6 +43,12 @@ export interface OpenResult {
      */
     "folders": string[] | null;
     "errors": string[] | null;
+
+    /**
+     * Binary are files not opened because they are not text (a link to one
+     * is handed to the system application instead).
+     */
+    "binary": string[] | null;
 }
 
 /**
@@ -142,12 +148,6 @@ export interface Settings {
      * CloseWindowOnLastTab closes a window when its last tab is closed.
      */
     "closeWindowOnLastTab": boolean;
-
-    /**
-     * TextExtensions are the extensions of files shown as plain text,
-     * separated by spaces or commas, e.g. "txt log". Markdown is .md / .markdown.
-     */
-    "textExtensions": string;
 }
 
 /**

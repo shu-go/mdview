@@ -1,9 +1,8 @@
 // Link preview popup: Ctrl + hovering a link to a heading of this document or
 // to another Markdown file shows the linked section (or the file's head); a
-// link to a text file shows its head.
+// link to any other file shows its head as text (binary files: an error).
 import { api } from './api';
 import { errMessage, h } from './util';
-import { fileKind } from './filetypes';
 
 const HIDE_DELAY = 250;
 /** top-level blocks copied when previewing a whole file */
@@ -41,7 +40,7 @@ export class LinkPreview {
     if (!a || !this.content.contains(a) || this.popup?.contains(a) || a.closest('.mdv-footnote-popup')) return null;
     if (a.matches('.footnote-ref, .footnote-backref, a[href^="#fn:"], a[href^="#fnref:"]')) return null; // footnote popup
     const path = a.dataset.mdvPath;
-    if (path) return fileKind(path) ? a : null;
+    if (path) return a;
     return (a.getAttribute('href') ?? '').startsWith('#') ? a : null;
   }
 

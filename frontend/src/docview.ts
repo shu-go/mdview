@@ -8,7 +8,6 @@ import { FootnotePopup } from './footnote';
 import { LinkPreview } from './linkpreview';
 import { applyInlineDiffs, type DiffDetail } from './inlinediff';
 import { ScrollMarks } from './scrollmarks';
-import { fileKind } from './filetypes';
 
 export interface DocHost {
   openLink(path: string, anchor: string, split: boolean): void;
@@ -274,9 +273,9 @@ export class DocView {
     const anchor = a.dataset.mdvAnchor ?? '';
     const href = a.getAttribute('href') ?? '';
     if (path) {
-      // network paths are refused by the Go side (OpenLink / OpenWithSystem)
-      if (fileKind(path)) this.host.openLink(path, anchor, split);
-      else this.host.openSystem(path);
+      // network paths are refused by the Go side (OpenLink); Markdown and
+      // text files open here, binary files with the system application
+      this.host.openLink(path, anchor, split);
       return;
     }
     if (href.startsWith('#')) {

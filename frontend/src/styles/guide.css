@@ -102,14 +102,14 @@
      .mdv-frontmatter-item .mdv-frontmatter-raw)
    - Footnotes: sup > a.footnote-ref, div.footnotes; hover popup .mdv-footnote-popup
      (-label -body)
-   - Link preview (Ctrl + hover on a heading / Markdown file link): .mdv-link-popup
+   - Link preview (Ctrl + hover on a heading / local file link): .mdv-link-popup
      > .mdv-link-popup-title + .mdv-link-popup-body (.mdv-link-popup-error .mdv-link-popup-more)
    - Task list: li > input[type="checkbox"] (drawn by this stylesheet)
    - Search hits: mark.mdv-search-hit (.is-current)
    - Diff: .mdv-diff-ins (added / changed block), .mdv-diff-del (removed block),
      .mdv-diff-ins.is-inline with ins.mdv-diff-word-ins / del.mdv-diff-word-del
    - Top-level blocks carry data-line="N" (source line).
-   - Plain text file (extensions in Settings > Text file extensions):
+   - Plain text file (any file other than .md / .markdown):
      .mdv-content.is-text > p.mdv-text-block (one paragraph; long ones are cut
      into chunks, the following chunks also have .mdv-text-block-cont), lines kept
      with white-space: pre-wrap, http(s) URLs as <a>. Font: --mdv-font-text
