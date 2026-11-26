@@ -8,6 +8,7 @@ import { FootnotePopup } from './footnote';
 import { LinkPreview } from './linkpreview';
 import { applyInlineDiffs, type DiffDetail } from './inlinediff';
 import { ScrollMarks } from './scrollmarks';
+import { fileKind } from './filetypes';
 
 export interface DocHost {
   openLink(path: string, anchor: string, split: boolean): void;
@@ -29,12 +30,6 @@ export function linkTarget(a: HTMLAnchorElement): string {
   const href = a.getAttribute('href') ?? '';
   if (href.startsWith('#')) return anchor ? `#${anchor}` : decodeURIComponent(href);
   return href;
-}
-
-const mdExt = /\.(md|markdown|mdown|mkd|mkdn|mdwn)$/i;
-
-export function isMarkdownPath(p: string): boolean {
-  return mdExt.test(p);
 }
 
 let mermaidSeq = 0;
@@ -191,6 +186,7 @@ export class DocView {
     this.footnotes.hide();
     this.preview.hide();
     this.content.innerHTML = r.html;
+    this.content.classList.toggle('is-text', r.kind === 'text');
     if (this.tab.diffMode !== 'off' && r.changes > 0) applyInlineDiffs(this.content, this.host.diffDetail());
     this.updateBanner();
     await this.renderMermaid();
@@ -279,7 +275,7 @@ export class DocView {
     const href = a.getAttribute('href') ?? '';
     if (path) {
       // network paths are refused by the Go side (OpenLink / OpenWithSystem)
-      if (isMarkdownPath(path)) this.host.openLink(path, anchor, split);
+      if (fileKind(path)) this.host.openLink(path, anchor, split);
       else this.host.openSystem(path);
       return;
     }

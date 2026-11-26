@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -8,6 +9,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/shu-go/mdview/internal/workspace"
 )
 
 func TestIsUNC(t *testing.T) {
@@ -43,9 +46,16 @@ func TestOpenLinkRefusesNetworkPaths(t *testing.T) {
 			t.Errorf("preview of %q should be refused", p)
 		}
 	}
-	// not Markdown: refused before touching the file
-	if _, err := a.Preview(filepath.Join(t.TempDir(), "secret.txt")); err == nil {
-		t.Error("preview of a non-Markdown file should be refused")
+	// unsupported file type: refused before touching the file
+	ws, err := workspace.New(nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ws.Close()
+	ws.SetTextExtensions([]string{".txt"})
+	a.ws = ws
+	if _, err := a.Preview(filepath.Join(t.TempDir(), "secret.dat")); !errors.Is(err, workspace.ErrUnsupported) {
+		t.Errorf("preview of an unsupported file should be refused: %v", err)
 	}
 }
 

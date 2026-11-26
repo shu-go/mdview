@@ -10,6 +10,9 @@
   --mdv-font-size: 16px;
   --mdv-zoom: 1;
   --mdv-line-height: 1.7;
+  /* plain text files */
+  --mdv-font-text: var(--mdv-font-code);
+  --mdv-text-font-scale: 0.9em;
 
   /* render area */
   --mdv-content-max-width: 860px;

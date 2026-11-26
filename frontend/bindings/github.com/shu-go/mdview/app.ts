@@ -184,9 +184,9 @@ export function PathKind(path: string): $CancellablePromise<string> {
 }
 
 /**
- * Preview renders a linked Markdown file for a hover popup. Unlike Render it
- * neither adds the file to the list nor watches it. Documents are not
- * trusted: network paths are refused (the path comes from a document link).
+ * Preview renders a linked Markdown or text file for a hover popup. Unlike
+ * Render it neither adds the file to the list nor watches it. Documents are
+ * not trusted: network paths are refused (the path comes from a document link).
  */
 export function Preview(path: string): $CancellablePromise<string> {
     return $Call.ByID(2978700927, path);

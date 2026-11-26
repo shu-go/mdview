@@ -87,6 +87,13 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
         { key: 'outlineMaxLevel', label: 'Outline depth', kind: 'number', step: '1' },
         { key: 'closeWindowOnLastTab', label: 'Close window with last tab', kind: 'checkbox', hint: 'Close the window when its last tab is closed.' },
         {
+          key: 'textExtensions',
+          label: 'Text file extensions',
+          kind: 'text',
+          placeholder: 'txt log',
+          hint: 'Shown as plain text, separated by spaces. Markdown is .md / .markdown; other files are not opened.',
+        },
+        {
           key: 'editorCommand',
           label: 'External editor',
           kind: 'text',

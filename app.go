@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -72,6 +74,7 @@ type RenderResult struct {
 	Changes  int                `json:"changes"`
 	Missing  bool               `json:"missing"`
 	Version  int                `json:"version"`
+	Kind     string             `json:"kind"` // "markdown" | "text"
 }
 
 // OpenResult tells the frontend what OpenPaths did.
@@ -120,6 +123,10 @@ func (a *App) ServiceStartup(ctx context.Context, _ application.ServiceOptions) 
 		return err
 	}
 	a.ws = ws
+	a.mu.Lock()
+	exts := textExtList(a.settings.TextExtensions)
+	a.mu.Unlock()
+	ws.SetTextExtensions(exts)
 	go a.watchCustomCSS(ctx)
 	return nil
 }
@@ -349,18 +356,34 @@ func (a *App) OpenLink(path string) (OpenResult, error) {
 	return a.OpenPaths([]string{path}), nil
 }
 
-var mdFilter = []application.FileFilter{
-	{DisplayName: "Markdown", Pattern: "*.md;*.markdown;*.mdown;*.mkd;*.mkdn;*.mdwn"},
-	{DisplayName: "All files", Pattern: "*.*"},
+// fileFilters lists the supported files for the open dialog.
+func fileFilters(textExts []string) []application.FileFilter {
+	pattern := func(exts []string) string {
+		ps := make([]string, len(exts))
+		for i, e := range exts {
+			ps[i] = "*" + e
+		}
+		return strings.Join(ps, ";")
+	}
+	all := append(slices.Clone(workspace.MarkdownExts), textExts...)
+	fs := []application.FileFilter{{DisplayName: "Supported files", Pattern: pattern(all)}}
+	fs = append(fs, application.FileFilter{DisplayName: "Markdown", Pattern: pattern(workspace.MarkdownExts)})
+	if len(textExts) > 0 {
+		fs = append(fs, application.FileFilter{DisplayName: "Text", Pattern: pattern(textExts)})
+	}
+	return append(fs, application.FileFilter{DisplayName: "All files", Pattern: "*.*"})
 }
 
 // OpenFileDialog lets the user choose files and opens them.
 func (a *App) OpenFileDialog(ctx context.Context) (OpenResult, error) {
+	a.mu.Lock()
+	exts := textExtList(a.settings.TextExtensions)
+	a.mu.Unlock()
 	d := a.app.Dialog.OpenFileWithOptions(&application.OpenFileDialogOptions{
-		Title:                   "Open Markdown files",
+		Title:                   "Open files",
 		CanChooseFiles:          true,
 		AllowsMultipleSelection: true,
-		Filters:                 mdFilter,
+		Filters:                 fileFilters(exts),
 	})
 	if w, ok := callerWindow(ctx).(*application.WebviewWindow); ok {
 		d.AttachToWindow(w)
@@ -397,32 +420,45 @@ func (a *App) RemoveFromList(path string) { a.ws.Remove(path) }
 
 // Render renders a document. mode is "off", "initial" or "baseline".
 func (a *App) Render(path string, mode string) (RenderResult, error) {
+	kind := a.ws.Kind(path)
+	if kind == "" {
+		return RenderResult{}, fmt.Errorf("%w: %s", workspace.ErrUnsupported, filepath.Base(path))
+	}
 	c, err := a.ws.Get(path)
 	if err != nil {
 		return RenderResult{}, err
 	}
 	path = workspace.Canonical(path)
-	var r markdown.Result
+	base := c.Current
 	switch mode {
 	case "initial":
-		r = markdown.RenderDiff(c.Initial, c.Current, path)
+		base = c.Initial
 	case "baseline":
-		r = markdown.RenderDiff(c.Baseline, c.Current, path)
-	default:
-		r = markdown.Render(c.Current, path)
+		base = c.Baseline
 	}
-	return RenderResult{Path: path, HTML: r.HTML, Headings: r.Headings, Changes: r.Changes, Missing: c.Missing, Version: c.Version}, nil
+	var r markdown.Result
+	switch kind {
+	case workspace.KindText:
+		r = markdown.RenderTextDiff(base, c.Current)
+	default:
+		r = markdown.RenderDiff(base, c.Current, path)
+	}
+	return RenderResult{Path: path, HTML: r.HTML, Headings: r.Headings, Changes: r.Changes, Missing: c.Missing, Version: c.Version, Kind: kind}, nil
 }
 
 // maxPreviewSize limits files read for a link preview.
 const maxPreviewSize = 4 << 20
 
-// Preview renders a linked Markdown file for a hover popup. Unlike Render it
-// neither adds the file to the list nor watches it. Documents are not
-// trusted: network paths are refused (the path comes from a document link).
+// Preview renders a linked Markdown or text file for a hover popup. Unlike
+// Render it neither adds the file to the list nor watches it. Documents are
+// not trusted: network paths are refused (the path comes from a document link).
 func (a *App) Preview(path string) (string, error) {
-	if path == "" || !filepath.IsAbs(path) || isUNC(path) || !workspace.IsMarkdown(path) {
+	if path == "" || !filepath.IsAbs(path) || isUNC(path) {
 		return "", errors.New("refused to preview: " + path)
+	}
+	kind := a.ws.Kind(path)
+	if kind == "" {
+		return "", fmt.Errorf("%w: %s", workspace.ErrUnsupported, filepath.Base(path))
 	}
 	path = workspace.Canonical(path)
 	src, ok := a.ws.Peek(path)
@@ -436,9 +472,12 @@ func (a *App) Preview(path string) (string, error) {
 		if !st.Mode().IsRegular() || st.Size() > maxPreviewSize {
 			return "", errors.New("not previewable: " + path)
 		}
-		if src, err = os.ReadFile(path); err != nil {
+		if src, err = workspace.ReadDoc(path); err != nil {
 			return "", err
 		}
+	}
+	if kind == workspace.KindText {
+		return markdown.RenderText(src).HTML, nil
 	}
 	return markdown.Render(src, path).HTML, nil
 }
@@ -468,11 +507,15 @@ func (a *App) GetSettings() Settings {
 func (a *App) SaveSettings(s Settings) (Settings, error) {
 	s.normalize()
 	a.mu.Lock()
+	extsChanged := a.settings.TextExtensions != s.TextExtensions
 	a.settings = s
 	path := a.settingsPath
 	a.cssStamp = time.Time{}
 	a.mu.Unlock()
 	err := saveSettings(path, s)
+	if extsChanged {
+		a.ws.SetTextExtensions(textExtList(s.TextExtensions))
+	}
 	a.app.Event.Emit(EvSettingsChanged, s)
 	a.emitCustomCSS()
 	return s, err

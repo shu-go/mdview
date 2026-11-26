@@ -26,4 +26,24 @@ func TestSettingsDefaultsAndMigration(t *testing.T) {
 	if s.CloseWindowOnLastTab {
 		t.Error("explicit false must be kept")
 	}
+	if s.TextExtensions != "txt" {
+		t.Errorf("textExtensions should default to txt: %q", s.TextExtensions)
+	}
+}
+
+func TestTextExtensions(t *testing.T) {
+	s := DefaultSettings()
+	s.TextExtensions = " .TXT, *.log;md txt  .markdown csv "
+	s.normalize()
+	if s.TextExtensions != "txt log csv" {
+		t.Errorf("normalized = %q", s.TextExtensions)
+	}
+	if got := textExtList(s.TextExtensions); len(got) != 3 || got[0] != ".txt" || got[2] != ".csv" {
+		t.Errorf("list = %v", got)
+	}
+	s.TextExtensions = ""
+	s.normalize()
+	if s.TextExtensions != "" || textExtList("") != nil {
+		t.Error("empty stays empty (no text files)")
+	}
 }

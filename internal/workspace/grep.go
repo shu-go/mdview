@@ -3,7 +3,6 @@ package workspace
 import (
 	"bytes"
 	"errors"
-	"os"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -81,7 +80,7 @@ func (ws *Workspace) Grep(q GrepQuery) (GrepResult, error) {
 		}
 		ws.mu.Unlock()
 		if content == nil {
-			b, err := os.ReadFile(item.Path)
+			b, err := ReadDoc(item.Path)
 			if err != nil {
 				continue
 			}

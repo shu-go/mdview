@@ -221,6 +221,21 @@
   font-family: var(--mdv-font-code);
 }
 
+/* plain text file: paragraphs (and chunks of long ones) as blocks of lines */
+.mdv-content p.mdv-text-block {
+  margin: 1em 0 0;
+  font-family: var(--mdv-font-text);
+  font-size: var(--mdv-text-font-scale);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 4;
+}
+
+/* a chunk continuing the same paragraph (no blank line before it) */
+.mdv-content p.mdv-text-block-cont {
+  margin-top: 0;
+}
+
 .mdv-content :not(pre) > code {
   padding: 0.2em 0.4em;
   font-size: 85%;

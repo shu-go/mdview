@@ -19,6 +19,7 @@ import { KeyState } from './keys';
 import { isDialogOpen, openHelp, openSettings } from './dialogs';
 import { showMenu, closeMenu, type MenuItem } from './menu';
 import { applySettings, setCustomCSS } from './theme';
+import { setTextExtensions } from './filetypes';
 import { installNavigationGuard } from './navguard';
 import appIconUrl from './assets/appicon.png';
 import type { DiffDetail } from './inlinediff';
@@ -286,13 +287,18 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
 
   private applySettings(s: Settings): void {
     const detailChanged = this.settings !== undefined && this.settings.diffDetail !== s.diffDetail;
+    // text extensions only change through the settings dialog, applied here
+    // from the broadcast after Go switched to them
+    const extsChanged = this.settings !== undefined && this.settings.textExtensions !== s.textExtensions;
     this.settings = s;
+    setTextExtensions(s.textExtensions);
     applySettings(s);
-    if (detailChanged) {
-      // re-render documents showing a diff; hidden tabs render when shown
+    if (detailChanged || extsChanged) {
+      // re-render documents showing a diff (or all, when the file kinds
+      // changed); hidden tabs render when shown
       const visible = new Set(this.visibleViews());
       this.views.forEach((v) => {
-        if (v.tab.diffMode === 'off' || !v.changes) return;
+        if (!extsChanged && (v.tab.diffMode === 'off' || !v.changes)) return;
         if (visible.has(v)) void v.render();
         else v.stale = true;
       });
@@ -671,7 +677,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
       h('div', { class: 'mdv-empty-actions' }, open, folder),
       h('div', {
         class: 'mdv-empty-hint',
-        text: 'Drop Markdown files or folders here, or pick one from the sidebar. Press F1 for key bindings.',
+        text: 'Drop Markdown / text files or folders here, or pick one from the sidebar. Press F1 for key bindings.',
       }),
     );
   }

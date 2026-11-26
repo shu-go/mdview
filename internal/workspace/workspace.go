@@ -6,6 +6,7 @@ package workspace
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -15,16 +16,65 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+
+	"github.com/shu-go/mdview/internal/textenc"
 )
 
 // Debounce is the delay between a file system event and its handling.
 var Debounce = 120 * time.Millisecond
 
-var mdExts = map[string]bool{".md": true, ".markdown": true, ".mdown": true, ".mkd": true, ".mkdn": true, ".mdwn": true}
+// File kinds (how a document is rendered), decided by the file extension.
+const (
+	KindMarkdown = "markdown"
+	KindText     = "text"
+)
 
-// IsMarkdown reports whether path has a Markdown file extension.
-func IsMarkdown(path string) bool {
-	return mdExts[strings.ToLower(filepath.Ext(path))]
+// MarkdownExts are the Markdown file extensions.
+var MarkdownExts = []string{".md", ".markdown"}
+
+// MaxFileSize limits the size of a document.
+const MaxFileSize = 32 << 20
+
+// Kinds maps lower-case file extensions (with the dot) to file kinds.
+type Kinds map[string]string
+
+// NewKinds returns the Markdown extensions plus textExts (".txt", ...).
+func NewKinds(textExts []string) Kinds {
+	k := Kinds{}
+	for _, e := range textExts {
+		k[strings.ToLower(e)] = KindText
+	}
+	for _, e := range MarkdownExts {
+		k[e] = KindMarkdown
+	}
+	return k
+}
+
+// Of returns the kind of path, "" when the extension is not supported.
+func (k Kinds) Of(path string) string {
+	return k[strings.ToLower(filepath.Ext(path))]
+}
+
+// ErrUnsupported is returned for files whose extension is not supported.
+var ErrUnsupported = errors.New("unsupported file type")
+
+// ReadDoc reads a document as UTF-8 text (size limit, binary check, encoding detection).
+func ReadDoc(path string) ([]byte, error) {
+	st, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+	if st.Size() > MaxFileSize {
+		return nil, fmt.Errorf("file too large (over %d MB): %s", MaxFileSize>>20, path)
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	if textenc.IsBinary(b) {
+		return nil, errors.New("not a text file: " + path)
+	}
+	return textenc.Decode(b), nil
 }
 
 // skipDir reports whether a directory is skipped while scanning folders.
@@ -78,6 +128,33 @@ type Workspace struct {
 	onList      func()
 	closed      bool
 	watchErrors int
+	kinds       Kinds
+}
+
+// SetTextExtensions sets the extensions (".txt", ...) shown as plain text and
+// rescans the folders.
+func (ws *Workspace) SetTextExtensions(exts []string) {
+	ws.mu.Lock()
+	ws.kinds = NewKinds(exts)
+	roots := make([]string, 0, len(ws.folders))
+	for f := range ws.folders {
+		roots = append(roots, f)
+	}
+	ws.mu.Unlock()
+	for _, r := range roots {
+		ws.rescan(r)
+	}
+}
+
+// Kind returns the kind of path ("" when not supported).
+func (ws *Workspace) Kind(path string) string {
+	return ws.currentKinds().Of(path)
+}
+
+func (ws *Workspace) currentKinds() Kinds {
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
+	return ws.kinds
 }
 
 // New creates a workspace. onDocChanged is called (from a background
@@ -97,6 +174,7 @@ func New(onDocChanged func(path string), onListChanged func()) (*Workspace, erro
 		timers:  map[string]*time.Timer{},
 		onDoc:   onDocChanged,
 		onList:  onListChanged,
+		kinds:   NewKinds(nil),
 	}
 	if ws.onDoc == nil {
 		ws.onDoc = func(string) {}
@@ -137,6 +215,9 @@ func (ws *Workspace) OpenFile(path string) (string, error) {
 	if st.IsDir() {
 		return "", errors.New("is a directory: " + path)
 	}
+	if ws.Kind(path) == "" {
+		return "", fmt.Errorf("%w: %s", ErrUnsupported, filepath.Base(path))
+	}
 	ws.mu.Lock()
 	_, err = ws.loadLocked(path)
 	added := !ws.files[path]
@@ -163,7 +244,7 @@ func (ws *Workspace) OpenFolder(path string) (string, []string, error) {
 	if !st.IsDir() {
 		return "", nil, errors.New("not a directory: " + path)
 	}
-	found := scanFolder(path)
+	found := scanFolder(path, ws.currentKinds())
 	ws.mu.Lock()
 	ws.folders[path] = found
 	ws.refreshWatchesLocked()
@@ -276,7 +357,7 @@ func (ws *Workspace) loadLocked(path string) (*doc, error) {
 	if d, ok := ws.docs[path]; ok {
 		return d, nil
 	}
-	b, err := os.ReadFile(path)
+	b, err := ReadDoc(path)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +366,7 @@ func (ws *Workspace) loadLocked(path string) (*doc, error) {
 	return d, nil
 }
 
-func scanFolder(root string) map[string]bool {
+func scanFolder(root string, kinds Kinds) map[string]bool {
 	found := map[string]bool{}
 	_ = filepath.WalkDir(root, func(p string, e fs.DirEntry, err error) error {
 		if err != nil {
@@ -300,7 +381,7 @@ func scanFolder(root string) map[string]bool {
 			}
 			return nil
 		}
-		if IsMarkdown(p) {
+		if kinds.Of(p) != "" {
 			found[p] = true
 		}
 		return nil
@@ -398,6 +479,7 @@ func (ws *Workspace) handle(ev fsnotify.Event) {
 	path := filepath.Clean(ev.Name)
 	ws.mu.Lock()
 	_, isDoc := ws.docs[path]
+	listed := ws.kinds.Of(path) != ""
 	var roots []string
 	for f := range ws.folders {
 		if path == f || strings.HasPrefix(path, f+string(filepath.Separator)) {
@@ -408,7 +490,7 @@ func (ws *Workspace) handle(ev fsnotify.Event) {
 
 	if isDoc {
 		ws.schedule("doc:"+path, func() { ws.reload(path) })
-	} else if len(roots) > 0 && IsMarkdown(path) && (ev.Has(fsnotify.Write) || ev.Has(fsnotify.Create)) {
+	} else if len(roots) > 0 && listed && (ev.Has(fsnotify.Write) || ev.Has(fsnotify.Create)) {
 		// not loaded, but listed: content consumers (grep) need to know
 		ws.schedule("doc:"+path, func() { ws.onDoc(path) })
 	}
@@ -422,7 +504,7 @@ func (ws *Workspace) handle(ev fsnotify.Event) {
 }
 
 func (ws *Workspace) reload(path string) {
-	b, err := os.ReadFile(path)
+	b, err := ReadDoc(path)
 	ws.mu.Lock()
 	d, ok := ws.docs[path]
 	if !ok {
@@ -461,7 +543,7 @@ func (ws *Workspace) reload(path string) {
 }
 
 func (ws *Workspace) rescan(root string) {
-	found := scanFolder(root)
+	found := scanFolder(root, ws.currentKinds())
 	ws.mu.Lock()
 	old, ok := ws.folders[root]
 	if !ok {

@@ -63,6 +63,11 @@ export interface RenderResult {
     "changes": number;
     "missing": boolean;
     "version": number;
+
+    /**
+     * "markdown" | "text"
+     */
+    "kind": string;
 }
 
 /**
@@ -137,6 +142,12 @@ export interface Settings {
      * CloseWindowOnLastTab closes a window when its last tab is closed.
      */
     "closeWindowOnLastTab": boolean;
+
+    /**
+     * TextExtensions are the extensions of files shown as plain text,
+     * separated by spaces or commas, e.g. "txt log". Markdown is .md / .markdown.
+     */
+    "textExtensions": string;
 }
 
 /**

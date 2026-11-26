@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"sync"
@@ -148,6 +149,61 @@ func TestSnapshotSorted(t *testing.T) {
 	}
 	if want := "X.md y.md z.md"; join(names) != want {
 		t.Errorf("order = %v", names)
+	}
+}
+
+func TestKindsAndText(t *testing.T) {
+	dir := t.TempDir()
+	write(t, filepath.Join(dir, "a.md"), "")
+	write(t, filepath.Join(dir, "b.markdown"), "")
+	write(t, filepath.Join(dir, "c.mdown"), "")
+	write(t, filepath.Join(dir, "d.TXT"), "\x93\xfa\x96\x7b\x8c\xea") // 日本語 in Shift_JIS
+	write(t, filepath.Join(dir, "e.log"), "")
+	write(t, filepath.Join(dir, "f.txt"), "bin\x00ary")
+	ws, _ := New(nil, nil)
+	defer ws.Close()
+
+	if _, err := ws.OpenFile(filepath.Join(dir, "d.TXT")); !errors.Is(err, ErrUnsupported) {
+		t.Errorf("text files are unsupported until enabled: %v", err)
+	}
+	ws.SetTextExtensions([]string{".txt"})
+	if _, err := ws.OpenFile(filepath.Join(dir, "c.mdown")); !errors.Is(err, ErrUnsupported) {
+		t.Errorf(".mdown should be unsupported: %v", err)
+	}
+	if _, err := ws.OpenFile(filepath.Join(dir, "f.txt")); err == nil {
+		t.Error("binary file should be refused")
+	}
+	p, err := ws.OpenFile(filepath.Join(dir, "d.TXT"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c, _ := ws.Get(p); string(c.Current) != "日本語" {
+		t.Errorf("Shift_JIS not decoded: %q", c.Current)
+	}
+	if ws.Kind(p) != KindText || ws.Kind("x.Markdown") != KindMarkdown || ws.Kind("x.log") != "" {
+		t.Error("Kind")
+	}
+
+	_, files, err := ws.OpenFolder(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, f := range files {
+		names = append(names, filepath.Base(f))
+	}
+	if want := "a.md b.markdown d.TXT f.txt"; join(names) != want {
+		t.Errorf("folder files = %v", names)
+	}
+	ws.SetTextExtensions([]string{".log"})
+	names = nil
+	for _, f := range ws.Snapshot().Files {
+		if f.Root != "" {
+			names = append(names, f.Name)
+		}
+	}
+	if want := "a.md b.markdown e.log"; join(names) != want {
+		t.Errorf("after changing the text extensions = %v", names)
 	}
 }
 
