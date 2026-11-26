@@ -1151,13 +1151,49 @@ button {
   border-top: 1px solid var(--mdv-color-border);
 }
 
-.mdv-dialog-section {
-  margin: 14px 0 6px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+/* settings: one tab per section */
+.mdv-dialog-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--mdv-color-border);
+}
+
+.mdv-dialog-tab {
+  margin-bottom: -1px; /* the active tab's underline covers the border */
+  padding: 8px 14px 7px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
   color: var(--mdv-color-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.mdv-dialog-tab:hover {
+  color: var(--mdv-color-fg);
+  background: var(--mdv-color-hover);
+}
+
+.mdv-dialog-tab.is-active {
+  color: var(--mdv-color-fg);
+  border-bottom-color: var(--mdv-color-accent);
+  font-weight: 600;
+}
+
+.mdv-dialog-panels {
+  display: grid;
+  padding-top: 6px;
+}
+
+.mdv-dialog-panel {
+  grid-area: 1 / 1;
+}
+
+/* hidden tabs keep their space (stable dialog size) and are not focusable */
+.mdv-dialog-panel.is-hidden {
+  visibility: hidden;
 }
 
 .mdv-dialog-field {

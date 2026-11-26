@@ -17,11 +17,12 @@ interface Field {
   extra?: { label: string; run: () => void };
 }
 
-function dialog(title: string, body: HTMLElement, footer: HTMLElement[]): { root: HTMLElement; close: () => void } {
+function dialog(title: string, body: HTMLElement, footer: HTMLElement[], header?: HTMLElement): { root: HTMLElement; close: () => void } {
   const box = h(
     'div',
     { class: 'mdv-dialog-box', role: 'dialog' },
     h('h2', { class: 'mdv-dialog-title', text: title }),
+    ...(header ? [header] : []),
     body,
     h('div', { class: 'mdv-dialog-footer' }, ...footer),
   );
@@ -44,6 +45,9 @@ function dialog(title: string, body: HTMLElement, footer: HTMLElement[]): { root
   document.body.append(root);
   return { root, close };
 }
+
+/** The settings tab shown last (kept while the app runs). */
+let settingsTab = 0;
 
 export function isDialogOpen(): boolean {
   return document.querySelector('.mdv-dialog') !== null;
@@ -99,10 +103,40 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
     ],
   ];
 
-  const body = h('div', { class: 'mdv-dialog-body' });
+  // one tab per section; the panels share one grid cell, so the dialog keeps
+  // the size of the largest one when switching
+  const tabs = h('div', { class: 'mdv-dialog-tabs', role: 'tablist' });
+  const panels = h('div', { class: 'mdv-dialog-panels' });
+  const body = h('div', { class: 'mdv-dialog-body' }, panels);
+  const tabButtons: HTMLButtonElement[] = [];
+  const panelEls: HTMLElement[] = [];
+  const selectTab = (i: number, focus = false) => {
+    settingsTab = i;
+    tabButtons.forEach((b, j) => {
+      b.classList.toggle('is-active', i === j);
+      b.setAttribute('aria-selected', String(i === j));
+      b.tabIndex = i === j ? 0 : -1;
+    });
+    panelEls.forEach((p, j) => p.classList.toggle('is-hidden', i !== j));
+    if (focus) tabButtons[i].focus();
+  };
   const inputs = new Map<keyof Settings, HTMLInputElement | HTMLSelectElement>();
   for (const [title, fields] of sections) {
-    body.append(h('div', { class: 'mdv-dialog-section', text: title }));
+    const index = tabButtons.length;
+    const tab = h('button', { class: 'mdv-dialog-tab', type: 'button', role: 'tab', text: title });
+    tab.addEventListener('click', () => selectTab(index));
+    tab.addEventListener('keydown', (e) => {
+      // arrow keys move between tabs (WAI-ARIA tabs pattern)
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      const n = sections.length;
+      selectTab((index + (e.key === 'ArrowRight' ? 1 : n - 1)) % n, true);
+    });
+    tabs.append(tab);
+    tabButtons.push(tab);
+    const panel = h('div', { class: 'mdv-dialog-panel', role: 'tabpanel' });
+    panels.append(panel);
+    panelEls.push(panel);
     for (const f of fields) {
       let input: HTMLInputElement | HTMLSelectElement;
       if (f.kind === 'select') {
@@ -134,16 +168,18 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
       }
       const field = h('label', { class: 'mdv-dialog-field' }, h('span', { class: 'mdv-dialog-field-label', text: f.label }), control);
       if (f.hint) field.append(h('span', { class: 'mdv-dialog-field-hint', text: f.hint }));
-      body.append(field);
+      panel.append(field);
     }
   }
+  const startTab = settingsTab < sections.length ? settingsTab : 0;
+  selectTab(startTab);
   const pathNote = h('div', { class: 'mdv-dialog-field-hint' });
   void api.SettingsPath().then((p) => (pathNote.textContent = `Saved to: ${p}`));
   body.append(pathNote);
 
   const cancel = h('button', { class: 'mdv-button', type: 'button', text: 'Cancel' });
   const save = h('button', { class: 'mdv-button mdv-button-primary', type: 'button', text: 'Save' });
-  const d = dialog('Settings', body, [cancel, save]);
+  const d = dialog('Settings', body, [cancel, save], tabs);
   cancel.addEventListener('click', d.close);
   save.addEventListener('click', async () => {
     const out = { ...s } as Record<string, unknown>;
@@ -159,7 +195,8 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
       status(`Cannot save settings: ${errMessage(e)}`, true);
     }
   });
-  (inputs.get('theme') as HTMLElement).focus();
+  // the first field of the open tab
+  (panelEls[startTab].querySelector('input, select') as HTMLElement | null)?.focus();
 }
 
 export function openHelp(): void {
