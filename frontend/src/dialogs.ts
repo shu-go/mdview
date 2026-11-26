@@ -90,6 +90,12 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
         },
         { key: 'outlineMaxLevel', label: 'Outline depth', kind: 'number', step: '1' },
         { key: 'wrapText', label: 'Wrap text files', kind: 'checkbox', hint: 'Wrap long lines of text files; off = scroll horizontally. Alt+Z' },
+        {
+          key: 'openInNewWindow',
+          label: 'Open files in a new window',
+          kind: 'checkbox',
+          hint: 'Files opened by drag & drop, the open dialog, recent files, the command line or a link get a new window. The sidebar and Ctrl+click on a link open in this window.',
+        },
         { key: 'closeWindowOnLastTab', label: 'Close window with last tab', kind: 'checkbox', hint: 'Close the window when its last tab is closed.' },
         {
           key: 'editorCommand',

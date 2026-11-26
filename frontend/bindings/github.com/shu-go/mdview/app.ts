@@ -130,6 +130,13 @@ export function OpenInEditor(path: string, line: number): $CancellablePromise<vo
 }
 
 /**
+ * OpenInNewWindow opens files in a new window (setting openInNewWindow).
+ */
+export function OpenInNewWindow(paths: string[] | null): $CancellablePromise<void> {
+    return $Call.ByID(3238681792, paths);
+}
+
+/**
  * OpenLink opens a file linked from a document. Documents are not
  * trusted: network paths are refused so that a link cannot make Windows
  * connect to a remote host (NTLM credential leak). Paths the user passes

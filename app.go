@@ -689,6 +689,13 @@ func (a *App) SetTitle(ctx context.Context, title string) {
 // OpenNewWindow opens an empty window.
 func (a *App) OpenNewWindow() { a.newWindow(nil, nil, nil) }
 
+// OpenInNewWindow opens files in a new window (setting openInNewWindow).
+func (a *App) OpenInNewWindow(paths []string) {
+	if len(paths) > 0 {
+		a.newWindow(paths, nil, nil)
+	}
+}
+
 // DetachTab moves a tab dragged out of the calling window to the window under
 // the screen point (x, y in DIP), or to a new window there. It returns the
 // target window ID.

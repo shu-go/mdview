@@ -145,6 +145,12 @@ export interface Settings {
     "diffDetail": string;
 
     /**
+     * OpenInNewWindow opens files in a new window (command line, drops, the
+     * open dialog, recent files, document links); the sidebar opens tabs.
+     */
+    "openInNewWindow": boolean;
+
+    /**
      * CloseWindowOnLastTab closes a window when its last tab is closed.
      */
     "closeWindowOnLastTab": boolean;

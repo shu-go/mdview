@@ -25,6 +25,9 @@ type Settings struct {
 	// DiffDetail is how changes inside a changed block are shown:
 	// "word" | "char" (inline marks) or "block" (old and new block side by side).
 	DiffDetail string `json:"diffDetail"`
+	// OpenInNewWindow opens files in a new window (command line, drops, the
+	// open dialog, recent files, document links); the sidebar opens tabs.
+	OpenInNewWindow bool `json:"openInNewWindow"`
 	// CloseWindowOnLastTab closes a window when its last tab is closed.
 	CloseWindowOnLastTab bool `json:"closeWindowOnLastTab"`
 	// WrapText wraps long lines of text files at the right edge; false keeps

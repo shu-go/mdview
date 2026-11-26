@@ -18,6 +18,9 @@ func TestSettingsDefaultsAndMigration(t *testing.T) {
 	if !s.WrapText {
 		t.Error("wrapText should default to true")
 	}
+	if s.OpenInNewWindow {
+		t.Error("openInNewWindow should default to false")
+	}
 	if s.DiffDetail != "word" {
 		t.Errorf("diffDetail = %q, want word", s.DiffDetail)
 	}

@@ -507,9 +507,34 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     this.showOpened(res);
   }
 
+  /**
+   * Opens files from outside the sidebar (command line, drops, the open
+   * dialog, recent files, document links): as tabs here, or with the setting
+   * "Open files in a new window" in one new window. Files already open in
+   * this window are shown there, and an empty window takes the files itself.
+   */
+  private openFiles(files: string[], anchor = ''): void {
+    const tabs = this.layout.tabs().map((x) => x.tab);
+    if (!this.settings.openInNewWindow || tabs.length === 0) {
+      for (const f of files) this.openFile(f, 'tab', anchor);
+      return;
+    }
+    const fresh: string[] = [];
+    for (const f of files) {
+      const t = tabs.find((x) => x.path === f);
+      if (!t) {
+        fresh.push(f);
+        continue;
+      }
+      this.activateTab(t.id);
+      if (anchor) void this.view(t).ready().then(() => this.view(t).scrollToAnchor(anchor));
+    }
+    if (fresh.length) void api.OpenInNewWindow(fresh).catch((e) => this.statusMsg(errMessage(e), true));
+  }
+
   /** Shows what OpenPaths opened: files as tabs, folders in the sidebar, errors. */
   private showOpened(res: OpenResult): void {
-    for (const f of res.files ?? []) this.openFile(f, 'tab');
+    this.openFiles(res.files ?? []);
     if (res.folders?.length) {
       this.sidebar.show('files');
       if (!this.settings.sidebarVisible) void this.saveSettings({ sidebarVisible: true });
@@ -570,7 +595,9 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
         return;
       }
       const f = res.files?.[0] ?? path;
-      this.openFile(f, split ? 'right' : 'tab', anchor);
+      // Ctrl+click / middle click: explicitly to the right in this window
+      if (split) this.openFile(f, 'right', anchor);
+      else this.openFiles([f], anchor);
     })();
   }
 
@@ -1069,7 +1096,7 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
   }
 
   private handleOpenResult(r: { files: string[] | null; folders: string[] | null; errors: string[] | null }): void {
-    for (const f of r.files ?? []) this.openFile(f, 'tab');
+    this.openFiles(r.files ?? []);
     if (r.folders?.length) {
       this.sidebar.show('files');
       if (!this.settings.sidebarVisible) void this.saveSettings({ sidebarVisible: true });
