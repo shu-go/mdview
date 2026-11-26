@@ -19,6 +19,7 @@
   --mdv-color-quote: #a06d80;
   --mdv-color-table-stripe: #fdf0f4;
   --mdv-color-task-done: #e0608f;
+  --mdv-color-line-number: #cf98ac;
   --mdv-callout-note: #c75b8a;
 
   --pele-fg: #4a2a36;
@@ -41,6 +42,7 @@
   --mdv-color-code-bg: #34232b;
   --mdv-color-table-stripe: #31212a;
   --mdv-color-task-done: #f08cb3;
+  --mdv-color-line-number: #946d7d;
 }
 
 .mdv-content h1,
