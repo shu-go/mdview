@@ -151,9 +151,16 @@ export interface Settings {
     "openInNewWindow": boolean;
 
     /**
-     * CloseWindowOnLastTab closes a window when its last tab is closed.
+     * LastTabAction is what happens to a window when its last tab is closed:
+     * "close" | "minimize" | "keep".
      */
-    "closeWindowOnLastTab": boolean;
+    "lastTabAction": string;
+
+    /**
+     * LegacyCloseWindowOnLastTab is read from settings files written before
+     * lastTabAction existed and converted by normalize; it is never written.
+     */
+    "closeWindowOnLastTab"?: boolean | null;
 
     /**
      * WrapText wraps long lines of text files at the right edge; false keeps

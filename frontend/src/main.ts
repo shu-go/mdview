@@ -475,23 +475,28 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
   closeTab(tabId: string): void {
     this.layout.removeTab(tabId);
     this.views.delete(tabId);
-    if (this.layout.tabs().length === 0 && this.settings.closeWindowOnLastTab) {
+    const last = this.layout.tabs().length === 0;
+    if (last && this.settings.lastTabAction === 'close') {
       void WailsWindow.Close();
       return;
     }
     this.renderAll();
     this.focusDoc();
+    if (last && this.settings.lastTabAction === 'minimize') void WailsWindow.Minimise();
   }
 
   /** A tab of this window was taken by another window. */
   private tabLeft(tabId: string): void {
     if (!this.layout.findTab(tabId)) return;
-    this.closeTab(tabId);
-    this.closeIfEmpty();
-  }
-
-  private closeIfEmpty(): void {
-    if (this.layout.tabs().length === 0) void WailsWindow.Close();
+    // an emptied window goes away whatever lastTabAction says (the tab lives on elsewhere)
+    this.layout.removeTab(tabId);
+    this.views.delete(tabId);
+    if (this.layout.tabs().length === 0) {
+      void WailsWindow.Close();
+      return;
+    }
+    this.renderAll();
+    this.focusDoc();
   }
 
   // ---------- opening ----------

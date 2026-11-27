@@ -28,8 +28,12 @@ type Settings struct {
 	// OpenInNewWindow opens files in a new window (command line, drops, the
 	// open dialog, recent files, document links); the sidebar opens tabs.
 	OpenInNewWindow bool `json:"openInNewWindow"`
-	// CloseWindowOnLastTab closes a window when its last tab is closed.
-	CloseWindowOnLastTab bool `json:"closeWindowOnLastTab"`
+	// LastTabAction is what happens to a window when its last tab is closed:
+	// "close" | "minimize" | "keep".
+	LastTabAction string `json:"lastTabAction"`
+	// LegacyCloseWindowOnLastTab is read from settings files written before
+	// lastTabAction existed and converted by normalize; it is never written.
+	LegacyCloseWindowOnLastTab *bool `json:"closeWindowOnLastTab,omitempty"`
 	// WrapText wraps long lines of text files at the right edge; false keeps
 	// lines as they are with horizontal scrolling.
 	WrapText bool `json:"wrapText"`
@@ -49,9 +53,9 @@ func DefaultSettings() Settings {
 		SidebarTab:      "files",
 		OutlineMaxLevel: 6,
 
-		DiffDetail:           "word",
-		CloseWindowOnLastTab: true,
-		WrapText:             true,
+		DiffDetail:    "word",
+		LastTabAction: "close",
+		WrapText:      true,
 	}
 }
 
@@ -71,6 +75,18 @@ func (s *Settings) normalize() {
 	case "word", "char", "block":
 	default:
 		s.DiffDetail = d.DiffDetail
+	}
+	if s.LegacyCloseWindowOnLastTab != nil {
+		// only old files carry it; they have no lastTabAction, which keeps the default
+		if !*s.LegacyCloseWindowOnLastTab && s.LastTabAction == d.LastTabAction {
+			s.LastTabAction = "keep"
+		}
+		s.LegacyCloseWindowOnLastTab = nil
+	}
+	switch s.LastTabAction {
+	case "close", "minimize", "keep":
+	default:
+		s.LastTabAction = d.LastTabAction
 	}
 	switch s.SidebarTab {
 	case "files", "outline", "search":

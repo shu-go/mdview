@@ -96,7 +96,13 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
           kind: 'checkbox',
           hint: 'Files opened by drag & drop, the open dialog, recent files, the command line or a link get a new window. The sidebar and Ctrl+click on a link open in this window.',
         },
-        { key: 'closeWindowOnLastTab', label: 'Close window with last tab', kind: 'checkbox', hint: 'Close the window when its last tab is closed.' },
+        {
+          key: 'lastTabAction',
+          label: 'After the last tab',
+          kind: 'select',
+          options: [['close', 'Close the window'], ['minimize', 'Minimize the window'], ['keep', 'Keep the window open']],
+          hint: 'What happens to the window when its last tab is closed.',
+        },
         {
           key: 'editorCommand',
           label: 'External editor',
