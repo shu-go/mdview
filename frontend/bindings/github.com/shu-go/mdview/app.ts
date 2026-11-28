@@ -261,3 +261,10 @@ export function SetTitle(title: string): $CancellablePromise<void> {
 export function SettingsPath(): $CancellablePromise<string> {
     return $Call.ByID(2551235351);
 }
+
+/**
+ * WindowCount returns the number of open document windows.
+ */
+export function WindowCount(): $CancellablePromise<number> {
+    return $Call.ByID(652709092);
+}

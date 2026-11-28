@@ -50,7 +50,7 @@ UI は WebView2 の CDP（`MDVIEW_REMOTE_DEBUG_PORT`）と実マウス/キー操
 | A08 | サイドバー各タブにアイコン | ✅ | |
 | A09 | `Ctrl`+ホイールでズーム | ✅ | |
 | A10 | `Ctrl+Q` で終了 | ✅ | |
-| A11 | 最後のタブを閉じたらウィンドウを閉じる／最小化する／そのまま残す（設定で選択、既定は閉じる） | ✅ | 設定 > Behaviour「After the last tab」。旧 closeWindowOnLastTab は読み込み時に移行。タブを別ウィンドウへ移して空になった場合は常に閉じる |
+| A11 | 最後のタブを閉じたらウィンドウを閉じる／最小化する／そのまま残す（設定で選択、既定は閉じる） | ✅ | 設定 > Behaviour「After the last tab」。最小化は最後のウィンドウのときだけで、他にウィンドウがあれば閉じる。旧 closeWindowOnLastTab は読み込み時に移行。タブを別ウィンドウへ移して空になった場合は常に閉じる |
 | A12 | icon.png をアプリアイコンに | ✅ | `build/appicon.png` から .ico / .icns 生成、Linux はウィンドウアイコンに埋め込み |
 | A13 | GitHub Actions でリリース（コミットタイトル一覧付き） | ⚠️ | `v*` タグの push で 4 プラットフォームをビルドしリリース。GitHub 上での実行は未確認 |
 | A14 | `Ctrl+1`〜`Ctrl+8` でその位置のタブ、`Ctrl+9` で末尾のタブ | ✅ | アクティブなペイン内のタブが対象 |

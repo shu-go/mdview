@@ -101,7 +101,7 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
           label: 'After the last tab',
           kind: 'select',
           options: [['close', 'Close the window'], ['minimize', 'Minimize the window'], ['keep', 'Keep the window open']],
-          hint: 'What happens to the window when its last tab is closed.',
+          hint: 'What happens to the window when its last tab is closed. Minimize applies to the last window only; other windows close.',
         },
         {
           key: 'editorCommand',

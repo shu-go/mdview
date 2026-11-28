@@ -482,7 +482,14 @@ class Controller implements WorkbenchHost, DocHost, SidebarHost {
     }
     this.renderAll();
     this.focusDoc();
-    if (last && this.settings.lastTabAction === 'minimize') void WailsWindow.Minimise();
+    if (last && this.settings.lastTabAction === 'minimize') void this.minimiseOrClose();
+  }
+
+  /** lastTabAction "minimize": only the last window stays (minimised); others close. */
+  private async minimiseOrClose(): Promise<void> {
+    const n = await api.WindowCount().catch(() => 1);
+    if (n > 1) void WailsWindow.Close();
+    else void WailsWindow.Minimise();
   }
 
   /** A tab of this window was taken by another window. */

@@ -689,6 +689,9 @@ func (a *App) SetTitle(ctx context.Context, title string) {
 // OpenNewWindow opens an empty window.
 func (a *App) OpenNewWindow() { a.newWindow(nil, nil, nil) }
 
+// WindowCount returns the number of open document windows.
+func (a *App) WindowCount() int { return len(a.windowsExcept(0)) }
+
 // OpenInNewWindow opens files in a new window (setting openInNewWindow).
 func (a *App) OpenInNewWindow(paths []string) {
 	if len(paths) > 0 {
