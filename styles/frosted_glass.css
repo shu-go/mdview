@@ -1,0 +1,340 @@
+/* ==========================================================================
+   frosted_glass.css — 控えめなすりガラスの質感・光沢
+   --------------------------------------------------------------------------
+   設定 > Appearance > Custom CSS にこのファイルを指定して使う。
+   ライト / ダークの両テーマに対応。
+
+   しくみ:
+     - ウィンドウ全体（body）に淡いグラデーションを敷き、その上に
+       ツールバー・サイドバー・タブバー・本文などを半透明の「ガラス板」と
+       して重ねている。
+     - ガラスらしさは 3 つの要素で出している。強い反射やグローは使わない。
+         1. 上端の細いハイライト線（光が縁に当たっている感じ）
+         2. 上から下へ薄れていく光沢（--glass-sheen）
+         3. ごく弱いすりガラスの粒子（--glass-grain）
+     - ぼかし（backdrop-filter）は、文書の上に重なるもの（検索バー、
+       メニュー、ダイアログ、ポップアップ）だけに使う。背景が静的な
+       グラデーションの部分はぼかしても見た目が変わらないため。
+
+   調整:
+     光沢の強さは --glass-sheen、本文の透け具合は --glass-sheet、
+     背景の色味は --glass-backdrop、検索バーと右クリックメニューの
+     透け具合は --glass-float-thin と --glass-blur-thin、設定ダイアログは
+     --glass-float-dense と --glass-blur-dense を変える。粒子の濃さは --glass-grain の
+     SVG 内の行列の最後の数値（0.05）。
+   ========================================================================== */
+
+/* ---------- glass parameters ---------- */
+:root,
+[data-theme="light"] {
+  --glass-backdrop:
+    radial-gradient(ellipse 70% 60% at 12% 8%, rgba(160, 196, 245, 0.85), transparent 70%),
+    radial-gradient(ellipse 60% 55% at 92% 18%, rgba(208, 190, 245, 0.70), transparent 70%),
+    radial-gradient(ellipse 80% 60% at 70% 100%, rgba(176, 228, 220, 0.70), transparent 70%),
+    linear-gradient(160deg, #e9f0fa, #e1e8f4);
+
+  /* panels (toolbar, sidebar, tab bar, status bar) */
+  --glass-tint: rgba(255, 255, 255, 0.32);
+  /* the document sheet: denser, so text reads as on paper */
+  --glass-sheet: rgba(255, 255, 255, 0.64);
+  /* floating things (menus, dialogs, search bar, popups) */
+  --glass-float: rgba(250, 252, 255, 0.70);
+  /* the search bar and context menus: thinner, the document shows through a little */
+  --glass-float-thin: rgba(250, 252, 255, 0.52);
+  /* the settings dialog: denser, so its text reads easily */
+  --glass-float-dense: rgba(250, 252, 255, 0.82);
+  /* cards inside the document (code, callouts, front matter) */
+  --glass-card: rgba(244, 248, 253, 0.65);
+
+  --glass-edge: rgba(255, 255, 255, 0.75);
+  --glass-line: rgba(110, 135, 170, 0.22);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.50), rgba(255, 255, 255, 0.10) 40%, rgba(255, 255, 255, 0) 100%);
+  --glass-shadow: 0 10px 32px rgba(40, 60, 95, 0.16), 0 1px 3px rgba(40, 60, 95, 0.08);
+  --glass-blur: blur(18px) saturate(160%);
+  --glass-blur-thin: blur(6px) saturate(140%);
+  --glass-blur-dense: blur(32px) saturate(160%);
+
+  --mdv-color-border: var(--glass-line);
+  --mdv-color-accent: #2f6fd0;
+  --mdv-color-link: #2a66c4;
+  --mdv-color-chrome-bg: rgba(255, 255, 255, 0.55);
+  --mdv-color-hover: rgba(255, 255, 255, 0.55);
+  --mdv-color-selected: rgba(47, 111, 208, 0.13);
+  --mdv-color-code-bg: var(--glass-card);
+  --mdv-color-inline-code-bg: rgba(110, 135, 170, 0.14);
+  --mdv-color-table-stripe: rgba(110, 135, 170, 0.06);
+
+  --pele-surface: rgba(255, 255, 255, 0.65);
+  --pele-surface-alt: rgba(230, 238, 248, 0.70);
+}
+
+[data-theme="dark"] {
+  --glass-backdrop:
+    radial-gradient(ellipse 70% 60% at 12% 8%, rgba(56, 96, 165, 0.55), transparent 70%),
+    radial-gradient(ellipse 60% 55% at 92% 18%, rgba(96, 72, 160, 0.42), transparent 70%),
+    radial-gradient(ellipse 80% 60% at 70% 100%, rgba(36, 118, 118, 0.38), transparent 70%),
+    linear-gradient(160deg, #0f141d, #0b1018);
+
+  --glass-tint: rgba(36, 44, 60, 0.34);
+  --glass-sheet: rgba(14, 19, 28, 0.58);
+  --glass-float: rgba(30, 37, 51, 0.72);
+  --glass-float-thin: rgba(30, 37, 51, 0.55);
+  --glass-float-dense: rgba(30, 37, 51, 0.84);
+  --glass-card: rgba(255, 255, 255, 0.04);
+
+  --glass-edge: rgba(255, 255, 255, 0.10);
+  --glass-line: rgba(160, 185, 225, 0.14);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015) 40%, rgba(255, 255, 255, 0) 100%);
+  --glass-shadow: 0 12px 36px rgba(0, 0, 0, 0.50), 0 1px 3px rgba(0, 0, 0, 0.30);
+
+  --mdv-color-accent: #6ea8fe;
+  --mdv-color-link: #7cb2ff;
+  --mdv-color-chrome-bg: rgba(255, 255, 255, 0.05);
+  --mdv-color-hover: rgba(255, 255, 255, 0.07);
+  --mdv-color-selected: rgba(110, 168, 254, 0.18);
+  --mdv-color-inline-code-bg: rgba(160, 185, 225, 0.14);
+  --mdv-color-table-stripe: rgba(255, 255, 255, 0.025);
+
+  --pele-surface: rgba(255, 255, 255, 0.06);
+  --pele-surface-alt: rgba(255, 255, 255, 0.10);
+}
+
+:root {
+  --mdv-radius: 8px;
+  /* frosted grain: an SVG noise tile (data: URL, allowed by the CSP).
+     grey noise at a constant alpha; the strength is the last number of the
+     matrix (0.05) */
+  --glass-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 0.05'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- the backdrop behind every glass sheet ----------
+   the grain sits on the backdrop, so it shows through the panels (frosted)
+   and hardly at all through the denser document sheet */
+html,
+body {
+  background: var(--glass-grain), var(--glass-backdrop);
+  background-attachment: fixed;
+}
+
+/* ---------- panels: toolbar, sidebar, tab bar, status bar ---------- */
+.mdv-toolbar,
+.mdv-sidebar,
+.mdv-pane-header,
+.mdv-statusbar {
+  background: var(--glass-sheen), var(--glass-tint);
+  box-shadow: var(--glass-highlight);
+  border-color: var(--glass-line);
+}
+
+.mdv-sidebar {
+  /* the right edge catches a little light too */
+  box-shadow: var(--glass-highlight), inset -1px 0 0 var(--glass-edge);
+}
+
+.mdv-statusbar {
+  background: var(--glass-tint);
+}
+
+.mdv-split-gutter {
+  background: var(--glass-line);
+}
+
+/* tabs: the active one is a brighter pane of glass joined to the document */
+.mdv-pane-tab {
+  border-right-color: var(--glass-line);
+}
+
+.mdv-pane-tab.is-active {
+  background: var(--glass-sheen), var(--glass-sheet);
+  box-shadow: inset 1px 0 0 var(--glass-edge), var(--glass-highlight);
+}
+
+.mdv-pane.is-active .mdv-pane-tab.is-active {
+  box-shadow: inset 0 2px 0 var(--mdv-color-accent), inset 1px 0 0 var(--glass-edge);
+}
+
+/* ---------- the document sheet ---------- */
+.mdv-doc {
+  background: var(--glass-sheet);
+}
+
+.mdv-doc-banner {
+  background: var(--glass-sheen), var(--glass-tint);
+}
+
+/* line numbers of unwrapped text files stay put while text scrolls under
+   them: paint the same layers as behind the document (backdrop + grain, fixed
+   to the window, then the sheet), so the column matches the document exactly
+   and still hides the text passing underneath */
+.is-text-nowrap .mdv-text-line::before {
+  background:
+    linear-gradient(var(--glass-sheet), var(--glass-sheet)),
+    var(--glass-grain),
+    var(--glass-backdrop);
+  background-attachment: fixed;
+}
+
+/* ---------- floating glass: search bar, menus, dialogs, popups ---------- */
+.mdv-search,
+.mdv-menu,
+.mdv-dialog-box,
+.mdv-footnote-popup,
+.mdv-link-popup {
+  background: var(--glass-sheen), var(--glass-float);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+}
+
+/* the search bar and menus hold only short labels: let the document show
+   through a little (thinner tint, lighter blur) */
+.mdv-search,
+.mdv-menu {
+  background: var(--glass-sheen), var(--glass-float-thin);
+  -webkit-backdrop-filter: var(--glass-blur-thin);
+  backdrop-filter: var(--glass-blur-thin);
+}
+
+.mdv-dialog {
+  background: rgba(20, 30, 50, 0.22);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+/* the settings dialog is read at length: a denser, more blurred pane so the
+   document behind does not show through the text */
+.mdv-dialog-box {
+  border-radius: 14px;
+  background: var(--glass-sheen), var(--glass-float-dense);
+  -webkit-backdrop-filter: var(--glass-blur-dense);
+  backdrop-filter: var(--glass-blur-dense);
+}
+
+/* ---------- controls ---------- */
+.mdv-toolbar-button,
+.mdv-pane-action,
+.mdv-pane-tab-close,
+.mdv-statusbar-button,
+.mdv-search-toggle,
+.mdv-search-button,
+.mdv-sidebar-search-toggle,
+.mdv-sidebar-files-item,
+.mdv-sidebar-outline-item,
+.mdv-menu-item {
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* hover: a faint raised glass chip */
+.mdv-toolbar-button:hover,
+.mdv-pane-action:hover,
+.mdv-pane-open:hover,
+.mdv-statusbar-button:hover,
+.mdv-search-toggle:hover,
+.mdv-search-button:hover,
+.mdv-sidebar-search-toggle:hover,
+.mdv-sidebar-files-item:hover,
+.mdv-sidebar-outline-item:hover,
+.mdv-sidebar-search-file:hover {
+  box-shadow: var(--glass-highlight), 0 0 0 1px var(--glass-line);
+}
+
+.mdv-sidebar-files-item,
+.mdv-sidebar-outline-item {
+  margin-inline: 4px;
+  border-radius: 6px;
+}
+
+.mdv-sidebar-files-item.is-active,
+.mdv-toolbar-button.is-active,
+.mdv-statusbar-button.is-active,
+.mdv-search-toggle.is-active {
+  background: var(--glass-sheen), var(--mdv-color-selected);
+  box-shadow: var(--glass-highlight), 0 0 0 1px color-mix(in srgb, var(--mdv-color-accent) 25%, transparent);
+}
+
+.mdv-menu-item:hover {
+  background: var(--glass-sheen), var(--mdv-color-selected);
+}
+
+.mdv-button {
+  background: var(--glass-sheen), var(--mdv-color-chrome-bg);
+  border-color: var(--glass-line);
+  box-shadow: var(--glass-highlight), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* the primary button: a glossy accent bead, kept soft */
+.mdv-button-primary,
+.mdv-button-primary:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.04) 50%, rgba(0, 0, 0, 0.04)),
+    var(--mdv-color-accent);
+  border-color: color-mix(in srgb, var(--mdv-color-accent) 80%, #000);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 2px 6px color-mix(in srgb, var(--mdv-color-accent) 30%, transparent);
+}
+
+/* inputs: a recessed glass well */
+.mdv-search-input,
+.mdv-sidebar-search-input,
+.mdv-dialog-field input:not([type="checkbox"]),
+.mdv-dialog-field select {
+  background: color-mix(in srgb, var(--mdv-color-bg) 60%, transparent);
+  border-color: var(--glass-line);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- inside the document ---------- */
+.mdv-code,
+.mdv-frontmatter,
+.mdv-content > pre,
+.mdv-content li > pre {
+  background: var(--glass-sheen), var(--glass-card);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-highlight), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.mdv-code-header {
+  border-bottom-color: var(--glass-line);
+}
+
+.mdv-callout {
+  background:
+    var(--glass-sheen),
+    color-mix(in srgb, var(--mdv-callout-color) 8%, var(--glass-card));
+  box-shadow: var(--glass-highlight), inset 0 0 0 1px color-mix(in srgb, var(--mdv-callout-color) 14%, transparent);
+}
+
+.mdv-content kbd {
+  background: var(--glass-sheen), var(--glass-card);
+  border-color: var(--glass-line);
+  box-shadow: var(--glass-highlight), 0 1px 0 var(--glass-line);
+}
+
+.mdv-content th {
+  background: var(--glass-sheen), var(--glass-card);
+}
+
+/* hr: a thin glass edge fading out at both ends */
+.mdv-content hr {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--mdv-color-muted) 20%, var(--mdv-color-muted) 80%, transparent);
+  opacity: 0.45;
+  box-shadow: 0 1px 0 var(--glass-edge);
+}
+
+.mdv-content blockquote {
+  border-left-color: color-mix(in srgb, var(--mdv-color-accent) 35%, transparent);
+}
+
+/* ---------- scrollbars: translucent thumbs, no track ---------- */
+* {
+  scrollbar-color: color-mix(in srgb, var(--mdv-color-muted) 45%, transparent) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mdv-app * {
+    transition: none !important;
+  }
+}
