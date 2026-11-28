@@ -1229,6 +1229,41 @@ button {
   color: var(--mdv-color-muted);
 }
 
+/* settings: About tab */
+.mdv-about {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 2px;
+}
+
+.mdv-about-name {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.mdv-about-description,
+.mdv-about-copyright {
+  color: var(--mdv-color-muted);
+}
+
+.mdv-about-link {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--mdv-color-link);
+  cursor: pointer;
+}
+
+.mdv-about-link:hover {
+  text-decoration: underline;
+}
+
+.mdv-about-copyright {
+  margin-top: 8px;
+}
+
 .mdv-help-table {
   width: 100%;
   border-collapse: collapse;

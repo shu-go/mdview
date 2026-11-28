@@ -91,6 +91,8 @@
      .mdv-dialog-title, .mdv-dialog-body, .mdv-dialog-footer
      settings: .mdv-dialog-tabs > .mdv-dialog-tab (.is-active) and
        .mdv-dialog-panels > .mdv-dialog-panel (.is-hidden) > .mdv-dialog-field
+       About tab: .mdv-about > .mdv-about-name, .mdv-about-description,
+       .mdv-about-link (repository URL, a button), .mdv-about-copyright
    .mdv-menu > .mdv-menu-item        context menus and the recent files / folders menu
                                      (.is-disabled; .mdv-menu-item-label / -detail for name + folder)
    .mdv-resize-edge                  invisible window resize grips

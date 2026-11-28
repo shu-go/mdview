@@ -46,6 +46,26 @@ function dialog(title: string, body: HTMLElement, footer: HTMLElement[], header?
   return { root, close };
 }
 
+const repositoryURL = 'https://github.com/shu-go/mdview';
+const copyright = '© 2026 Shuhei Kubota';
+
+/** The About tab of the settings dialog: repository and copyright. */
+function aboutPanel(status: (m: string, err?: boolean) => void): HTMLElement {
+  // a button, not <a href>: the WebView must not navigate; OpenURL opens the browser
+  const link = h('button', { class: 'mdv-about-link', type: 'button', text: repositoryURL, title: 'Open in the browser' });
+  link.addEventListener('click', () => {
+    api.OpenURL(repositoryURL).catch((e) => status(errMessage(e), true));
+  });
+  return h(
+    'div',
+    { class: 'mdv-about' },
+    h('div', { class: 'mdv-about-name', text: 'mdview' }),
+    h('div', { class: 'mdv-about-description', text: 'A Markdown viewer' }),
+    link,
+    h('div', { class: 'mdv-about-copyright', text: copyright }),
+  );
+}
+
 /** The settings tab shown last (kept while the app runs). */
 let settingsTab = 0;
 
@@ -132,8 +152,7 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
     panelEls.forEach((p, j) => p.classList.toggle('is-hidden', i !== j));
     if (focus) tabButtons[i].focus();
   };
-  const inputs = new Map<keyof Settings, HTMLInputElement | HTMLSelectElement>();
-  for (const [title, fields] of sections) {
+  const addTab = (title: string): HTMLElement => {
     const index = tabButtons.length;
     const tab = h('button', { class: 'mdv-dialog-tab', type: 'button', role: 'tab', text: title });
     tab.addEventListener('click', () => selectTab(index));
@@ -141,7 +160,7 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
       // arrow keys move between tabs (WAI-ARIA tabs pattern)
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
       e.preventDefault();
-      const n = sections.length;
+      const n = tabButtons.length;
       selectTab((index + (e.key === 'ArrowRight' ? 1 : n - 1)) % n, true);
     });
     tabs.append(tab);
@@ -149,6 +168,11 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
     const panel = h('div', { class: 'mdv-dialog-panel', role: 'tabpanel' });
     panels.append(panel);
     panelEls.push(panel);
+    return panel;
+  };
+  const inputs = new Map<keyof Settings, HTMLInputElement | HTMLSelectElement>();
+  for (const [title, fields] of sections) {
+    const panel = addTab(title);
     for (const f of fields) {
       let input: HTMLInputElement | HTMLSelectElement;
       if (f.kind === 'select') {
@@ -183,7 +207,8 @@ export function openSettings(current: Settings, exportCSS: () => void, status: (
       panel.append(field);
     }
   }
-  const startTab = settingsTab < sections.length ? settingsTab : 0;
+  addTab('About').append(aboutPanel(status));
+  const startTab = settingsTab < tabButtons.length ? settingsTab : 0;
   selectTab(startTab);
   const pathNote = h('div', { class: 'mdv-dialog-field-hint' });
   void api.SettingsPath().then((p) => (pathNote.textContent = `Saved to: ${p}`));
